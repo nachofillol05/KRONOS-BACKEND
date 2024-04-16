@@ -1,1 +1,2 @@
-# ITSCALENDAR
+# KRONOS
+This is a final school project, the main purpose is to choose an organization following the school motto: "Buenos cristianos, honrados ciudadanos y eficientes técnicos para el servicio" aplying all the technologies that we have been learning over the years (Django, React, SQL, Github).
