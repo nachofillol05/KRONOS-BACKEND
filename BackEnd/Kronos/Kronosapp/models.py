@@ -1,4 +1,6 @@
 from django.db import models
+import uuid
+from django.contrib.auth.models import AbstractUser
 
 class Modules(models.Model):
     moduleId = models.IntegerField(primary_key=True)
@@ -54,7 +56,7 @@ class Roles(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
-class Users(models.Model):
+class User(AbstractUser):
     userId = models.IntegerField(primary_key=True)
     firstName = models.CharField(max_length=255)
     lastName = models.CharField(max_length=255)
@@ -66,10 +68,12 @@ class Users(models.Model):
     nationalityId = models.ForeignKey('Nationalities', on_delete=models.CASCADE)
     contactInfoId = models.OneToOneField('ContactInformation', on_delete=models.CASCADE)
     roleId = models.ForeignKey('Roles', on_delete=models.CASCADE)
+    email_verified = models.BooleanField(default=False)
+    verification_token = models.UUIDField(default=uuid.uuid4)
 
 class TeacherAvailability(models.Model):
     moduleId = models.ForeignKey('Modules', on_delete=models.CASCADE)
-    teacherId = models.ForeignKey('Users', on_delete=models.CASCADE)
+    teacherId = models.ForeignKey('User', on_delete=models.CASCADE)
     loadDate = models.DateTimeField()
     availabilityStateId = models.ForeignKey('AvailabilityStates', on_delete=models.CASCADE)
 
@@ -99,7 +103,7 @@ class Subjects(models.Model):
 class TeacherSubjectSchool(models.Model):
     schoolId = models.ForeignKey('Schools', on_delete=models.CASCADE)
     subjectId = models.ForeignKey('Subjects', on_delete=models.CASCADE)
-    teacherId = models.ForeignKey('Users', on_delete=models.CASCADE)
+    teacherId = models.ForeignKey('User', on_delete=models.CASCADE)
 
 class Actions(models.Model):
     actionId = models.IntegerField(primary_key=True)
@@ -128,7 +132,7 @@ class Events(models.Model):
     eventTypeId = models.ForeignKey('EventTypes', on_delete=models.CASCADE)
 
 class TeacherEvent(models.Model):
-    teacherId = models.ForeignKey('Users', on_delete=models.CASCADE)
+    teacherId = models.ForeignKey('User', on_delete=models.CASCADE)
     eventId = models.ForeignKey('Events', on_delete=models.CASCADE)
     class Meta:
         unique_together = ('teacherId', 'eventId')
