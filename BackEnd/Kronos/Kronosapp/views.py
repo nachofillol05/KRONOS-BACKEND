@@ -5,8 +5,26 @@ from .models import customuser
 #from Serializers.userSR import UserSerializer
 from django.core.mail import send_mail
 from django.urls import reverse
+from email.message import EmailMessage
+import smtplib
 
 # Create your views here.
+class send_test_email(generics.GenericAPIView):
+    def post(self,request):
+        remitente = "proyecto.villada.solidario@gmail.com"
+        destinatario = "weigandttimoteo@gmail.com"
+        mensaje = "¡Hola, mundo!"
+        email = EmailMessage()
+        email["From"] = remitente
+        email["To"] = destinatario
+        email["Subject"] = "Ore no puede ser tan gay"
+        email.set_content(mensaje)
+        smtp = smtplib.SMTP_SSL("smtp.gmail.com")
+        smtp.login(remitente, "bptf tqtv hjsb zfpl")
+        smtp.sendmail(remitente, destinatario, email.as_string())
+        smtp.quit()
+        return Response('Correo electrónico enviado con éxito', status=200)
+        
 
 class LoginView(generics.GenericAPIView):
     #permission_classes = [AllowAny]

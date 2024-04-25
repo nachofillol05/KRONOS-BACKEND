@@ -43,14 +43,6 @@ INSTALLED_APPS = [
 ]
 
 
-#THIS IS THE CONFIGURATION FOR THE MAIL VERIFICATION
-ACCOUNT_ACTIVATION_DAYS = 7  # Days to activate the account
-REGISTRATION_AUTO_LOGIN = True
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-#EMAIL_PORT = 587
-EMAIL_HOST_USER = 'proyecto.villada.solidario@gmail.com'
-EMAIL_HOST_PASSWORD = 'LaMamaDelPeruan'
-
 AUTH_USER_MODEL = 'Kronosapp.customuser'
 
 
