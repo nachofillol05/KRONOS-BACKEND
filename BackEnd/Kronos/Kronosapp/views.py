@@ -1,31 +1,13 @@
 from django.contrib.auth import authenticate, login
+from django.http import HttpResponse
 from rest_framework import generics, status
 from rest_framework.response import Response
 from .models import customuser
 #from Serializers.userSR import UserSerializer
-from django.core.mail import send_mail
 from django.urls import reverse
 from email.message import EmailMessage
 import smtplib
-
-# Create your views here.
-class send_test_email(generics.GenericAPIView):
-    def post(self,request):
-        remitente = "proyecto.villada.solidario@gmail.com"
-        destinatario = "weigandttimoteo@gmail.com"
-        mensaje = "¡Hola, mundo!"
-        email = EmailMessage()
-        email["From"] = remitente
-        email["To"] = destinatario
-        email["Subject"] = "Ore no puede ser tan gay"
-        email.set_content(mensaje)
-        smtp = smtplib.SMTP_SSL("smtp.gmail.com")
-        smtp.login(remitente, "bptf tqtv hjsb zfpl")
-        smtp.sendmail(remitente, destinatario, email.as_string())
-        smtp.quit()
-        return Response('Correo electrónico enviado con éxito', status=200)
         
-
 class LoginView(generics.GenericAPIView):
     #permission_classes = [AllowAny]
     def post(self, request):
@@ -57,22 +39,29 @@ class RegisterView(generics.GenericAPIView):
             verification_url = request.build_absolute_uri(
                 reverse('verify-email', args=[str(user.verification_token)])
             )
-            send_mail(
-                'Verifica tu correo electrónico',
-                'Haz clic en el enlace para verificar tu correo electrónico: ' + verification_url,
-                'from@example.com',
-                [user.email],
-            )
+            remitente = "proyecto.villada.solidario@gmail.com"
+            destinatario = "nachofillol05@gmail.com"
+            mensaje = 'Haz clic en el enlace para verificar tu correo electrónico: ' + verification_url
+            email = EmailMessage()
+            email["From"] = remitente
+            email["To"] = destinatario
+            email["Subject"] = 'Verifica tu correo electrónico'
+            email.set_content(mensaje)
+            smtp = smtplib.SMTP_SSL("smtp.gmail.com")
+            smtp.login(remitente, "bptf tqtv hjsb zfpl")
+            smtp.sendmail(remitente, destinatario, email.as_string())
+            smtp.quit()
             return Response('Correo electrónico enviado con éxito', status=200)
 
-            return Response('Usuario creado con éxito', status=200)
 
-
-def verify_email(request, token):
+def verify_email(token):
     try:
-        user = User.objects.get(verification_token=token)
-        user.email_verified = True
-        user.save()
-        return Response('Correo electrónico verificado con éxito')
-    except User.DoesNotExist:
-        return Response('Token de verificación no válido', status=400)
+        user = customuser.objects.get(verification_token=token)
+        if user.email_verified:
+            return HttpResponse('Correo electrónico ya verificado', status=400)
+        else:
+            user.email_verified = True
+            user.save()
+            return HttpResponse('Correo electrónico verificado con éxito', status=200)
+    except customuser.DoesNotExist:
+        return HttpResponse('Token de verificación no válido', status=400)
