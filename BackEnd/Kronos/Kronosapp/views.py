@@ -32,29 +32,31 @@ class RegisterView(generics.GenericAPIView):
             username = request.POST['username']
             email = request.POST['email']
             password = request.POST['password']
-            #TENGO QUE CREAR UN USUARIO PERO EN LA BASE DE DATOS NO EL SISTEMA DE CISCO O MODIFICAR EL DE CISCO
-            user = customuser.objects.create_user(username=username, email=email, password=password)
-            print("el usuario es:" ,user)
-
-            verification_url = request.build_absolute_uri(
+            if not customuser.objects.get(username=username):
+                user = customuser.objects.create_user(username=username, email=email, password=password)
+                verification_url = request.build_absolute_uri(
                 reverse('verify-email', args=[str(user.verification_token)])
-            )
-            remitente = "proyecto.villada.solidario@gmail.com"
-            destinatario = "nachofillol05@gmail.com"
-            mensaje = 'Haz clic en el enlace para verificar tu correo electrónico: ' + verification_url
-            email = EmailMessage()
-            email["From"] = remitente
-            email["To"] = destinatario
-            email["Subject"] = 'Verifica tu correo electrónico'
-            email.set_content(mensaje)
-            smtp = smtplib.SMTP_SSL("smtp.gmail.com")
-            smtp.login(remitente, "bptf tqtv hjsb zfpl")
-            smtp.sendmail(remitente, destinatario, email.as_string())
-            smtp.quit()
-            return Response('Correo electrónico enviado con éxito', status=200)
+                )
+                remitente = "proyecto.villada.solidario@gmail.com"
+                destinatario = "nachofillol05@gmail.com"
+                mensaje = 'Haz clic en el enlace para verificar tu correo electrónico: ' + verification_url
+                email = EmailMessage()
+                email["From"] = remitente
+                email["To"] = destinatario
+                email["Subject"] = 'Verifica tu correo electrónico'
+                email.set_content(mensaje)
+                smtp = smtplib.SMTP_SSL("smtp.gmail.com")
+                smtp.login(remitente, "bptf tqtv hjsb zfpl")
+                smtp.sendmail(remitente, destinatario, email.as_string())
+                smtp.quit()
+                return Response('Correo electrónico enviado con éxito', status=200)
+            else:
+                return Response('Correo electrónico ya en uso', status=400)
+
+            
 
 
-def verify_email(token):
+def verify_email(request,token):
     try:
         user = customuser.objects.get(verification_token=token)
         if user.email_verified:

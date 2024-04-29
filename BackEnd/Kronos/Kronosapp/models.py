@@ -61,7 +61,7 @@ class customuser(AbstractUser):
     firstName = models.CharField(max_length=255,blank=True, null=True)
     lastName = models.CharField(max_length=255,blank=True, null=True)
     gender = models.CharField(max_length=255, choices=[('Male', 'Male'), ('Female', 'Female')],blank=True, null=True)
-    email = models.CharField(max_length=255,blank=True, null=True)
+    email = models.CharField(max_length=255,blank=True, null=False, unique=True)
     document = models.CharField(max_length=255,blank=True, null=True)
     hoursToWork = models.IntegerField(blank=True, null=True)
     documentTypeId = models.ForeignKey('DocumentTypes', on_delete=models.CASCADE,blank=True, null=True)
