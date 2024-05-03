@@ -43,7 +43,7 @@ INSTALLED_APPS = [
 ]
 
 
-AUTH_USER_MODEL = 'Kronosapp.customuser'
+AUTH_USER_MODEL = 'Kronosapp.CustomUser'
 
 
 MIDDLEWARE = [

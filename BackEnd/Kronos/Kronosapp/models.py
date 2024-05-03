@@ -48,7 +48,7 @@ class Roles(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
-class customuser(AbstractUser):
+class CustomUser(AbstractUser):
     firstName = models.CharField(max_length=255,blank=True, null=True)
     lastName = models.CharField(max_length=255,blank=True, null=True)
     gender = models.CharField(max_length=255, choices=[('Male', 'Male'), ('Female', 'Female')],blank=True, null=True)
