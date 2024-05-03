@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate, login
 from django.http import HttpResponse
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .models import customuser
+from .models import CustomUser
 #from Serializers.userSR import UserSerializer
 from django.urls import reverse
 from email.message import EmailMessage
@@ -32,8 +32,8 @@ class RegisterView(generics.GenericAPIView):
             username = request.POST['username']
             email = request.POST['email']
             password = request.POST['password']
-            if not customuser.objects.get(username=username):
-                user = customuser.objects.create_user(username=username, email=email, password=password)
+            if not CustomUser.objects.get(username=username):
+                user = CustomUser.objects.create_user(username=username, email=email, password=password)
                 verification_url = request.build_absolute_uri(
                 reverse('verify-email', args=[str(user.verification_token)])
                 )
@@ -58,12 +58,12 @@ class RegisterView(generics.GenericAPIView):
 
 def verify_email(request,token):
     try:
-        user = customuser.objects.get(verification_token=token)
+        user = CustomUser.objects.get(verification_token=token)
         if user.email_verified:
             return HttpResponse('Correo electrónico ya verificado', status=400)
         else:
             user.email_verified = True
             user.save()
             return HttpResponse('Correo electrónico verificado con éxito', status=200)
-    except customuser.DoesNotExist:
+    except CustomUser.DoesNotExist:
         return HttpResponse('Token de verificación no válido', status=400)

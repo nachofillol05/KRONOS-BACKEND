@@ -64,7 +64,7 @@ class CustomUser(AbstractUser):
 
 class TeacherAvailability(models.Model):
     moduleId = models.ForeignKey('Modules', on_delete=models.CASCADE)
-    teacherId = models.ForeignKey('customuser', on_delete=models.CASCADE)
+    teacherId = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
     loadDate = models.DateTimeField()
     availabilityStateId = models.ForeignKey('AvailabilityStates', on_delete=models.CASCADE)
 
@@ -91,7 +91,7 @@ class Subjects(models.Model):
 class TeacherSubjectSchool(models.Model):
     schoolId = models.ForeignKey('Schools', on_delete=models.CASCADE)
     subjectId = models.ForeignKey('Subjects', on_delete=models.CASCADE)
-    teacherId = models.ForeignKey('customuser', on_delete=models.CASCADE)
+    teacherId = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
 
 class Actions(models.Model):
     name = models.CharField(max_length=255)
@@ -112,10 +112,6 @@ class Events(models.Model):
     description = models.CharField(max_length=255)
     startDate = models.DateTimeField()
     endDate = models.DateTimeField()
-    schoolId = models.ForeignKey('Schools', on_delete=models.CASCADE)
-    eventTypeId = models.ForeignKey('EventTypes', on_delete=models.SET_NULL)
-
-class TeacherEvent(models.Model):
-    eventId = models.ForeignKey('Events', on_delete=models.CASCADE)
-    class Meta:
-        unique_together = ('teacherId', 'eventId')
+    school = models.ForeignKey(Schools, on_delete=models.CASCADE)
+    eventType = models.ForeignKey(EventTypes, on_delete=models.SET_NULL)
+    affiliated_teachers = models.ManyToManyField(CustomUser)
