@@ -29,8 +29,8 @@ class Schools(models.Model):
     name = models.CharField(max_length=255)
     abbreviation = models.CharField(max_length=10)
     logo = models.ImageField(upload_to='logos/')
-    email = models.EmailField(max_length=255)
-    contactInfoId = models.OneToOneField('ContactInformation', on_delete=models.CASCADE)
+    email = models.EmailField(max_length=255, unique=True)
+    contactInfoId = models.OneToOneField('ContactInformation', on_delete=models.SET_NULL)
 
 class AvailabilityStates(models.Model):
     name = models.CharField(max_length=255)
@@ -55,10 +55,10 @@ class customuser(AbstractUser):
     email = models.CharField(max_length=255,blank=True, null=False, unique=True)
     document = models.CharField(max_length=255,blank=True, null=True)
     hoursToWork = models.IntegerField(blank=True, null=True)
-    documentTypeId = models.ForeignKey('DocumentTypes', on_delete=models.CASCADE,blank=True, null=True)
-    nationalityId = models.ForeignKey('Nationalities', on_delete=models.CASCADE,blank=True, null=True)
-    contactInfoId = models.OneToOneField('ContactInformation', on_delete=models.CASCADE,blank=True, null=True)
-    roleId = models.ForeignKey('Roles', on_delete=models.CASCADE,blank=True, null=True)
+    documentTypeId = models.ForeignKey('DocumentTypes', on_delete=models.SET_NULL,blank=True, null=True)
+    nationalityId = models.ForeignKey('Nationalities', on_delete=models.SET_NULL,blank=True, null=True)
+    contactInfoId = models.OneToOneField('ContactInformation', on_delete=models.SET_NULL,blank=True, null=True)
+    roleId = models.ForeignKey('Roles', on_delete=models.SET_NULL,blank=True, null=True)
     email_verified = models.BooleanField(default=False,blank=True, null=True)
     verification_token = models.UUIDField(default=uuid.uuid4,blank=True, null=True)
 
@@ -80,13 +80,13 @@ class Courses(models.Model):
 
 class Subjects(models.Model):
     name = models.CharField(max_length=255)
-    studyPlan = models.CharField(max_length=255)
+    studyPlan = models.TextField()
     description = models.CharField(max_length=255)
     weeklyHours = models.IntegerField()
     color = models.CharField(max_length=255)
     abbreviation = models.CharField(max_length=255)
     yearId = models.ForeignKey('Years', on_delete=models.CASCADE)
-    courseId = models.ForeignKey('Courses', on_delete=models.CASCADE)
+    courseId = models.ForeignKey('Courses', on_delete=models.SET_NULL)
 
 class TeacherSubjectSchool(models.Model):
     schoolId = models.ForeignKey('Schools', on_delete=models.CASCADE)
@@ -99,7 +99,7 @@ class Actions(models.Model):
 
 class Schedules(models.Model):
     date = models.DateTimeField()
-    actionId = models.ForeignKey('Actions', on_delete=models.CASCADE)
+    actionId = models.ForeignKey('Actions', on_delete=models.SET_NULL)
     moduleId = models.ForeignKey('Modules', on_delete=models.CASCADE)
     tssId = models.ForeignKey('TeacherSubjectSchool', on_delete=models.CASCADE)
 
@@ -113,7 +113,7 @@ class Events(models.Model):
     startDate = models.DateTimeField()
     endDate = models.DateTimeField()
     schoolId = models.ForeignKey('Schools', on_delete=models.CASCADE)
-    eventTypeId = models.ForeignKey('EventTypes', on_delete=models.CASCADE)
+    eventTypeId = models.ForeignKey('EventTypes', on_delete=models.SET_NULL)
 
 class TeacherEvent(models.Model):
     eventId = models.ForeignKey('Events', on_delete=models.CASCADE)
