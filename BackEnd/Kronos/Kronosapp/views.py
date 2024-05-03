@@ -2,7 +2,8 @@ from django.contrib.auth import authenticate, login
 from django.http import HttpResponse
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .models import customuser
+from .models import customuser, Schools
+from .Serializers import SchoolSerializer
 #from Serializers.userSR import UserSerializer
 from django.urls import reverse
 from email.message import EmailMessage
@@ -28,11 +29,15 @@ class LoginView(generics.GenericAPIView):
 
 class RegisterView(generics.GenericAPIView):
     def post(self, request):
-        if request.method == 'POST':
+        try:
             username = request.POST['username']
             email = request.POST['email']
             password = request.POST['password']
-            if not customuser.objects.get(username=username):
+
+            if customuser.objects.filter(username=username).exists():
+                return Response('Nombre de usuario ya en uso', status=400)
+            
+            else:
                 user = customuser.objects.create_user(username=username, email=email, password=password)
                 verification_url = request.build_absolute_uri(
                 reverse('verify-email', args=[str(user.verification_token)])
@@ -50,8 +55,10 @@ class RegisterView(generics.GenericAPIView):
                 smtp.sendmail(remitente, destinatario, email.as_string())
                 smtp.quit()
                 return Response('Correo electrónico enviado con éxito', status=200)
-            else:
-                return Response('Correo electrónico ya en uso', status=400)
+            
+        except Exception as e:
+            return Response({'message': 'Ocurrió un error durante el registro: ' + str(e)}, status=500)
+        
 
             
 
@@ -67,3 +74,16 @@ def verify_email(request,token):
             return HttpResponse('Correo electrónico verificado con éxito', status=200)
     except customuser.DoesNotExist:
         return HttpResponse('Token de verificación no válido', status=400)
+    
+# Definición de la vista para listar y crear School
+class SchoolListCreateView(generics.ListCreateAPIView):
+
+    queryset = Schools.objects.all()
+    serializer_class = SchoolSerializer
+
+# Definición de la vista para recuperar, actualizar y eliminar School
+class SchoolRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Schools.objects.all()
+    serializer_class = SchoolSerializer
+
+
