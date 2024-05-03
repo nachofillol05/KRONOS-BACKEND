@@ -4,7 +4,6 @@ from django.contrib.auth.models import AbstractUser
 
 
 class Modules(models.Model):
-    moduleId = models.IntegerField(primary_key=True)
     moduleNumber = models.IntegerField()
     dayId = models.CharField(max_length=10, choices=[
         ('Lunes', 'Lunes'),
@@ -20,7 +19,6 @@ class Modules(models.Model):
     schoolId = models.ForeignKey('Schools', on_delete=models.CASCADE)
 
 class ContactInformation(models.Model):
-    contactInfoId = models.IntegerField(primary_key=True)
     phoneNumber = models.CharField(max_length=255)
     postalCode = models.CharField(max_length=255)
     street = models.CharField(max_length=255)
@@ -30,7 +28,6 @@ class ContactInformation(models.Model):
     country = models.CharField(max_length=255)
 
 class Schools(models.Model):
-    schoolId = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
     abbreviation = models.CharField(max_length=10)
     logo = models.ImageField(upload_to='logos/')
@@ -38,22 +35,18 @@ class Schools(models.Model):
     contactInfoId = models.OneToOneField('ContactInformation', on_delete=models.CASCADE)
 
 class AvailabilityStates(models.Model):
-    availabilityStateId = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
     isEnabled = models.BooleanField()
 
 class DocumentTypes(models.Model):
-    documentTypeId = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
 class Nationalities(models.Model):
-    nationalityId = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
 class Roles(models.Model):
-    roleId = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
@@ -78,19 +71,16 @@ class TeacherAvailability(models.Model):
     availabilityStateId = models.ForeignKey('AvailabilityStates', on_delete=models.CASCADE)
 
 class Years(models.Model):
-    yearId = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     number = models.CharField(max_length=255)
 
 class Courses(models.Model):
-    courseId = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     yearId = models.ForeignKey('Years', on_delete=models.CASCADE)
 
 class Subjects(models.Model):
-    subjectId = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
     studyPlan = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
@@ -106,24 +96,20 @@ class TeacherSubjectSchool(models.Model):
     teacherId = models.ForeignKey('customuser', on_delete=models.CASCADE)
 
 class Actions(models.Model):
-    actionId = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
     isEnabled = models.BooleanField()
 
 class Schedules(models.Model):
-    scheduleId = models.IntegerField(primary_key=True)
     date = models.DateTimeField()
     actionId = models.ForeignKey('Actions', on_delete=models.CASCADE)
     moduleId = models.ForeignKey('Modules', on_delete=models.CASCADE)
     tssId = models.ForeignKey('TeacherSubjectSchool', on_delete=models.CASCADE)
 
 class EventTypes(models.Model):
-    eventTypeId = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
 class Events(models.Model):
-    eventId = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     startDate = models.DateTimeField()
@@ -132,7 +118,6 @@ class Events(models.Model):
     eventTypeId = models.ForeignKey('EventTypes', on_delete=models.CASCADE)
 
 class TeacherEvent(models.Model):
-    teacherId = models.ForeignKey('customuser', on_delete=models.CASCADE)
     eventId = models.ForeignKey('Events', on_delete=models.CASCADE)
     class Meta:
         unique_together = ('teacherId', 'eventId')
