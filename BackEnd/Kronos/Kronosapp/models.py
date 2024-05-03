@@ -19,13 +19,11 @@ class Modules(models.Model):
     schoolId = models.ForeignKey('Schools', on_delete=models.CASCADE)
 
 class ContactInformation(models.Model):
-    phoneNumber = models.CharField(max_length=255)
     postalCode = models.CharField(max_length=255)
     street = models.CharField(max_length=255)
     streetNumber = models.CharField(max_length=255)
     city = models.CharField(max_length=255)
     province = models.CharField(max_length=255)
-    country = models.CharField(max_length=255)
 
 class Schools(models.Model):
     name = models.CharField(max_length=255)
