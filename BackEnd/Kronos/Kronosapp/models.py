@@ -3,18 +3,51 @@ import uuid
 from django.contrib.auth.models import AbstractUser
 
 
+class DocumentTypes(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.CharField(max_length=255)
+
+
+class Nationalities(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.CharField(max_length=255)
+
+
+class ContactInformation(models.Model):
+    postalCode = models.CharField(max_length=255)
+    street = models.CharField(max_length=255)
+    streetNumber = models.CharField(max_length=255)
+    city = models.CharField(max_length=255)
+    province = models.CharField(max_length=255)
+
+
+class Schools(models.Model):
+    name = models.CharField(max_length=255)
+    abbreviation = models.CharField(max_length=10)
+    logo = models.ImageField(upload_to='logos/')
+    email = models.EmailField(max_length=255, unique=True)
+    contactInfo = models.OneToOneField(ContactInformation, on_delete=models.SET_NULL)
+    directives = models.ManyToManyField('CustomUser')
+
 class CustomUser(AbstractUser):
+    GENDER_CHOICES = {
+        'male': 'Masculino',
+        'female': 'Femenino'
+    }
     firstName = models.CharField(max_length=255,blank=True, null=True)
     lastName = models.CharField(max_length=255,blank=True, null=True)
-    gender = models.CharField(max_length=255, choices=[('Male', 'Male'), ('Female', 'Female')],blank=True, null=True)
+    gender = models.CharField(max_length=255, choices=GENDER_CHOICES,blank=True, null=True)
     email = models.CharField(max_length=255,blank=True, null=False, unique=True)
     document = models.CharField(max_length=255,blank=True, null=True)
     hoursToWork = models.IntegerField(blank=True, null=True)
-    documentTypeId = models.ForeignKey('DocumentTypes', on_delete=models.SET_NULL,blank=True, null=True)
-    nationalityId = models.ForeignKey('Nationalities', on_delete=models.SET_NULL,blank=True, null=True)
-    contactInfoId = models.OneToOneField('ContactInformation', on_delete=models.SET_NULL,blank=True, null=True)
+    documentType = models.ForeignKey(DocumentTypes, on_delete=models.SET_NULL,blank=True, null=True)
+    nationality = models.ForeignKey(Nationalities, on_delete=models.SET_NULL,blank=True, null=True)
+    contactInfo = models.OneToOneField(ContactInformation, on_delete=models.SET_NULL,blank=True, null=True)
     email_verified = models.BooleanField(default=False,blank=True, null=True)
     verification_token = models.UUIDField(default=uuid.uuid4,blank=True, null=True)
+
+    def is_directive(self, school: Schools):
+        return self in school.directives.all()
 
 
 class Modules(models.Model):
@@ -32,34 +65,12 @@ class Modules(models.Model):
     startTime = models.TimeField()
     schoolId = models.ForeignKey('Schools', on_delete=models.CASCADE)
 
-class ContactInformation(models.Model):
-    postalCode = models.CharField(max_length=255)
-    street = models.CharField(max_length=255)
-    streetNumber = models.CharField(max_length=255)
-    city = models.CharField(max_length=255)
-    province = models.CharField(max_length=255)
 
-class Schools(models.Model):
-    name = models.CharField(max_length=255)
-    abbreviation = models.CharField(max_length=10)
-    logo = models.ImageField(upload_to='logos/')
-    email = models.EmailField(max_length=255, unique=True)
-    contactInfo = models.OneToOneField(ContactInformation, on_delete=models.SET_NULL)
-    directives = models.ManyToManyField(CustomUser)
+
 
 class AvailabilityStates(models.Model):
     name = models.CharField(max_length=255)
     isEnabled = models.BooleanField()
-
-class DocumentTypes(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.CharField(max_length=255)
-
-class Nationalities(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.CharField(max_length=255)
-
-
 
 
 class TeacherAvailability(models.Model):
