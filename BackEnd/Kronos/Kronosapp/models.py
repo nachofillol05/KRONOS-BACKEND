@@ -3,6 +3,20 @@ import uuid
 from django.contrib.auth.models import AbstractUser
 
 
+class CustomUser(AbstractUser):
+    firstName = models.CharField(max_length=255,blank=True, null=True)
+    lastName = models.CharField(max_length=255,blank=True, null=True)
+    gender = models.CharField(max_length=255, choices=[('Male', 'Male'), ('Female', 'Female')],blank=True, null=True)
+    email = models.CharField(max_length=255,blank=True, null=False, unique=True)
+    document = models.CharField(max_length=255,blank=True, null=True)
+    hoursToWork = models.IntegerField(blank=True, null=True)
+    documentTypeId = models.ForeignKey('DocumentTypes', on_delete=models.SET_NULL,blank=True, null=True)
+    nationalityId = models.ForeignKey('Nationalities', on_delete=models.SET_NULL,blank=True, null=True)
+    contactInfoId = models.OneToOneField('ContactInformation', on_delete=models.SET_NULL,blank=True, null=True)
+    email_verified = models.BooleanField(default=False,blank=True, null=True)
+    verification_token = models.UUIDField(default=uuid.uuid4,blank=True, null=True)
+
+
 class Modules(models.Model):
     moduleNumber = models.IntegerField()
     dayId = models.CharField(max_length=10, choices=[
@@ -30,7 +44,8 @@ class Schools(models.Model):
     abbreviation = models.CharField(max_length=10)
     logo = models.ImageField(upload_to='logos/')
     email = models.EmailField(max_length=255, unique=True)
-    contactInfoId = models.OneToOneField('ContactInformation', on_delete=models.SET_NULL)
+    contactInfo = models.OneToOneField(ContactInformation, on_delete=models.SET_NULL)
+    directives = models.ManyToManyField(CustomUser)
 
 class AvailabilityStates(models.Model):
     name = models.CharField(max_length=255)
@@ -44,23 +59,8 @@ class Nationalities(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
-class Roles(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.CharField(max_length=255)
 
-class CustomUser(AbstractUser):
-    firstName = models.CharField(max_length=255,blank=True, null=True)
-    lastName = models.CharField(max_length=255,blank=True, null=True)
-    gender = models.CharField(max_length=255, choices=[('Male', 'Male'), ('Female', 'Female')],blank=True, null=True)
-    email = models.CharField(max_length=255,blank=True, null=False, unique=True)
-    document = models.CharField(max_length=255,blank=True, null=True)
-    hoursToWork = models.IntegerField(blank=True, null=True)
-    documentTypeId = models.ForeignKey('DocumentTypes', on_delete=models.SET_NULL,blank=True, null=True)
-    nationalityId = models.ForeignKey('Nationalities', on_delete=models.SET_NULL,blank=True, null=True)
-    contactInfoId = models.OneToOneField('ContactInformation', on_delete=models.SET_NULL,blank=True, null=True)
-    roleId = models.ForeignKey('Roles', on_delete=models.SET_NULL,blank=True, null=True)
-    email_verified = models.BooleanField(default=False,blank=True, null=True)
-    verification_token = models.UUIDField(default=uuid.uuid4,blank=True, null=True)
+
 
 class TeacherAvailability(models.Model):
     moduleId = models.ForeignKey('Modules', on_delete=models.CASCADE)
