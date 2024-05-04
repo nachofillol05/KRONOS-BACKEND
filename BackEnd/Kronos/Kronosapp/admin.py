@@ -1,23 +1,39 @@
 from django.contrib import admin
-from django.contrib import admin
-from .models import *
+
+from .models import (
+    Module,
+    ContactInformation,
+    School,
+    AvailabilityState,
+    DocumentType,
+    CustomUser,
+    TeacherAvailability,
+    Year,
+    Course,
+    Subject,
+    TeacherSubjectSchool,
+    Action,
+    Schedules,
+    EventType,
+    Event,
+    Nationality
+)
+
 
 # Register your models here.
-admin.site.register(Modules)
+admin.site.register(Module)
 admin.site.register(ContactInformation)
-admin.site.register(Schools)
-admin.site.register(AvailabilityStates)
-admin.site.register(DocumentTypes)
-admin.site.register(Nationalities)
-admin.site.register(Roles)
+admin.site.register(School)
+admin.site.register(AvailabilityState)
+admin.site.register(DocumentType)
+admin.site.register(Nationality)
 admin.site.register(CustomUser)
 admin.site.register(TeacherAvailability)
-admin.site.register(Years)
-admin.site.register(Courses)
-admin.site.register(Subjects)
+admin.site.register(Year)
+admin.site.register(Course)
+admin.site.register(Subject)
 admin.site.register(TeacherSubjectSchool)
-admin.site.register(Actions)
+admin.site.register(Action)
 admin.site.register(Schedules)
-admin.site.register(EventTypes)
-admin.site.register(Events)
-admin.site.register(TeacherEvent)
+admin.site.register(EventType)
+admin.site.register(Event)

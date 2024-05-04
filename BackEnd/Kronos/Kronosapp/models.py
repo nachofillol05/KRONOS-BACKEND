@@ -3,12 +3,12 @@ import uuid
 from django.contrib.auth.models import AbstractUser
 
 
-class DocumentTypes(models.Model):
+class DocumentType(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
 
-class Nationalities(models.Model):
+class Nationality(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
@@ -21,13 +21,14 @@ class ContactInformation(models.Model):
     province = models.CharField(max_length=255)
 
 
-class Schools(models.Model):
+class School(models.Model):
     name = models.CharField(max_length=255)
     abbreviation = models.CharField(max_length=10)
     logo = models.ImageField(upload_to='logos/')
     email = models.EmailField(max_length=255, unique=True)
     contactInfo = models.OneToOneField(ContactInformation, on_delete=models.SET_NULL)
     directives = models.ManyToManyField('CustomUser')
+
 
 class CustomUser(AbstractUser):
     GENDER_CHOICES = {
@@ -40,17 +41,17 @@ class CustomUser(AbstractUser):
     email = models.CharField(max_length=255,blank=True, null=False, unique=True)
     document = models.CharField(max_length=255,blank=True, null=True)
     hoursToWork = models.IntegerField(blank=True, null=True)
-    documentType = models.ForeignKey(DocumentTypes, on_delete=models.SET_NULL,blank=True, null=True)
-    nationality = models.ForeignKey(Nationalities, on_delete=models.SET_NULL,blank=True, null=True)
+    documentType = models.ForeignKey(DocumentType, on_delete=models.SET_NULL,blank=True, null=True)
+    nationality = models.ForeignKey(Nationality, on_delete=models.SET_NULL,blank=True, null=True)
     contactInfo = models.OneToOneField(ContactInformation, on_delete=models.SET_NULL,blank=True, null=True)
     email_verified = models.BooleanField(default=False,blank=True, null=True)
     verification_token = models.UUIDField(default=uuid.uuid4,blank=True, null=True)
 
-    def is_directive(self, school: Schools):
+    def is_directive(self, school: School):
         return self in school.directives.all()
 
 
-class Modules(models.Model):
+class Module(models.Model):
     moduleNumber = models.IntegerField()
     dayId = models.CharField(max_length=10, choices=[
         ('Lunes', 'Lunes'),
@@ -66,9 +67,7 @@ class Modules(models.Model):
     schoolId = models.ForeignKey('Schools', on_delete=models.CASCADE)
 
 
-
-
-class AvailabilityStates(models.Model):
+class AvailabilityState(models.Model):
     name = models.CharField(max_length=255)
     isEnabled = models.BooleanField()
 
@@ -77,19 +76,22 @@ class TeacherAvailability(models.Model):
     moduleId = models.ForeignKey('Modules', on_delete=models.CASCADE)
     teacherId = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
     loadDate = models.DateTimeField()
-    availabilityStateId = models.ForeignKey('AvailabilityStates', on_delete=models.CASCADE)
+    availabilityStateId = models.ForeignKey('AvailabilityState', on_delete=models.CASCADE)
 
-class Years(models.Model):
+
+class Year(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     number = models.CharField(max_length=255)
 
-class Courses(models.Model):
+
+class Course(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     yearId = models.ForeignKey('Years', on_delete=models.CASCADE)
 
-class Subjects(models.Model):
+
+class Subject(models.Model):
     name = models.CharField(max_length=255)
     studyPlan = models.TextField()
     description = models.CharField(max_length=255)
@@ -99,14 +101,17 @@ class Subjects(models.Model):
     yearId = models.ForeignKey('Years', on_delete=models.CASCADE)
     courseId = models.ForeignKey('Courses', on_delete=models.SET_NULL)
 
+
 class TeacherSubjectSchool(models.Model):
     schoolId = models.ForeignKey('Schools', on_delete=models.CASCADE)
     subjectId = models.ForeignKey('Subjects', on_delete=models.CASCADE)
     teacherId = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
 
-class Actions(models.Model):
+
+class Action(models.Model):
     name = models.CharField(max_length=255)
     isEnabled = models.BooleanField()
+
 
 class Schedules(models.Model):
     date = models.DateTimeField()
@@ -114,15 +119,17 @@ class Schedules(models.Model):
     moduleId = models.ForeignKey('Modules', on_delete=models.CASCADE)
     tssId = models.ForeignKey('TeacherSubjectSchool', on_delete=models.CASCADE)
 
-class EventTypes(models.Model):
+
+class EventType(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
-class Events(models.Model):
+
+class Event(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     startDate = models.DateTimeField()
     endDate = models.DateTimeField()
-    school = models.ForeignKey(Schools, on_delete=models.CASCADE)
-    eventType = models.ForeignKey(EventTypes, on_delete=models.SET_NULL)
+    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    eventType = models.ForeignKey(EventType, on_delete=models.SET_NULL)
     affiliated_teachers = models.ManyToManyField(CustomUser)
