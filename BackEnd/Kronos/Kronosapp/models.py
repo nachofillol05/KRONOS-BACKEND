@@ -115,9 +115,9 @@ class Action(models.Model):
 
 class Schedules(models.Model):
     date = models.DateTimeField()
-    actionId = models.ForeignKey('Actions', on_delete=models.SET_NULL)
-    moduleId = models.ForeignKey('Modules', on_delete=models.CASCADE)
-    tssId = models.ForeignKey('TeacherSubjectSchool', on_delete=models.CASCADE)
+    action = models.ForeignKey(Action, on_delete=models.SET_NULL)
+    module = models.ForeignKey(Module, on_delete=models.CASCADE)
+    tssId = models.ForeignKey(TeacherSubjectSchool, on_delete=models.CASCADE)
 
 
 class EventType(models.Model):
