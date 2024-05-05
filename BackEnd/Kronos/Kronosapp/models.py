@@ -74,10 +74,10 @@ class AvailabilityState(models.Model):
 
 
 class TeacherAvailability(models.Model):
-    moduleId = models.ForeignKey('Modules', on_delete=models.CASCADE)
-    teacherId = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
+    module = models.ForeignKey(Module, on_delete=models.CASCADE)
+    teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     loadDate = models.DateTimeField()
-    availabilityStateId = models.ForeignKey('AvailabilityState', on_delete=models.CASCADE)
+    availabilityState = models.ForeignKey(AvailabilityState, on_delete=models.SET_NULL)
 
 
 class Year(models.Model):
