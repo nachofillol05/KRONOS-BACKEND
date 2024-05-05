@@ -52,19 +52,20 @@ class CustomUser(AbstractUser):
 
 
 class Module(models.Model):
+    DAY_CHOICES = {
+        'monday': 'Lunes',
+        'tuesday': 'Martes',
+        'wednesday': 'Miércoles',
+        'thursday': 'Jueves',
+        'friday': 'Viernes',
+        'saturday': 'Sábado',
+        'sunday': 'Domingo'
+    }
     moduleNumber = models.IntegerField()
-    dayId = models.CharField(max_length=10, choices=[
-        ('Lunes', 'Lunes'),
-        ('Martes', 'Martes'),
-        ('Miércoles', 'Miércoles'),
-        ('Jueves', 'Jueves'),
-        ('Viernes', 'Viernes'),
-        ('Sábado', 'Sábado'),
-        ('Domingo', 'Domingo'),
-    ])
+    dayId = models.CharField(max_length=10, choices=DAY_CHOICES)
     endTime = models.TimeField()
     startTime = models.TimeField()
-    schoolId = models.ForeignKey('Schools', on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE)
 
 
 class AvailabilityState(models.Model):
