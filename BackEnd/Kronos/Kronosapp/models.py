@@ -89,7 +89,7 @@ class Year(models.Model):
 class Course(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
-    yearId = models.ForeignKey('Years', on_delete=models.CASCADE)
+    year = models.ForeignKey(Year, on_delete=models.CASCADE)
 
 
 class Subject(models.Model):
@@ -97,16 +97,15 @@ class Subject(models.Model):
     studyPlan = models.TextField()
     description = models.CharField(max_length=255)
     weeklyHours = models.IntegerField()
-    color = models.CharField(max_length=255)
-    abbreviation = models.CharField(max_length=255)
-    yearId = models.ForeignKey('Years', on_delete=models.CASCADE)
-    courseId = models.ForeignKey('Courses', on_delete=models.SET_NULL)
+    color = models.CharField(max_length=6)
+    abbreviation = models.CharField(max_length=10)
+    course = models.ForeignKey(Course, on_delete=models.SET_NULL)
 
 
 class TeacherSubjectSchool(models.Model):
-    schoolId = models.ForeignKey('Schools', on_delete=models.CASCADE)
-    subjectId = models.ForeignKey('Subjects', on_delete=models.CASCADE)
-    teacherId = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
 
 
 class Action(models.Model):
