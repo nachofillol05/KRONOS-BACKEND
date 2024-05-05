@@ -26,7 +26,7 @@ class School(models.Model):
     abbreviation = models.CharField(max_length=10)
     logo = models.ImageField(upload_to='logos/')
     email = models.EmailField(max_length=255, unique=True)
-    contactInfo = models.OneToOneField(ContactInformation, on_delete=models.SET_NULL)
+    contactInfo = models.OneToOneField(ContactInformation, null=True, on_delete=models.SET_NULL)
     directives = models.ManyToManyField('CustomUser')
 
 
@@ -35,16 +35,16 @@ class CustomUser(AbstractUser):
         'male': 'Masculino',
         'female': 'Femenino'
     }
-    firstName = models.CharField(max_length=255,blank=True, null=True)
-    lastName = models.CharField(max_length=255,blank=True, null=True)
+    first_name = models.CharField(max_length=255, blank=True, null=True)
+    last_name = models.CharField(max_length=255, blank=True, null=True)
     gender = models.CharField(max_length=255, choices=GENDER_CHOICES,blank=True, null=True)
-    email = models.CharField(max_length=255,blank=True, null=False, unique=True)
-    document = models.CharField(max_length=255,blank=True, null=True)
+    email = models.CharField(max_length=255, blank=True, null=False, unique=True)
+    document = models.CharField(max_length=255, blank=True, null=True)
     hoursToWork = models.IntegerField(blank=True, null=True)
     documentType = models.ForeignKey(DocumentType, on_delete=models.SET_NULL,blank=True, null=True)
     nationality = models.ForeignKey(Nationality, on_delete=models.SET_NULL,blank=True, null=True)
     contactInfo = models.OneToOneField(ContactInformation, on_delete=models.SET_NULL,blank=True, null=True)
-    email_verified = models.BooleanField(default=False,blank=True, null=True)
+    email_verified = models.BooleanField(default=False)
     verification_token = models.UUIDField(default=uuid.uuid4,blank=True, null=True)
 
     def is_directive(self, school: School):
@@ -77,7 +77,7 @@ class TeacherAvailability(models.Model):
     module = models.ForeignKey(Module, on_delete=models.CASCADE)
     teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     loadDate = models.DateTimeField()
-    availabilityState = models.ForeignKey(AvailabilityState, on_delete=models.SET_NULL)
+    availabilityState = models.ForeignKey(AvailabilityState, null=True, on_delete=models.SET_NULL)
 
 
 class Year(models.Model):
@@ -99,7 +99,7 @@ class Subject(models.Model):
     weeklyHours = models.IntegerField()
     color = models.CharField(max_length=6)
     abbreviation = models.CharField(max_length=10)
-    course = models.ForeignKey(Course, on_delete=models.SET_NULL)
+    course = models.ForeignKey(Course, null=True, on_delete=models.SET_NULL)
 
 
 class TeacherSubjectSchool(models.Model):
@@ -115,7 +115,7 @@ class Action(models.Model):
 
 class Schedules(models.Model):
     date = models.DateTimeField()
-    action = models.ForeignKey(Action, on_delete=models.SET_NULL)
+    action = models.ForeignKey(Action, null=True, on_delete=models.SET_NULL)
     module = models.ForeignKey(Module, on_delete=models.CASCADE)
     tssId = models.ForeignKey(TeacherSubjectSchool, on_delete=models.CASCADE)
 
@@ -131,5 +131,5 @@ class Event(models.Model):
     startDate = models.DateTimeField()
     endDate = models.DateTimeField()
     school = models.ForeignKey(School, on_delete=models.CASCADE)
-    eventType = models.ForeignKey(EventType, on_delete=models.SET_NULL)
+    eventType = models.ForeignKey(EventType, null=True, on_delete=models.SET_NULL)
     affiliated_teachers = models.ManyToManyField(CustomUser)
