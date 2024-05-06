@@ -2,12 +2,13 @@ from django.contrib.auth import authenticate, login
 from django.http import HttpResponse
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .models import customuser, Schools
-from .Serializers import SchoolSerializer
 from django.urls import reverse
+from .models import CustomUser, Schools
+from Serializers import SchoolSerializer
 from email.message import EmailMessage
 import smtplib
         
+
 class LoginView(generics.GenericAPIView):
     def post(self, request):
         username = request.data.get('username')
@@ -23,19 +24,17 @@ class LoginView(generics.GenericAPIView):
             return Response({'message': 'An error occurred during login: ' + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 class RegisterView(generics.GenericAPIView):
     def post(self, request):
         try:
             username = request.POST['username']
             email = request.POST['email']
             password = request.POST['password']
-
-            if customuser.objects.filter(username=username).exists():
+            if CustomUser.objects.filter(username=username).exists():
                 return Response('Nombre de usuario ya en uso', status=400)
             
             else:
-                user = customuser.objects.create_user(username=username, email=email, password=password)
+                user = CustomUser.objects.create_user(username=username, email=email, password=password)
                 verification_url = request.build_absolute_uri(
                 reverse('verify-email', args=[str(user.verification_token)])
                 )
@@ -52,7 +51,6 @@ class RegisterView(generics.GenericAPIView):
                 smtp.sendmail(remitente, destinatario, email.as_string())
                 smtp.quit()
                 return Response('Correo electrónico enviado con éxito', status=200)
-            
         except Exception as e:
             return Response({'message': 'Ocurrió un error durante el registro: ' + str(e)}, status=500)
             
@@ -60,23 +58,21 @@ class RegisterView(generics.GenericAPIView):
 
 def verify_email(request,token):
     try:
-        user = customuser.objects.get(verification_token=token)
+        user = CustomUser.objects.get(verification_token=token)
         if user.email_verified:
             return HttpResponse('Correo electrónico ya verificado', status=400)
         else:
             user.email_verified = True
             user.save()
             return HttpResponse('Correo electrónico verificado con éxito', status=200)
-    except customuser.DoesNotExist:
+    except CustomUser.DoesNotExist:
         return HttpResponse('Token de verificación no válido', status=400)
     
-class SchoolListCreateView(generics.ListCreateAPIView):
 
+class SchoolListCreateView(generics.ListCreateAPIView):
     queryset = Schools.objects.all()
     serializer_class = SchoolSerializer
 
 class SchoolRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Schools.objects.all()
     serializer_class = SchoolSerializer
-
-
