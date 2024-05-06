@@ -99,7 +99,7 @@ class Subject(models.Model):
     weeklyHours = models.IntegerField()
     color = models.CharField(max_length=6)
     abbreviation = models.CharField(max_length=10)
-    course = models.ForeignKey(Course, null=True, on_delete=models.SET_NULL)
+    course = models.ForeignKey(Course, on_delete=models.SET_NULL)
 
 
 class TeacherSubjectSchool(models.Model):
