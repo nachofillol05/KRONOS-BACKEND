@@ -3,8 +3,7 @@ from django.http import HttpResponse
 from rest_framework import generics, status
 from rest_framework.response import Response
 from django.urls import reverse
-from .models import CustomUser, Schools
-from Serializers import SchoolSerializer
+from .models import CustomUser, School
 from email.message import EmailMessage
 import smtplib
         
@@ -26,20 +25,22 @@ class LoginView(generics.GenericAPIView):
 
 class RegisterView(generics.GenericAPIView):
     def post(self, request):
-        try:
-            username = request.POST['username']
-            email = request.POST['email']
-            password = request.POST['password']
-            if CustomUser.objects.filter(username=username).exists():
-                return Response('Nombre de usuario ya en uso', status=400)
-            
+        username = request.POST['username']
+        email = request.POST['email']
+        password = request.POST['password']
+        if CustomUser.objects.filter(username=username).exists():
+            return Response('Nombre de usuario ya en uso', status=400)
+        
+        else:
+            if CustomUser.objects.filter(email=email).exists():
+                return Response('mail ya en uso', status=400)
             else:
                 user = CustomUser.objects.create_user(username=username, email=email, password=password)
                 verification_url = request.build_absolute_uri(
                 reverse('verify-email', args=[str(user.verification_token)])
                 )
                 remitente = "proyecto.villada.solidario@gmail.com"
-                destinatario = "nachofillol05@gmail.com"
+                destinatario = user.email
                 mensaje = 'Haz clic en el enlace para verificar tu correo electrónico: ' + verification_url
                 email = EmailMessage()
                 email["From"] = remitente
@@ -51,9 +52,6 @@ class RegisterView(generics.GenericAPIView):
                 smtp.sendmail(remitente, destinatario, email.as_string())
                 smtp.quit()
                 return Response('Correo electrónico enviado con éxito', status=200)
-        except Exception as e:
-            return Response({'message': 'Ocurrió un error durante el registro: ' + str(e)}, status=500)
-            
 
 
 def verify_email(request,token):
@@ -69,10 +67,3 @@ def verify_email(request,token):
         return HttpResponse('Token de verificación no válido', status=400)
     
 
-class SchoolListCreateView(generics.ListCreateAPIView):
-    queryset = Schools.objects.all()
-    serializer_class = SchoolSerializer
-
-class SchoolRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Schools.objects.all()
-    serializer_class = SchoolSerializer
