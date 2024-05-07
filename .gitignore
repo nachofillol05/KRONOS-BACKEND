@@ -1,0 +1,53 @@
+# Archivos y directorios de Python y Django
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.pyc
+
+# Archivos y directorios de Django
+*.sqlite3
+*.db
+*.log
+*.pot
+*.pyc
+*.pyo
+local_settings.py
+.idea/
+
+# Archivos y directorios de Django Rest Framework
+*.pyc
+
+# Dependencias de Python
+__pycache__/
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Dependencias específicas de Python
+.env
+.env.local
+.env.*.local
+.env.development
+.env.development.local
+.env.production
+.env.production.local
+.env.test
+.env.test.local
+.envrc
+
+# Dependencias de Node.js y React
+node_modules/
+build/
+.cache/
+yarn-error.log
+
+# Otros archivos y directorios comunes en proyectos de software
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.bak
+*.swp
+.DS_Store
