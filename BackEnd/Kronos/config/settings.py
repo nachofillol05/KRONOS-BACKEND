@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'Kronosapp',
     'rest_framework',
-    'rest_framework.authtoken',
+    
 ]
 
 
