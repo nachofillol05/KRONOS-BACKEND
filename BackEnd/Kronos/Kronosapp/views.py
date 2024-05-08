@@ -70,33 +70,36 @@ def verify_email(request,token):
             user.save()
             return HttpResponse('Correo electrónico verificado con éxito', status=200)
     except CustomUser.DoesNotExist:
-        return HttpResponse('Token de verificación no válido', status=400)
+        return HttpResponse('Token de verificación no válido', status=404)
 
 
 class OlvideMiContrasenia(generics.GenericAPIView):
     def get(self, request):
-        token = request.data.get('token')
-        user = request.user
-        token = Token.objects.get(key=token)
-        user = token.user
-        remitente = user.email
-        verification_url = request.build_absolute_uri(
-            reverse('forgot-password', args=[str(user.verification_token)])
-        )
-        remitente = "proyecto.villada.solidario@gmail.com"
-        destinatario = user.email
-        
-        mensaje = 'Haz clic en el enlace para cambiar tu contrasenia: ' + verification_url
-        email = EmailMessage()
-        email["From"] = remitente
-        email["To"] = destinatario
-        email["Subject"] = 'Cambie su contraseña'
-        email.set_content(mensaje)
-        smtp = smtplib.SMTP_SSL("smtp.gmail.com")
-        smtp.login(remitente, "bptf tqtv hjsb zfpl")
-        smtp.sendmail(remitente, destinatario, email.as_string())
-        smtp.quit()
-        return Response('Correo enviado con exito', status=200)
+        try:
+            token = request.data.get('token')
+            user = request.user
+            token = Token.objects.get(key=token)
+            user = token.user
+            remitente = user.email
+            verification_url = request.build_absolute_uri(
+                reverse('forgot-password', args=[str(user.verification_token)])
+            )
+            remitente = "proyecto.villada.solidario@gmail.com"
+            destinatario = user.email
+            
+            mensaje = 'Haz clic en el enlace para cambiar tu contrasenia: ' + verification_url
+            email = EmailMessage()
+            email["From"] = remitente
+            email["To"] = destinatario
+            email["Subject"] = 'Cambie su contraseña'
+            email.set_content(mensaje)
+            smtp = smtplib.SMTP_SSL("smtp.gmail.com")
+            smtp.login(remitente, "bptf tqtv hjsb zfpl")
+            smtp.sendmail(remitente, destinatario, email.as_string())
+            smtp.quit()
+            return Response('Correo enviado con exito', status=200)
+        except:
+            return Response('Error al enviar el correo', status=400)
     
 def change_password(request, token):
     try:
@@ -109,7 +112,7 @@ def change_password(request, token):
             return HttpResponse('El correo no esta verificado', status=400)
             
     except CustomUser.DoesNotExist:
-        return HttpResponse('Token de verificación no válido', status=400)
+        return HttpResponse('Token de verificación no válido', status=404)
 
 
 class SchoolListView(generics.ListAPIView):
@@ -141,3 +144,5 @@ class SchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == 'PATCH':
             return CreateSchoolSerializer
         return super().get_serializer_class()
+    
+    
