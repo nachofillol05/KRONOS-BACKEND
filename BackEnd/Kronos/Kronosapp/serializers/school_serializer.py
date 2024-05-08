@@ -5,13 +5,13 @@ from ..models import School, ContactInformation, CustomUser
 class ContactInformationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactInformation
-        exclude = ['id']
+        fields = '__all__'
 
 
 class DirectiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['first_name', 'last_name', 'gender', 'email']
+        fields = ['pk','first_name', 'last_name', 'gender', 'email']
 
 
 class ReadSchoolSerializer(serializers.ModelSerializer):
@@ -20,7 +20,7 @@ class ReadSchoolSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = School
-        fields = ['name', 'abbreviation', 'logo', 'email', 'directives', 'contactInfo']
+        fields = ['pk', 'name', 'abbreviation', 'logo', 'email', 'directives', 'contactInfo']
 
 
 class IdDirectiveSerializer(serializers.ModelSerializer):
@@ -34,7 +34,7 @@ class CreateSchoolSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = School
-        fields = ['name', 'abbreviation', 'logo', 'email', 'directives', 'contactInfo']
+        fields = ['pk','name', 'abbreviation', 'logo', 'email', 'directives', 'contactInfo']
 
     def create(self, validated_data):
         contact_info_data = validated_data.pop('contactInfo')
@@ -44,6 +44,5 @@ class CreateSchoolSerializer(serializers.ModelSerializer):
         school = School.objects.create(contactInfo=contact_info, **validated_data)
 
         school.directives.set(directives_data)
-
         return school
 

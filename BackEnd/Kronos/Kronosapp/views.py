@@ -126,13 +126,18 @@ class SchoolCreateView(generics.CreateAPIView):
         serializer = DirectiveSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-"""
-class SchoolListView(generics.ListCreateAPIView):
+
+class SchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = School.objects.all()
-    
+    serializer_class = ReadSchoolSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        serializer = self.get_serializer(instance)
+        return Response({'object_deleted': serializer.data})
+
     def get_serializer_class(self):
-        print(self.request.method)
-        if self.request.method == "GET":
-            return ReadSchoolSerializer
-        return CreateSchoolSerializer
-"""
+        if self.request.method == 'PATCH':
+            return CreateSchoolSerializer
+        return super().get_serializer_class()
