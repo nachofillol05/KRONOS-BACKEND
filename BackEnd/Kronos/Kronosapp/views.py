@@ -150,7 +150,7 @@ class SchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
 class TeacherListView(generics.ListAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = TeacherSerializer
-    
+
 class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = TeacherSerializer
@@ -165,3 +165,13 @@ class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == 'PATCH':
             return CreateTeacherSerializer
         return super().get_serializer_class()
+    
+class TeacherCreateView(generics.CreateAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = CreateTeacherSerializer
+    
+    def get(self, request):
+        queryset = CustomUser.objects.all()
+        print(queryset)
+        serializer = DirectiveSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
