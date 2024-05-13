@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from django.urls import reverse
 from .models import CustomUser, School
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer
+from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from email.message import EmailMessage
 import smtplib
 from rest_framework.authtoken.models import Token
@@ -145,4 +146,22 @@ class SchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
             return CreateSchoolSerializer
         return super().get_serializer_class()
     
+
+class TeacherListView(generics.ListAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = TeacherSerializer
     
+class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = TeacherSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        serializer = self.get_serializer(instance)
+        return Response({'object_deleted': serializer.data})
+    
+    def get_serializer_class(self):
+        if self.request.method == 'PATCH':
+            return CreateTeacherSerializer
+        return super().get_serializer_class()
