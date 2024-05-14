@@ -12,6 +12,8 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth.hashers import make_password
 import pandas as pd
 from django.http import JsonResponse
+from validate_email_address import validate_email
+
 class LoginView(generics.GenericAPIView):
     def post(self, request):
         username = request.data.get('username')
@@ -38,12 +40,12 @@ class RegisterView(generics.GenericAPIView):
     
 def send_email(request, username, email, password, document, first_name, last_name):
     if CustomUser.objects.filter(username=username).exists():
-        return Response('Nombre de usuario ya en uso', status=400)
+        return 'Nombre de usuario ya en uso'
 
     
     else:
         if CustomUser.objects.filter(email=email).exists():
-            return Response('mail ya en uso', status=400)
+            return 'mail ya en uso'
         else:
             user = CustomUser.objects.create_user(username=username, email=email, password=password, first_name=first_name, last_name=last_name, document=document)
             token = Token.objects.create(user=user)
@@ -62,7 +64,7 @@ def send_email(request, username, email, password, document, first_name, last_na
             smtp.login(remitente, "bptf tqtv hjsb zfpl")
             smtp.sendmail(remitente, destinatario, email.as_string())
             smtp.quit()
-            return Response({"token":token.key,"mensaje":'Correo electrónico enviado con éxito'}, status=200)
+            return {"token":token.key,"mensaje":'Correo electrónico enviado con éxito'}
 
 
 def verify_email(request,token):
@@ -170,61 +172,38 @@ class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
             return CreateTeacherSerializer
         return super().get_serializer_class()
     
-class DniComprobation(generics.CreateAPIView):
+class DniComprobation(generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.all()
-    serializer_class = CreateTeacherSerializer
-
-
-    
-    def get(self, request):
-        queryset = CustomUser.objects.all()
-        print(queryset)
-        serializer = DirectiveSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-
-class Wordteacher(generics.GenericAPIView):
+    serializer_class = TeacherSerializer
     def post(self, request):
-        archivo = '~/Escritorio/Profesores2.xls'
+        document = request.data.get('document')
+        if CustomUser.objects.filter(document=document).exists():
+            return 'DNI en uso'
+        ### FALTA TERMINAR
+
+class ExcelToteacher(generics.GenericAPIView):
+    def post(self, request):
+        archivo = 'Static/Profesores.xls'
         df = pd.read_excel(archivo, sheet_name=0, header=0)
         results = []
-        response = {}
+
         for index, row in df.iterrows():
-            if row['DNI'] != None:
+            if pd.notnull(row['DNI']):
                 print(row)
                 document = row['DNI']
                 username = row['NOMBRE'] + '.' + row['APELLIDO']
                 first_name = row['NOMBRE']
                 last_name = row['APELLIDO']
-                #meter validacion
                 email = row['MAIL']
                 password = str(row['DNI'])
-                response.update({'DNI': document,'Response':send_email(request, username, email, password, document, first_name, last_name)})
-        if response != {}:
-            return JsonResponse({'results': response})
-            """user_data = {
-                'document': document,
-                'username': username,
-                'first_name': first_name,
-                'last_name': last_name,
-                'email': email,
-                'password': password
-            }
 
-            # Aquí puedes añadir una lógica adicional si necesitas verificar algo antes de añadirlo
-            # Por ejemplo, podrías verificar si el email ya existe en la base de datos y si no, añadirlo a results
-            # De momento, vamos a añadir directamente cada usuario a la lista de resultados
-            results.append(user_data)
+                if validate_email(email):
+                    result = send_email(request, username, email, password, document, first_name, last_name)
+                    results.append({'DNI': document, 'Response': result})
+                else:
+                    results.append({'DNI': document, 'Response': 'Email no valido'})
 
-        return JsonResponse({'results': results})"""
-
-        
-
-
-    '''
-    def post(self, request):
-        username = request.data.get('username')
-        email = request.data.get('email')
-        password = request.data.get('password')
-        send_email(request, username, email, password)
-    '''
+        if results:
+            return JsonResponse({'results': results})
+        else:
+            return JsonResponse({'error': 'No se procesaron datos válidos'}, status=400)
