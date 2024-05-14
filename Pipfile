@@ -9,6 +9,8 @@ djangorestframework = "*"
 pillow = "*"
 python-dotenv = "*"
 mysqlclient = "*"
+pandas = "*"
+xlrd = "*"
 
 [dev-packages]
 

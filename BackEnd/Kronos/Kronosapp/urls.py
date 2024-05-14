@@ -10,7 +10,7 @@ from .views import (
     SchoolDetailView,
     TeacherListView,
     TeacherDetailView,
-    TeacherCreateView
+    Wordteacher
 )
 
 
@@ -28,5 +28,6 @@ urlpatterns = [
     # Teachers
     path('teachers/', TeacherListView.as_view(), name='get_teachers'),
     path('teacher/<int:pk>', TeacherDetailView.as_view(), name='detail_teacher'),
-    path('create_teacher/', TeacherCreateView.as_view(), name='create_teacher'),
+    #path('create_teacher/', TeacherCreateView.as_view(), name='create_teacher'),
+    path('teacher_word/', Wordteacher.as_view(), name='teacher_word'),
 ]
