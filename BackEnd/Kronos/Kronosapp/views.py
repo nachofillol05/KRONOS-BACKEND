@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
 from django.urls import reverse
-from .models import CustomUser, School
+from .models import CustomUser, School, TeacherSubjectSchool
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from email.message import EmailMessage
@@ -154,9 +154,36 @@ class SchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
     
 
 class TeacherListView(generics.ListAPIView):
-    queryset = CustomUser.objects.all()
     serializer_class = TeacherSerializer
 
+    def post(self, request, *args, **kwargs):
+        school_id = request.data.get('school_id')
+        if not school_id:
+            return Response({'error': 'se requiere el id de la escuela'}, status=400)
+
+        queryset = TeacherSubjectSchool.objects.filter(school=school_id)
+
+        subject_id = request.data.get('subject_id')
+        if subject_id:
+            queryset = queryset.filter(subject_id=subject_id)
+
+        search_name = request.data.get('search_name')
+        if search_name:
+            queryset = queryset.filter(
+                teacher__first_name__icontains=search_name) | queryset.filter(
+                teacher__last_name__icontains=search_name)
+
+        if not queryset.exists():
+            return Response({'error': 'No se encontraron maestros'}, status=404)
+        teachers = []
+        for ts in queryset:
+            teacher = ts.teacher
+            teachers.append(teacher)
+            
+        serializer = self.get_serializer(teachers, many=True)
+
+        return Response(serializer.data)
+    
 class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = TeacherSerializer
