@@ -10,7 +10,8 @@ from .views import (
     SchoolDetailView,
     TeacherListView,
     TeacherDetailView,
-    Wordteacher
+    ExcelToteacher,
+    DniComprobation
 )
 
 
@@ -28,6 +29,6 @@ urlpatterns = [
     # Teachers
     path('teachers/', TeacherListView.as_view(), name='get_teachers'),
     path('teacher/<int:pk>', TeacherDetailView.as_view(), name='detail_teacher'),
-    #path('create_teacher/', TeacherCreateView.as_view(), name='create_teacher'),
-    path('teacher_word/', Wordteacher.as_view(), name='teacher_word'),
+    path('create_teacher/', DniComprobation.as_view(), name='Comprobation_DNI'),
+    path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
 ]

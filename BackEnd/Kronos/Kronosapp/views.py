@@ -172,14 +172,18 @@ class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
             return CreateTeacherSerializer
         return super().get_serializer_class()
     
-class DniComprobation(generics.RetrieveUpdateDestroyAPIView):
-    queryset = CustomUser.objects.all()
-    serializer_class = TeacherSerializer
+class DniComprobation(generics.GenericAPIView):
     def post(self, request):
-        document = request.data.get('document')
-        if CustomUser.objects.filter(document=document).exists():
-            return 'DNI en uso'
-        ### FALTA TERMINAR
+            document = request.data.get('document')
+            user = CustomUser.objects.filter(document=document)
+
+            if user.exists():
+                user = user.first()
+                serializer = TeacherSerializer(user)
+                return Response({'results': 'DNI en uso', 'user': serializer.data}, status=400)
+            else:
+                return Response({'results': 'DNI no está en uso'}, status=200)
+        
 
 class ExcelToteacher(generics.GenericAPIView):
     def post(self, request):

@@ -11,6 +11,7 @@ python-dotenv = "*"
 mysqlclient = "*"
 pandas = "*"
 xlrd = "*"
+validate-email-address = "*"
 
 [dev-packages]
 
