@@ -3,8 +3,9 @@ from django.http import HttpResponse
 from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
 from django.urls import reverse
-from .models import CustomUser, School
+from .models import CustomUser, School, Subject
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer
+from .serializers.Subject_serializer import SubjectSerializer
 from email.message import EmailMessage
 import smtplib
 
@@ -92,3 +93,29 @@ class SchoolListView(generics.ListCreateAPIView):
             return ReadSchoolSerializer
         return CreateSchoolSerializer
 """
+
+class SubjectListCreate(generics.ListCreateAPIView):
+    queryset = Subject.objects.all()
+    serializer_class = SubjectSerializer
+
+    def get(self, request):
+        queryset = Subject.objects.all()
+        print(queryset)
+        serializer = SubjectSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        serializer = SubjectSerializer(data=request.data)
+        if serializer.is_valid():
+            # Verificar si la materia ya existe
+            subject_name = serializer.validated_data.get('name')
+            if Subject.objects.filter(name=subject_name).exists():
+                return Response({'error': 'La materia ya está creada'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Subject.objects.all()
+    serializer_class = SubjectSerializer
