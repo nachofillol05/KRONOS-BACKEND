@@ -1,10 +1,13 @@
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponse
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
 from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
 from django.urls import reverse
 from .models import CustomUser, School
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer
+from .serializers.user_serializer import UserSerializer
 from email.message import EmailMessage
 import smtplib
 from rest_framework.authtoken.models import Token
@@ -145,4 +148,21 @@ class SchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
             return CreateSchoolSerializer
         return super().get_serializer_class()
     
+
+class ProfileView(generics.GenericAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def get(self, request):
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
+    def put(self, request):
+        usuario = request.user
+        serializer = UserSerializer(usuario, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
