@@ -106,16 +106,20 @@ class SubjectListCreate(generics.ListCreateAPIView):
     
     def post(self, request):
         serializer = SubjectSerializer(data=request.data)
-        if serializer.is_valid():
-            # Verificar si la materia ya existe
-            subject_name = serializer.validated_data.get('name')
-            if Subject.objects.filter(name=subject_name).exists():
-                return Response({'error': 'La materia ya está creada'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(
+            {'Saved': 'La materia ha sido creada', 'data': serializer.data},status=status.HTTP_201_CREATED)
 
 class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
+
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        return Response({'Deleted': 'La materia ha sido eliminada'}, status=status.HTTP_204_NO_CONTENT)
+    
+    def put(self, request, *args, **kwargs):
+        response = super().put(request, *args, **kwargs)
+        return Response({'Updated': 'La materia ha sido actualizada', 'data': response.data}, status=status.HTTP_200_OK)
