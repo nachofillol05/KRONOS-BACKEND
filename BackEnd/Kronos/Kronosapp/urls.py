@@ -7,8 +7,7 @@ from .views import (
     change_password,
     SchoolListView,
     SchoolCreateView,
-    SchoolDetailView,
-    ProfileView
+    ProfileView,
     SchoolDetailView,
     TeacherListView,
     TeacherDetailView,

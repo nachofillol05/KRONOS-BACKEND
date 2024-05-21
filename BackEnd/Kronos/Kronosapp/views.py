@@ -8,6 +8,7 @@ from django.urls import reverse
 from .models import CustomUser, School, TeacherSubjectSchool
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
+from .serializers.user_serializer import UserSerializer
 from email.message import EmailMessage
 import smtplib
 from rest_framework.authtoken.models import Token
