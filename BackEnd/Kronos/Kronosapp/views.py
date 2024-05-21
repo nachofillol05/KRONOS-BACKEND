@@ -3,9 +3,13 @@ from django.http import HttpResponse
 from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
 from django.urls import reverse
-from .models import CustomUser, School, TeacherSubjectSchool
+
+from .models import CustomUser, School, TeacherSubjectSchool, Subject
+
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
+from .serializers.Subject_serializer import SubjectSerializer
+
 from email.message import EmailMessage
 import smtplib
 from rest_framework.authtoken.models import Token
@@ -195,6 +199,10 @@ class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
         return Response({'object_deleted': serializer.data})
     
     def get_serializer_class(self):
+        print(self.request.method)
+        if self.request.method == "GET":
+            return ReadSchoolSerializer
+        return CreateSchoolSerializer
         if self.request.method == 'PATCH':
             return CreateTeacherSerializer
         return super().get_serializer_class()
@@ -238,3 +246,33 @@ class ExcelToteacher(generics.GenericAPIView):
             return JsonResponse({'results': results})
         else:
             return JsonResponse({'error': 'No se procesaron datos válidos'}, status=400)
+          
+class SubjectListCreate(generics.ListCreateAPIView):
+    queryset = Subject.objects.all()
+    serializer_class = SubjectSerializer
+
+    def get(self, request):
+        queryset = Subject.objects.all()
+        print(queryset)
+        serializer = SubjectSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        serializer = SubjectSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(
+            {'Saved': 'La materia ha sido creada', 'data': serializer.data},status=status.HTTP_201_CREATED)
+
+class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Subject.objects.all()
+    serializer_class = SubjectSerializer
+
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        return Response({'Deleted': 'La materia ha sido eliminada'}, status=status.HTTP_204_NO_CONTENT)
+    
+    def put(self, request, *args, **kwargs):
+        response = super().put(request, *args, **kwargs)
+        return Response({'Updated': 'La materia ha sido actualizada', 'data': response.data}, status=status.HTTP_200_OK)
