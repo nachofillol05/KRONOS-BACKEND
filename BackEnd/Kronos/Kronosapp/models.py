@@ -46,6 +46,8 @@ class CustomUser(AbstractUser):
     contactInfo = models.OneToOneField(ContactInformation, on_delete=models.SET_NULL,blank=True, null=True)
     email_verified = models.BooleanField(default=False)
     verification_token = models.UUIDField(default=uuid.uuid4,blank=True, null=True)
+    dark_mode = models.BooleanField(default=False)
+    color = models.SmallIntegerField(blank=True, null=True)
 
     def is_directive(self, school: School):
         return self in school.directives.all()
