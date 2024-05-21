@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'Kronosapp',
     'rest_framework',
     'rest_framework.authtoken',
+    'corsheaders',
 ]
 
 
@@ -59,8 +60,15 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
-
+#CORS_ALLOW_ALL_ORIGINS = True#ESTO ES SOLO PARA EL DESARROLLO DESPUES CAMBIAR PARA PERMITIR DOMINIOS ESPECIFICOS
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    # Añade otros dominios permitidos aquí
+]
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
