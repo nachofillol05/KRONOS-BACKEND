@@ -12,6 +12,8 @@ mysqlclient = "*"
 pandas = "*"
 xlrd = "*"
 validate-email-address = "*"
+l = "*"
+django-cors-headers = "*"
 
 [dev-packages]
 

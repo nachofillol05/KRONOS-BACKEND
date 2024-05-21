@@ -1,5 +1,7 @@
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponse
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
 from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
 from django.urls import reverse
@@ -8,8 +10,8 @@ from .models import CustomUser, School, TeacherSubjectSchool, Subject
 
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
+from .serializers.user_serializer import UserSerializer
 from .serializers.Subject_serializer import SubjectSerializer
-
 from email.message import EmailMessage
 import smtplib
 from rest_framework.authtoken.models import Token
@@ -37,16 +39,18 @@ class LoginView(generics.GenericAPIView):
 
 class RegisterView(generics.GenericAPIView):
     def post(self, request):
-        username = request.data.get('username')
+        first_name = request.data.get('first_name')
+        last_name = request.data.get('last_name')
+        username = f"{first_name}_{last_name}"
+        document = request.data.get('document')
         email = request.data.get('email')
         password = request.data.get('password')
-        send_email(request, username, email, password)
-    
+        mensaje = send_email(request, username, email, password, document, first_name, last_name)
+        return Response({'detail':mensaje}, status=status.HTTP_201_CREATED)
+
 def send_email(request, username, email, password, document, first_name, last_name):
     if CustomUser.objects.filter(username=username).exists():
         return 'Nombre de usuario ya en uso'
-
-    
     else:
         if CustomUser.objects.filter(email=email).exists():
             return 'mail ya en uso'
@@ -183,11 +187,11 @@ class TeacherListView(generics.ListAPIView):
         for ts in queryset:
             teacher = ts.teacher
             teachers.append(teacher)
-            
+
         serializer = self.get_serializer(teachers, many=True)
 
         return Response(serializer.data)
-    
+
 class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = TeacherSerializer
@@ -197,7 +201,7 @@ class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
         self.perform_destroy(instance)
         serializer = self.get_serializer(instance)
         return Response({'object_deleted': serializer.data})
-    
+
     def get_serializer_class(self):
         print(self.request.method)
         if self.request.method == "GET":
@@ -206,7 +210,7 @@ class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == 'PATCH':
             return CreateTeacherSerializer
         return super().get_serializer_class()
-    
+
 class DniComprobation(generics.GenericAPIView):
     def post(self, request):
             document = request.data.get('document')
@@ -218,7 +222,7 @@ class DniComprobation(generics.GenericAPIView):
                 return Response({'results': 'DNI en uso', 'user': serializer.data}, status=400)
             else:
                 return Response({'results': 'DNI no está en uso'}, status=200)
-        
+
 
 class ExcelToteacher(generics.GenericAPIView):
     def post(self, request):
@@ -230,7 +234,7 @@ class ExcelToteacher(generics.GenericAPIView):
             if pd.notnull(row['DNI']):
                 print(row)
                 document = row['DNI']
-                username = row['NOMBRE'] + '.' + row['APELLIDO']
+                username = row['NOMBRE'] + '_' + row['APELLIDO']
                 first_name = row['NOMBRE']
                 last_name = row['APELLIDO']
                 email = row['MAIL']
@@ -246,6 +250,26 @@ class ExcelToteacher(generics.GenericAPIView):
             return JsonResponse({'results': results})
         else:
             return JsonResponse({'error': 'No se procesaron datos válidos'}, status=400)
+
+
+class ProfileView(generics.GenericAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def get(self, request):
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        usuario = request.user
+        serializer = UserSerializer(usuario, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
           
 class SubjectListCreate(generics.ListCreateAPIView):
     queryset = Subject.objects.all()
@@ -264,6 +288,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
         serializer.save()
         return Response(
             {'Saved': 'La materia ha sido creada', 'data': serializer.data},status=status.HTTP_201_CREATED)
+
 
 class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Subject.objects.all()
