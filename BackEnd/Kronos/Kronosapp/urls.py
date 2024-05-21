@@ -9,6 +9,11 @@ from .views import (
     SchoolCreateView,
     SchoolDetailView,
     ProfileView
+    SchoolDetailView,
+    TeacherListView,
+    TeacherDetailView,
+    ExcelToteacher,
+    DniComprobation
 )
 
 
@@ -23,5 +28,10 @@ urlpatterns = [
     # Schools
     path('schools/', SchoolListView.as_view(), name='get_schools'),
     path('create_schools/', SchoolCreateView.as_view(), name='create_school'),
-    path('school/<int:pk>', SchoolDetailView.as_view(), name='create_school'),
+    path('school/<int:pk>', SchoolDetailView.as_view(), name='detail_school'),
+    # Teachers
+    path('teachers/', TeacherListView.as_view(), name='get_teachers'),
+    path('teacher/<int:pk>', TeacherDetailView.as_view(), name='detail_teacher'),
+    path('create_teacher/', DniComprobation.as_view(), name='Comprobation_DNI'),
+    path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
 ]

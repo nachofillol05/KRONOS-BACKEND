@@ -47,9 +47,7 @@ class CustomUser(AbstractUser):
     email_verified = models.BooleanField(default=False)
     verification_token = models.UUIDField(default=uuid.uuid4,blank=True, null=True)
     dark_mode = models.BooleanField(default=False)
-    color1 = models.CharField(max_length=12, default="000000")
-    color2 = models.CharField(max_length=12, default="111111")
-    color3 = models.CharField(max_length=12, default="222222")
+    color = models.SmallIntegerField(blank=True, null=True)
 
     def is_directive(self, school: School):
         return self in school.directives.all()
