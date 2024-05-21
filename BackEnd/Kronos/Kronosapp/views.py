@@ -36,16 +36,18 @@ class LoginView(generics.GenericAPIView):
 
 class RegisterView(generics.GenericAPIView):
     def post(self, request):
-        username = request.data.get('username')
+        first_name = request.data.get('first_name')
+        last_name = request.data.get('last_name')
+        username = f"{first_name}_{last_name}"
+        document = request.data.get('document')
         email = request.data.get('email')
         password = request.data.get('password')
-        send_email(request, username, email, password)
+        mensaje = send_email(request, username, email, password, document, first_name, last_name)
+        return Response({'detail':mensaje}, status=status.HTTP_201_CREATED)
 
 def send_email(request, username, email, password, document, first_name, last_name):
     if CustomUser.objects.filter(username=username).exists():
         return 'Nombre de usuario ya en uso'
-
-
     else:
         if CustomUser.objects.filter(email=email).exists():
             return 'mail ya en uso'
@@ -225,7 +227,7 @@ class ExcelToteacher(generics.GenericAPIView):
             if pd.notnull(row['DNI']):
                 print(row)
                 document = row['DNI']
-                username = row['NOMBRE'] + '.' + row['APELLIDO']
+                username = row['NOMBRE'] + '_' + row['APELLIDO']
                 first_name = row['NOMBRE']
                 last_name = row['APELLIDO']
                 email = row['MAIL']

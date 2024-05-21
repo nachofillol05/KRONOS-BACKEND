@@ -14,6 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = [
+            'id',
             'first_name',
             'last_name',
             'email',
@@ -23,9 +24,7 @@ class UserSerializer(serializers.ModelSerializer):
             'nationality',
             'contactInfo',
             'dark_mode',
-            'color1',
-            'color2',
-            'color3'
+            'color'
         ]
     
     def update(self, instance, validated_data):
