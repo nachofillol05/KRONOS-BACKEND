@@ -11,7 +11,7 @@ from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year
 
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
-from .serializers.preceptor_serializer import PreceptorSerializer
+from .serializers.preceptor_serializer import PreceptorSerializer, YearSerializer
 from .serializers.user_serializer import UserSerializer
 from .serializers.Subject_serializer import SubjectSerializer
 from email.message import EmailMessage
@@ -312,8 +312,34 @@ class PreceptorListCreateView(APIView):
         preceptors = CustomUser.objects.filter(years__school__id=pk_school).distinct()
         serializer = PreceptorSerializer(preceptors, many=True)
         return Response(serializer.data)
+    
+    def post(self, request, *args, **kwargs):
+        return self.manage_user(request, is_add=True)
+    
+    def delete(self, request, *args, **kwargs):
+        return self.manage_user(request, is_add=False)
 
+    def manage_user(self, request, is_add):
+        year_id = request.data.get('year_id')
+        user_id = request.data.get('user_id')
 
+        if not year_id or not user_id:
+            return Response({'detail': 'year_id and user_id are requireds'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            year = Year.objects.get(pk=year_id)
+            user = CustomUser.objects.get(pk=user_id)
+        except (Year.DoesNotExist, CustomUser.DoesNotExist):
+            return Response({'detail': 'Year or User do not exist'}, status=status.HTTP_404_NOT_FOUND)
 
-   # def post(self, request):
+        if is_add:
+            year.preceptors.add(user)
+        else:
+            if user not in year.preceptors.all():
+                return Response({'error': 'The user is not associated with this year.'}, status=status.HTTP_400_BAD_REQUEST)
+            year.preceptors.remove(user)
+        
+        year.save()
+        serializer = YearSerializer(year)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
