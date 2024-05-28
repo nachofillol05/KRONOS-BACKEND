@@ -1,15 +1,17 @@
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponse
+from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
 from django.urls import reverse
 
-from .models import CustomUser, School, TeacherSubjectSchool, Subject
+from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year
 
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
+from .serializers.preceptor_serializer import PreceptorSerializer
 from .serializers.user_serializer import UserSerializer
 from .serializers.Subject_serializer import SubjectSerializer
 from email.message import EmailMessage
@@ -301,3 +303,17 @@ class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
         response = super().put(request, *args, **kwargs)
         return Response({'Updated': 'La materia ha sido actualizada', 'data': response.data}, status=status.HTTP_200_OK)
+
+
+class PreceptorListCreateView(APIView):
+
+    def get(self, request, *args, **kwargs):
+        pk_school = self.kwargs.get('pk_school')
+        preceptors = CustomUser.objects.filter(years__school__id=pk_school).distinct()
+        serializer = PreceptorSerializer(preceptors, many=True)
+        return Response(serializer.data)
+
+
+
+   # def post(self, request):
+

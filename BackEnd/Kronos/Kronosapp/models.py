@@ -86,6 +86,8 @@ class Year(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     number = models.CharField(max_length=255)
+    preceptors = models.ManyToManyField(CustomUser, related_name="years")
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="years")
 
 
 class Course(models.Model):
