@@ -21,6 +21,14 @@ class ReadSchoolSerializer(serializers.ModelSerializer):
     class Meta:
         model = School
         fields = ['pk', 'name', 'abbreviation', 'logo', 'email', 'directives', 'contactInfo']
+    
+    def create(self, validated_data):
+        directives_data = validated_data.pop('directives', [])
+
+        school = School.objects.create(**validated_data)
+        school.directives.set(directives_data)
+
+        return school
 
 
 class IdDirectiveSerializer(serializers.ModelSerializer):

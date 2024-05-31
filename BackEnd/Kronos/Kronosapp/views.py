@@ -1,10 +1,12 @@
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponse
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from django.urls import reverse
 
 from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year
@@ -22,6 +24,51 @@ import pandas as pd
 from django.http import JsonResponse
 from validate_email_address import validate_email
 
+
+@extend_schema(
+    tags=['Users'],
+    description='Permite a un usuario existente iniciar sesión en el sistema.',
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'username': {
+                    'type': 'string',
+                    'example': 'superusername'
+                },
+                'password': {
+                    'type': 'string',
+                    'format': 'password',
+                    'example': 'aguantebelgrano'
+                }
+            }
+        }
+    },
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'token': {
+                    'type': 'string',
+                    'example': 'a18a0428a4d6cb797ba5923eb7315af9b8f182ad'
+                },
+                'message': {
+                    'type': 'string',
+                    'example': 'Login exitoso'
+                    }
+                }
+            },
+        401: {
+            'type': 'object',
+            'properties': {
+                'message': {
+                    'type': 'string',
+                    'example': 'El usuario o contraseña son incorrectos'
+                },
+            }
+        }
+    }
+)
 class LoginView(generics.GenericAPIView):
     def post(self, request):
         username = request.data.get('username')
@@ -39,6 +86,59 @@ class LoginView(generics.GenericAPIView):
             return Response({'message': 'An error occurred during login: ' + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@extend_schema(
+    tags=['Users'],
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'username': {
+                    'type': 'string',
+                    'example': 'superusername'
+                },
+                'email': {
+                    'type': 'string',
+                    'example': 'micorreo@correo.com'
+                },
+                'password': {
+                    'type': 'string',
+                    'format': 'password',
+                    'example': 'aguantebelgrano'
+                }
+            },
+            'required': ['username', 'email', 'password']
+        }
+    },
+    responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'token': {
+                        'type': 'string',
+                        'example': '354b333cfb962cfc4df0e8105e21275ad55e5450'
+                    },
+                    'mensaje': {
+                        'type': 'string',
+                        'example': 'Correo electrónico enviado con éxito'
+                    }
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {
+                        'type': 'string',
+                        'example': 'Nombre de usuario ya en uso'
+                    },
+                    'err': {
+                        'type': 'string',
+                        'example': 'Mal ya en uso'
+                    }
+                }
+            }
+    },
+    description="Registra un nuevo usuario. También puedes usarlo para crear un profesor :)."
+)
 class RegisterView(generics.GenericAPIView):
     def post(self, request):
         first_name = request.data.get('first_name')
@@ -77,6 +177,37 @@ def send_email(request, username, email, password, document, first_name, last_na
             return {"token":token.key,"mensaje":'Correo electrónico enviado con éxito'}
 
 
+@extend_schema(
+    tags=['Users'], 
+    description="Permite a un usuario verificar su dirección de correo electrónico haciendo clic en un enlace enviado por email después del registro.",
+    responses={
+        200: {
+            'type': 'object', 'properties': {
+                'mensaje': {
+                    'type': 'string',
+                    'example': 'Correo electrónico verificado con éxito'
+                }
+            }
+        },
+        400: {
+            'type': 'object', 'properties': {
+                'mensaje': {
+                    'type': 'string',
+                    'example': 'Correo electrónico ya verificado'
+                }
+            }
+        },
+        401: {
+            'type': 'object', 'properties': {
+                'mensaje': {
+                    'type': 'string',
+                    'example': 'Token de verificación no válido'
+                },
+            }
+        }
+    }
+)
+@api_view(['GET'])
 def verify_email(request,token):
     try:
         user = CustomUser.objects.get(verification_token=token)
@@ -90,6 +221,51 @@ def verify_email(request,token):
         return HttpResponse('Token de verificación no válido', status=404)
 
 
+@extend_schema(
+    tags=['Users'],
+    description='Permite a un usuario solicitar un enlace para restablecer su contraseña. El token es el enviado en el REQUEST BODY con la key de "token". Por ejemplo: {"token": mitoken} para identificar el usuario.',
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'username': {
+                    'type': 'string',
+                    'example': 'superusername'
+                },
+                'password': {
+                    'type': 'string',
+                    'format': 'password',
+                    'example': 'aguantebelgrano'
+                }
+            },
+            'required': ['username', 'password']
+        },
+    },
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'token': {
+                    'type': 'string',
+                    'example': 'a18a0428a4d6cb797ba5923eb7315af9b8f182ad'
+                },
+                'message': {
+                    'type': 'string',
+                    'example': 'Login exitoso'
+                    }
+                }
+            },
+        401: {
+            'type': 'object',
+            'properties': {
+                'message': {
+                    'type': 'string',
+                    'example': 'El usuario o contraseña son incorrectos'
+                },
+            }
+        }
+    }
+)
 class OlvideMiContrasenia(generics.GenericAPIView):
     def get(self, request):
         try:
@@ -117,52 +293,178 @@ class OlvideMiContrasenia(generics.GenericAPIView):
             return Response('Correo enviado con exito', status=200)
         except:
             return Response('Error al enviar el correo', status=400)
-    
+
+@extend_schema(
+    tags=['Users'],
+    description='permite a un usuario restablecer su contraseña utilizando el token enviado por email.',
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'message': {
+                    'type': 'string',
+                    'example': 'Contraseña cambiada'
+                }
+            }
+        },
+        400: {
+            'type': 'object',
+            'properties': {
+                'message': {
+                    'type': 'string',
+                    'example': 'El correo no esta verificado'
+                }
+            }
+        },
+        404: {
+            'type': 'object',
+            'properties': {
+                'message': {
+                    'type': 'string',
+                    'example': 'Token de verificacion no valido'
+                }
+            }
+        }
+    }
+)
+@api_view(['POST'])
 def change_password(request, token):
     try:
         user = CustomUser.objects.get(verification_token=token)
         if user.email_verified:
             user.password = make_password('contrasenia temporal')#request.data.get('password') cuano se haga el front
             user.save()
-            return HttpResponse('Contraseña cambiada', status=200)
+            return Response('Contraseña cambiada', status=200)
         else:
-            return HttpResponse('El correo no esta verificado', status=400)
+            return Response('El correo no esta verificado', status=400)
             
     except CustomUser.DoesNotExist:
-        return HttpResponse('Token de verificación no válido', status=404)
+        return Response('Token de verificación no válido', status=404)
 
 
-class SchoolListView(generics.ListAPIView):
-    queryset = School.objects.all()
-    serializer_class = ReadSchoolSerializer
+@extend_schema(tags=['Users'])
+class ProfileView(generics.GenericAPIView):
+    """
+    Vista para obtener el perfil de un usuario autenticado
+    """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
 
-class SchoolCreateView(generics.CreateAPIView):
-    queryset = School.objects.all()
-    serializer_class = CreateSchoolSerializer
-
+    @extend_schema(
+        summary="Obtener información del perfil",
+        responses={
+            200: UserSerializer,
+            401: OpenApiResponse(description="No autenticado")
+        }
+    )
     def get(self, request):
-        queryset = CustomUser.objects.all()
-        print(queryset)
-        serializer = DirectiveSerializer(queryset, many=True)
+        user = request.user
+        serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="Actualizar información del perfil",
+        request=UserSerializer,
+        responses={
+            200: UserSerializer,
+            400: OpenApiResponse(description="Datos inválidos"),
+            401: OpenApiResponse(description="No autenticado")
+        }
+    )
+    def put(self, request):
+        usuario = request.user
+        serializer = UserSerializer(usuario, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
 
-class SchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
+
+@extend_schema(tags=['Schools'])
+class SchoolsView(generics.ListCreateAPIView):
+    """
+    GET: Listar escuelas
+    POST: Mostrar escuelas
+    """
+    queryset = School.objects.all()
+    
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ReadSchoolSerializer
+        return CreateSchoolSerializer
+
+    @extend_schema(
+        summary="Listar las escuelas",
+        responses={
+            201: CreateSchoolSerializer,
+            400: OpenApiResponse(description="Datos inválidos")
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        """
+        Lista todas las escuelas.
+        """
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="Crear una escuela",
+        request=CreateSchoolSerializer,
+        responses={
+            201: CreateSchoolSerializer,
+            400: OpenApiResponse(description="Datos inválidos")
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        """
+        Crea una nueva escuela.
+        """
+        return super().create(request, *args, **kwargs)
+
+
+@extend_schema(tags=['Schools'])
+class SchoolView(generics.RetrieveUpdateDestroyAPIView):
     queryset = School.objects.all()
     serializer_class = ReadSchoolSerializer
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        serializer = self.get_serializer(instance)
-        return Response({'object_deleted': serializer.data})
 
     def get_serializer_class(self):
         if self.request.method == 'PATCH':
             return CreateSchoolSerializer
         return super().get_serializer_class()
     
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({'detail': 'School deleted'}, status=status.HTTP_200_OK)
+    
+    @extend_schema(
+        summary='Obtener detalles de una escuela',
+        responses={200: ReadSchoolSerializer}
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
+    @extend_schema(
+        summary='Actualizar detalles de una escuela',
+        request=CreateSchoolSerializer,
+        responses={200: ReadSchoolSerializer}
+    )
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
+
+    @extend_schema(
+        summary='Eliminar una escuela',
+        responses={200: 'School deleted'}
+    )
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs)
+    
+    @extend_schema(exclude=True)
+    def put(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
+
+
+@extend_schema(tags=['Teachers'])
 class TeacherListView(generics.ListAPIView):
     serializer_class = TeacherSerializer
 
@@ -194,6 +496,8 @@ class TeacherListView(generics.ListAPIView):
 
         return Response(serializer.data)
 
+
+@extend_schema(tags=['Teachers'])
 class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = TeacherSerializer
@@ -213,6 +517,8 @@ class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
             return CreateTeacherSerializer
         return super().get_serializer_class()
 
+
+@extend_schema(tags=['Teachers'])
 class DniComprobation(generics.GenericAPIView):
     def post(self, request):
             document = request.data.get('document')
@@ -226,6 +532,7 @@ class DniComprobation(generics.GenericAPIView):
                 return Response({'results': 'DNI no está en uso'}, status=200)
 
 
+@extend_schema(tags=['Teachers'])
 class ExcelToteacher(generics.GenericAPIView):
     def post(self, request):
         archivo = 'Static/Profesores.xls'
@@ -254,25 +561,7 @@ class ExcelToteacher(generics.GenericAPIView):
             return JsonResponse({'error': 'No se procesaron datos válidos'}, status=400)
 
 
-class ProfileView(generics.GenericAPIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-    serializer_class = UserSerializer
-
-    def get(self, request):
-        user = request.user
-        serializer = UserSerializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def put(self, request):
-        usuario = request.user
-        serializer = UserSerializer(usuario, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
-
-          
+@extend_schema(tags=['Subjects'])
 class SubjectListCreate(generics.ListCreateAPIView):
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
@@ -292,6 +581,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
             {'Saved': 'La materia ha sido creada', 'data': serializer.data},status=status.HTTP_201_CREATED)
 
 
+@extend_schema(tags=['Subjects'])
 class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
@@ -304,19 +594,73 @@ class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
         response = super().put(request, *args, **kwargs)
         return Response({'Updated': 'La materia ha sido actualizada', 'data': response.data}, status=status.HTTP_200_OK)
 
-
+@extend_schema(tags=['Preceptors'])
 class PreceptorListCreateView(APIView):
+    """
+    Endpoints que realiza acciones sobre los preceptores del colegio indicado en la ruta
+    """
 
+    @extend_schema(
+        summary='Obtener preceptores de una escuela',
+        responses={200: PreceptorSerializer(many=True)}
+    )
     def get(self, request, *args, **kwargs):
         pk_school = self.kwargs.get('pk_school')
         preceptors = CustomUser.objects.filter(years__school__id=pk_school).distinct()
         serializer = PreceptorSerializer(preceptors, many=True)
         return Response(serializer.data)
     
+    @extend_schema(
+        summary='Agregar preceptor',
+        request={
+            'application/json': {
+
+                'type': 'object',
+                'properties': {
+                    'year_id': {'type': 'integer'},
+                    'user_id': {'type': 'integer'}
+                },
+                'required': ['year_id', 'user_id']
+            }
+        },
+        responses={
+            201: YearSerializer(),
+            400: OpenApiResponse(description="year_id and user_id are requireds"),
+            404: OpenApiResponse(description="Year or User do not exist")
+        }
+    )
     def post(self, request, *args, **kwargs):
+        """
+        Se le indica el año y el usuario que sera añadido como preceptor.
+        Devuelve el año actualizado
+        """
         return self.manage_user(request, is_add=True)
     
+    @extend_schema(
+        summary='Remover preceptor',
+        request={
+            'application/json': {
+
+                'type': 'object',
+                'properties': {
+                    'year_id': {'type': 'integer'},
+                    'user_id': {'type': 'integer'}
+                },
+                'required': ['year_id', 'user_id']
+            }
+        },
+        responses={
+            201: YearSerializer(),
+            400: OpenApiResponse(description="year_id and user_id are requireds"),
+            402: OpenApiResponse(description="The user is not associated with the year."),
+            404: OpenApiResponse(description="Year or User do not exist")
+        }
+    )
     def delete(self, request, *args, **kwargs):
+        """
+        Se le indica el año y el usuario que sera removido como preceptor.
+        Devuelve el año actualizado
+        """
         return self.manage_user(request, is_add=False)
 
     def manage_user(self, request, is_add):
@@ -336,7 +680,7 @@ class PreceptorListCreateView(APIView):
             year.preceptors.add(user)
         else:
             if user not in year.preceptors.all():
-                return Response({'error': 'The user is not associated with this year.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'The user is not associated with the year.'}, status=status.HTTP_400_BAD_REQUEST)
             year.preceptors.remove(user)
         
         year.save()

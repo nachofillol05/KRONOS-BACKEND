@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'drf_spectacular'
 ]
 
 
@@ -128,6 +129,26 @@ REST_FRAMEWORK = {
     # ...
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Kronos Api',
+    'DESCRIPTION': 'The Kronos web application API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'docExpansion': 'none',  # Cerrar todas las secciones por defecto
+    },
+    'TAGS': [
+        {'name': 'Users', 'description': 'Endpoints relacionados con los usuarios. Registro, Inicio de sesion, perfil, etc,.'},
+        {'name': 'Schools', 'description': 'Endpoints relacionados con las escuelas'},
+        {'name': 'Teachers', 'description': 'Endpoints relacionados con los profesores'},
+        {'name': 'Preceptors', 'description': 'Endpoints relacionados con preceptores'},
+        {'name': 'Subjects', 'description': 'Endpoints relacionados con las asignaturas'},
+
     ],
 }
 
