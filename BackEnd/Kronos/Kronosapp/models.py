@@ -64,10 +64,13 @@ class Module(models.Model):
         'sunday': 'Domingo'
     }
     moduleNumber = models.IntegerField()
-    dayId = models.CharField(max_length=10, choices=DAY_CHOICES)
+    day = models.CharField(max_length=10, choices=DAY_CHOICES)
     endTime = models.TimeField()
     startTime = models.TimeField()
     school = models.ForeignKey(School, on_delete=models.CASCADE)
+
+    def __str__(self) -> str:
+        return f"{self.school.name} - {self.pk}. N°{self.moduleNumber}"
 
 
 class AvailabilityState(models.Model):
