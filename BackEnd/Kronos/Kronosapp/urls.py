@@ -1,4 +1,5 @@
 from django.urls import path
+from rest_framework.routers import DefaultRouter
 from .views import (
     LoginView,
     verify_email,
@@ -14,9 +15,13 @@ from .views import (
     ExcelToteacher,
     DniComprobation,
     SubjectListCreate, 
-    SubjectRetrieveUpdateDestroy
+    SubjectRetrieveUpdateDestroy,
+    ModuleViewSet
 )
 
+
+router = DefaultRouter()
+router.register(r'modules', ModuleViewSet)
 
 
 urlpatterns = [
@@ -33,10 +38,12 @@ urlpatterns = [
     path('school/<int:pk>', SchoolDetailView.as_view(), name='detail_school'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
-    path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail')
+    path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail'),
     # Teachers
     path('teachers/', TeacherListView.as_view(), name='get_teachers'),
     path('teacher/<int:pk>', TeacherDetailView.as_view(), name='detail_teacher'),
     path('create_teacher/', DniComprobation.as_view(), name='Comprobation_DNI'),
     path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
 ]
+
+urlpatterns += router.urls
