@@ -5,6 +5,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
 from rest_framework import viewsets
+from rest_framework.exceptions import ValidationError
 from django.urls import reverse
 
 from .models import CustomUser, School, TeacherSubjectSchool, Subject, Module
@@ -308,4 +309,23 @@ class ModuleViewSet(viewsets.ModelViewSet):
     queryset = Module.objects.all()
     serializer_class = ModuleSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        school_id = self.request.query_params.get('school_id')
+
+        if not school_id:
+            raise ValidationError({'school_id': 'This query parameter is required.'})
+        
+        school = School.objects.filter(pk=school_id)
+        if not school:
+            raise ValidationError({'school_id': 'There is no school with that ID.'})
+        
+        queryset = Module.objects.filter(school_id=school_id).order_by('moduleNumber')
+
+        day = self.request.query_params.get('day')
+        if day:
+            queryset = queryset.filter(day=day)
+        
+        return queryset
+        
 
