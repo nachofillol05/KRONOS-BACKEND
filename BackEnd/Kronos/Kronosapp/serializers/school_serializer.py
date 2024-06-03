@@ -19,6 +19,7 @@ class ModuleSerializer(serializers.ModelSerializer):
         model = Module
         fields = '__all__'
 
+
 class ReadSchoolSerializer(serializers.ModelSerializer):
     contactInfo = ContactInformationSerializer()
     directives = DirectiveSerializer(many=True)
