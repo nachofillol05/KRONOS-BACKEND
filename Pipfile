@@ -14,6 +14,7 @@ xlrd = "*"
 validate-email-address = "*"
 l = "*"
 django-cors-headers = "*"
+drf-spectacular = "*"
 
 [dev-packages]
 

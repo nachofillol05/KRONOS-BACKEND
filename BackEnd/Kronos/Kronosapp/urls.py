@@ -5,16 +5,16 @@ from .views import (
     RegisterView,
     OlvideMiContrasenia,
     change_password,
-    SchoolListView,
-    SchoolCreateView,
     ProfileView,
-    SchoolDetailView,
+    SchoolsView,
+    SchoolView,
     TeacherListView,
     TeacherDetailView,
     ExcelToteacher,
     DniComprobation,
     SubjectListCreate, 
-    SubjectRetrieveUpdateDestroy
+    SubjectRetrieveUpdateDestroy,
+    PreceptorListCreateView
 )
 
 
@@ -28,12 +28,12 @@ urlpatterns = [
     path('forgot-password/<uuid:token>/', change_password, name='forgot-password'),
     path('profile', ProfileView.as_view(), name='profile'),
     # Schools
-    path('schools/', SchoolListView.as_view(), name='get_schools'),
-    path('create_schools/', SchoolCreateView.as_view(), name='create_school'),
-    path('school/<int:pk>', SchoolDetailView.as_view(), name='detail_school'),
+    path('schools/', SchoolsView.as_view(), name='schools'),
+    path('schools/<int:pk>', SchoolView.as_view(), name='school'),
+    path('schools/<int:pk>/preceptors', PreceptorListCreateView.as_view(), name='preceptors'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
-    path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail')
+    path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail'),
     # Teachers
     path('teachers/', TeacherListView.as_view(), name='get_teachers'),
     path('teacher/<int:pk>', TeacherDetailView.as_view(), name='detail_teacher'),
