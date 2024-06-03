@@ -8,7 +8,7 @@ from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from django.urls import reverse
 from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
@@ -599,6 +599,15 @@ class ModuleViewSet(viewsets.ModelViewSet):
     queryset = Module.objects.all()
     serializer_class = ModuleSerializer
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name='school_id', description='ID of the school', required=True, type=int),
+            OpenApiParameter(name='day', description='Day of the week', required=False, type=str),
+        ]
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs) 
 
     def get_queryset(self):
         school_id = self.request.query_params.get('school_id')
