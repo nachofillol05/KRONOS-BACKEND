@@ -29,6 +29,9 @@ class School(models.Model):
     contactInfo = models.OneToOneField(ContactInformation, null=True, on_delete=models.SET_NULL)
     directives = models.ManyToManyField('CustomUser')
 
+    def __str__(self) -> str:
+        return f"{self.pk} - {self.name} ({self.abbreviation})"
+
 
 class CustomUser(AbstractUser):
     GENDER_CHOICES = {
@@ -51,6 +54,9 @@ class CustomUser(AbstractUser):
 
     def is_directive(self, school: School):
         return self in school.directives.all()
+    
+    def __str__(self) -> str:
+        return f'{self.pk} {self.username}'
 
 
 class Module(models.Model):
@@ -89,6 +95,11 @@ class Year(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     number = models.CharField(max_length=255)
+    preceptors = models.ManyToManyField(CustomUser, related_name="years")
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="years")
+
+    def __str__(self) -> str:
+        return f'{self.pk}. N°{self.number} - {self.name} - {self.school}'
 
 
 class Course(models.Model):
