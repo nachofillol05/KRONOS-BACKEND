@@ -6,12 +6,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from rest_framework import viewsets
+from rest_framework.exceptions import ValidationError
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from django.urls import reverse
-
-from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year
-
-from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer
+from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module
+from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from .serializers.preceptor_serializer import PreceptorSerializer, YearSerializer
 from .serializers.user_serializer import UserSerializer
@@ -594,6 +594,40 @@ class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
         response = super().put(request, *args, **kwargs)
         return Response({'Updated': 'La materia ha sido actualizada', 'data': response.data}, status=status.HTTP_200_OK)
 
+
+class ModuleViewSet(viewsets.ModelViewSet):
+    queryset = Module.objects.all()
+    serializer_class = ModuleSerializer
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name='school_id', description='ID of the school', required=True, type=int),
+            OpenApiParameter(name='day', description='Day of the week', required=False, type=str),
+        ]
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs) 
+
+    def get_queryset(self):
+        school_id = self.request.query_params.get('school_id')
+
+        if not school_id:
+            raise ValidationError({'school_id': 'This query parameter is required.'})
+        
+        school = School.objects.filter(pk=school_id)
+        if not school:
+            raise ValidationError({'school_id': 'There is no school with that ID.'})
+        
+        queryset = Module.objects.filter(school_id=school_id).order_by('moduleNumber')
+
+        day = self.request.query_params.get('day')
+        if day:
+            queryset = queryset.filter(day=day)
+        
+        return queryset
+        
+
 @extend_schema(tags=['Preceptors'])
 class PreceptorListCreateView(APIView):
     """
@@ -686,4 +720,3 @@ class PreceptorListCreateView(APIView):
         year.save()
         serializer = YearSerializer(year)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-

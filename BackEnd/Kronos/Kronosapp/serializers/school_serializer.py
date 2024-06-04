@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import School, ContactInformation, CustomUser
+from ..models import School, ContactInformation, CustomUser, Module
 
 
 class ContactInformationSerializer(serializers.ModelSerializer):
@@ -12,6 +12,12 @@ class DirectiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['pk','first_name', 'last_name', 'gender', 'email']
+
+
+class ModuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Module
+        fields = '__all__'
 
 
 class ReadSchoolSerializer(serializers.ModelSerializer):
