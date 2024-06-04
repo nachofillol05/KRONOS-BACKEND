@@ -5,7 +5,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('Kronosapp/', include('Kronosapp.urls')),
+    path('api/', include('Kronosapp.urls')),
     # yaml UI
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     # docs
