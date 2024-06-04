@@ -15,6 +15,7 @@ validate-email-address = "*"
 l = "*"
 django-cors-headers = "*"
 drf-spectacular = "*"
+djangorestframework-simplejwt = "*"
 
 [dev-packages]
 
