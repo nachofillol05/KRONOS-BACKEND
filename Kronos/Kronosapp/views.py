@@ -21,10 +21,15 @@ import smtplib
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.hashers import make_password
 import pandas as pd
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse
 from validate_email_address import validate_email
+from django.conf import settings
 
 
+
+'''
+INICIAR SESION
+'''
 @extend_schema(
     tags=['Users'],
     description='Permite a un usuario existente iniciar sesión en el sistema.',
@@ -39,9 +44,10 @@ from validate_email_address import validate_email
                 'password': {
                     'type': 'string',
                     'format': 'password',
-                    'example': 'aguantebelgrano'
+                    'example': 'pepe1234'
                 }
-            }
+            },
+            'required': ['username', 'password']
         }
     },
     responses={
@@ -66,6 +72,15 @@ from validate_email_address import validate_email
                     'example': 'El usuario o contraseña son incorrectos'
                 },
             }
+        },
+        500: {
+            'type': 'object',
+            'properties': {
+                'message': {
+                    'type': 'string',
+                    'example': 'An error occurred during login'
+                }
+            }
         }
     }
 )
@@ -86,15 +101,30 @@ class LoginView(generics.GenericAPIView):
             return Response({'message': 'An error occurred during login: ' + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+
+
+
+'''
+REGISTRAR USUARIOS
+'''
 @extend_schema(
     tags=['Users'],
+    description="Registra un nuevo usuario. puede ser un profesor, un preceptor o un directivo.",
     request={
         'application/json': {
             'type': 'object',
             'properties': {
-                'username': {
+                'first_name': {
                     'type': 'string',
-                    'example': 'superusername'
+                    'example': 'Monica'
+                },
+                'last_name': {
+                    'type': 'string',
+                    'example': 'Flores'
+                },
+                'document': {
+                    'type': 'string',
+                    'example': '123456789'
                 },
                 'email': {
                     'type': 'string',
@@ -103,10 +133,10 @@ class LoginView(generics.GenericAPIView):
                 'password': {
                     'type': 'string',
                     'format': 'password',
-                    'example': 'aguantebelgrano'
+                    'example': 'pepe1234'
                 }
             },
-            'required': ['username', 'email', 'password']
+            'required': ['first_name', 'last_name', 'document', 'email', 'password']
         }
     },
     responses={
@@ -132,12 +162,11 @@ class LoginView(generics.GenericAPIView):
                     },
                     'err': {
                         'type': 'string',
-                        'example': 'Mal ya en uso'
+                        'example': 'Mail ya en uso'
                     }
                 }
             }
-    },
-    description="Registra un nuevo usuario. También puedes usarlo para crear un profesor :)."
+    }
 )
 class RegisterView(generics.GenericAPIView):
     def post(self, request):
@@ -150,6 +179,77 @@ class RegisterView(generics.GenericAPIView):
         mensaje = send_email(request, username, email, password, document, first_name, last_name)
         return Response({'detail':mensaje}, status=status.HTTP_201_CREATED)
 
+
+
+
+
+'''
+REGISTRAR USUARIOS EN CANTIDAD DESDE UN EXCEL
+'''
+@extend_schema(
+    tags=['Teachers'],
+    description="Registra a los usuarios desde un archivo excel. El archivo debe tener un formato especifico.",
+    request={
+        'application/json': {
+            'type': 'object',
+            'propieties': {
+                'file': {
+                    'type': 'file',
+                    'example': 'Profesores.xls'  
+                }
+            },               
+        }
+    }
+)
+class ExcelToteacher(generics.GenericAPIView):
+
+    def get(self, request):
+        file_path = settings.BASE_DIR / 'Static' / 'Profesores.xls'
+        if file_path.exists():
+            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename='Profesores.xls')
+        else:
+            return JsonResponse({'error': 'Archivo no encontrado'}, status=404)
+
+
+    def post(self, request):
+        archivo = 'Static/Profesores.xls'
+        df = pd.read_excel(archivo, sheet_name=0, header=0)
+        results = []
+        '''
+        IMPLEMENTAR
+        archivo = request.FILES.get('archvio') 
+        if not archivo:
+            return JsonResponse({'error': 'No se proporcionó un archivo'}, status=400)
+        '''
+
+        for index, row in df.iterrows():
+            if pd.notnull(row['DNI']):
+                print(row)
+                document = row['DNI']
+                username = row['NOMBRE'] + '_' + row['APELLIDO']
+                first_name = row['NOMBRE']
+                last_name = row['APELLIDO']
+                email = row['MAIL']
+                password = str(row['DNI'])
+
+                if validate_email(email):
+                    result = send_email(request, username, email, password, document, first_name, last_name)
+                    results.append({'DNI': document, 'Response': result})
+                else:
+                    results.append({'DNI': document, 'Response': 'Email no valido'})
+
+        if results:
+            return JsonResponse({'results': results})
+        else:
+            return JsonResponse({'error': 'No se procesaron datos válidos'}, status=400)
+
+
+
+
+
+'''
+FUNCION CREAR USUARIOS Y MANDAR MAILS. LA LLAMAN DESDE: RegisterView y ExcelToteacher
+'''
 def send_email(request, username, email, password, document, first_name, last_name):
     if CustomUser.objects.filter(username=username).exists():
         return 'Nombre de usuario ya en uso'
@@ -531,34 +631,6 @@ class DniComprobation(generics.GenericAPIView):
             else:
                 return Response({'results': 'DNI no está en uso'}, status=200)
 
-
-@extend_schema(tags=['Teachers'])
-class ExcelToteacher(generics.GenericAPIView):
-    def post(self, request):
-        archivo = 'Static/Profesores.xls'
-        df = pd.read_excel(archivo, sheet_name=0, header=0)
-        results = []
-
-        for index, row in df.iterrows():
-            if pd.notnull(row['DNI']):
-                print(row)
-                document = row['DNI']
-                username = row['NOMBRE'] + '_' + row['APELLIDO']
-                first_name = row['NOMBRE']
-                last_name = row['APELLIDO']
-                email = row['MAIL']
-                password = str(row['DNI'])
-
-                if validate_email(email):
-                    result = send_email(request, username, email, password, document, first_name, last_name)
-                    results.append({'DNI': document, 'Response': result})
-                else:
-                    results.append({'DNI': document, 'Response': 'Email no valido'})
-
-        if results:
-            return JsonResponse({'results': results})
-        else:
-            return JsonResponse({'error': 'No se procesaron datos válidos'}, status=400)
 
 
 @extend_schema(tags=['Subjects'])
