@@ -16,7 +16,8 @@ from .views import (
     SubjectListCreate, 
     SubjectRetrieveUpdateDestroy,
     ModuleViewSet,
-    PreceptorListCreateView
+    PreceptorListCreateView,
+    verifyToken
 )
 
 
@@ -44,6 +45,8 @@ urlpatterns = [
     path('teacher/<int:pk>', TeacherDetailView.as_view(), name='detail_teacher'),
     path('create_teacher/', DniComprobation.as_view(), name='Comprobation_DNI'),
     path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
+    
+    path('verifyToken/', verifyToken.as_view(), name='verifyToken'),
 ]
 
 urlpatterns += router.urls

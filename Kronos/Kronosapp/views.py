@@ -720,3 +720,11 @@ class PreceptorListCreateView(APIView):
         year.save()
         serializer = YearSerializer(year)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+class verifyToken(APIView):
+    def post(self, request):
+        token = request.data.get('token')
+        token = Token.objects.get(key=token)
+        user = token.user
+        print(user)
+        return JsonResponse({'user': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, 'document': user.document, 'email_verified': user.email_verified, 'is_active': user.is_active, 'is_staff': user.is_staff, 'is_superuser': user.is_superuser, 'date_joined': user.date_joined, 'last_login': user.last_login, 'verification_token': user.verification_token, 'id': user.id})

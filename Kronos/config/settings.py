@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
-    'drf_spectacular'
+    'drf_spectacular',
+    'rest_framework.authtoken'
 ]
 
 
