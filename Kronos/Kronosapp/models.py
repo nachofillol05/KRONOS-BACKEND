@@ -107,6 +107,9 @@ class Course(models.Model):
     description = models.CharField(max_length=255)
     year = models.ForeignKey(Year, on_delete=models.CASCADE)
 
+    def __str__(self) -> str:
+        return f"{self.name} - {self.year}"
+
 
 class Subject(models.Model):
     name = models.CharField(max_length=255)
@@ -116,6 +119,9 @@ class Subject(models.Model):
     color = models.CharField(max_length=6)
     abbreviation = models.CharField(max_length=10)
     course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self) -> str:
+        return f"{self.name} - {self.course}"
 
 
 class TeacherSubjectSchool(models.Model):
