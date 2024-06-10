@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
+from .permissions import SchoolHeader, IsDirectiveOrOnlyRead
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
@@ -637,10 +638,11 @@ class DniComprobation(generics.GenericAPIView):
 class SubjectListCreate(generics.ListCreateAPIView):
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     def get(self, request):
         queryset = Subject.objects.all()
-        print(queryset)
         serializer = SubjectSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     

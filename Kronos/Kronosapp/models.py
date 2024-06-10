@@ -55,6 +55,12 @@ class CustomUser(AbstractUser):
     def is_directive(self, school: School):
         return self in school.directives.all()
     
+    def is_teacher(self, school: School):
+        return TeacherSubjectSchool.objects.filter(school=school, teacher=self).exists()
+    
+    def is_preceptor(self, school: School):
+        return Year.objects.filter(school=school, preceptors=self).exists()
+    
     def __str__(self) -> str:
         return f'{self.pk} {self.username}'
 

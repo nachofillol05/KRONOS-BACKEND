@@ -131,8 +131,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'Kronosapp.permissions.IsSchoolMember',
-        'Kronosapp.permissions.IsDirective',
+        'Kronosapp.permissions.SchoolHeader',
+        'Kronosapp.permissions.IsDirectiveOrOnlyRead',
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
