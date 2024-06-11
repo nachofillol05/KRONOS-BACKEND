@@ -7,8 +7,6 @@ from .views import (
     OlvideMiContrasenia,
     change_password,
     ProfileView,
-    SchoolsView,
-    SchoolView,
     TeacherListView,
     TeacherDetailView,
     ExcelToteacher,
@@ -34,8 +32,7 @@ urlpatterns = [
     path('forgot-password/<uuid:token>/', change_password, name='forgot-password'),
     path('profile', ProfileView.as_view(), name='profile'),
     # Schools
-    path('schools/', SchoolsView.as_view(), name='schools'),
-    path('schools/<int:pk>', SchoolView.as_view(), name='school'),
+
     path('schools/<int:pk>/preceptors', PreceptorListCreateView.as_view(), name='preceptors'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),

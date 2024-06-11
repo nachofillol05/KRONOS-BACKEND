@@ -1,5 +1,11 @@
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponse
+from django.urls import reverse
+from django.http import JsonResponse, FileResponse
+from django.conf import settings
+from django.contrib.auth.hashers import make_password
+from django_filters.rest_framework import DjangoFilterBackend
+
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
@@ -8,28 +14,24 @@ from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
+from rest_framework.authtoken.models import Token
+
+from email.message import EmailMessage
+from validate_email_address import validate_email
+import smtplib
+import pandas as pd
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
-from django.urls import reverse
+
 from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module
+
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from .serializers.preceptor_serializer import PreceptorSerializer, YearSerializer
 from .serializers.user_serializer import UserSerializer
 from .serializers.Subject_serializer import SubjectSerializer
-from email.message import EmailMessage
-import smtplib
-from rest_framework.authtoken.models import Token
-from django.contrib.auth.hashers import make_password
-import pandas as pd
-from django.http import JsonResponse, FileResponse
-from validate_email_address import validate_email
-from django.conf import settings
 
 
 
-'''
-INICIAR SESION
-'''
 @extend_schema(
     tags=['Users'],
     description='Permite a un usuario existente iniciar sesión en el sistema.',
@@ -85,6 +87,9 @@ INICIAR SESION
     }
 )
 class LoginView(generics.GenericAPIView):
+    '''
+    INICIAR SESION
+    '''
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -102,11 +107,6 @@ class LoginView(generics.GenericAPIView):
 
 
 
-
-
-'''
-REGISTRAR USUARIOS
-'''
 @extend_schema(
     tags=['Users'],
     description="Registra un nuevo usuario. puede ser un profesor, un preceptor o un directivo.",
@@ -169,6 +169,9 @@ REGISTRAR USUARIOS
     }
 )
 class RegisterView(generics.GenericAPIView):
+    '''
+    REGISTRAR USUARIOS
+    '''
     def post(self, request):
         first_name = request.data.get('first_name')
         last_name = request.data.get('last_name')
@@ -183,9 +186,7 @@ class RegisterView(generics.GenericAPIView):
 
 
 
-'''
-REGISTRAR USUARIOS EN CANTIDAD DESDE UN EXCEL
-'''
+
 @extend_schema(
     tags=['Teachers'],
     description="Registra a los usuarios desde un archivo excel. El archivo debe tener un formato especifico.",
@@ -203,6 +204,9 @@ REGISTRAR USUARIOS EN CANTIDAD DESDE UN EXCEL
 )
 class ExcelToteacher(generics.GenericAPIView):
 
+    '''
+    DESCARGAR EXCEL CON EL FORMATO ADECUADO
+    '''
     def get(self, request):
         file_path = settings.BASE_DIR / 'Static' / 'Profesores.xls'
         if file_path.exists():
@@ -210,7 +214,9 @@ class ExcelToteacher(generics.GenericAPIView):
         else:
             return JsonResponse({'error': 'Archivo no encontrado'}, status=404)
 
-
+    '''
+    REGISTRAR USUARIOS EN CANTIDAD DESDE UN EXCEL
+    '''
     def post(self, request):
         archivo = 'Static/Profesores.xls'
         df = pd.read_excel(archivo, sheet_name=0, header=0)
@@ -247,10 +253,11 @@ class ExcelToteacher(generics.GenericAPIView):
 
 
 
-'''
-FUNCION CREAR USUARIOS Y MANDAR MAILS. LA LLAMAN DESDE: RegisterView y ExcelToteacher
-'''
+
 def send_email(request, username, email, password, document, first_name, last_name):
+    '''
+    FUNCION CREAR USUARIOS Y MANDAR MAILS. LA LLAMAN DESDE: RegisterView y ExcelToteacher
+    '''
     if CustomUser.objects.filter(username=username).exists():
         return 'Nombre de usuario ya en uso'
     else:
@@ -481,7 +488,7 @@ class ProfileView(generics.GenericAPIView):
         return Response(serializer.errors, status=400)
 
 
-@extend_schema(tags=['Schools'])
+'''@extend_schema(tags=['Schools'])
 class SchoolsView(generics.ListCreateAPIView):
     """
     GET: Listar escuelas
@@ -563,27 +570,28 @@ class SchoolView(generics.RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
+'''
 
 @extend_schema(tags=['Teachers'])
 class TeacherListView(generics.ListAPIView):
     serializer_class = TeacherSerializer
 
-    def post(self, request, *args, **kwargs):
-        school_id = request.data.get('school_id')
-        if not school_id:
-            return Response({'error': 'se requiere el id de la escuela'}, status=400)
+    def get(self, request, *args, **kwargs):
+        subject_id = request.GET.get('subject_id')
+        search_name = request.GET.get('search_name')
 
-        queryset = TeacherSubjectSchool.objects.filter(school=school_id)
+        queryset = TeacherSubjectSchool.objects.all()
 
-        subject_id = request.data.get('subject_id')
+        
         if subject_id:
             queryset = queryset.filter(subject_id=subject_id)
 
-        search_name = request.data.get('search_name')
+        
         if search_name:
             queryset = queryset.filter(
                 teacher__first_name__icontains=search_name) | queryset.filter(
                 teacher__last_name__icontains=search_name)
+
 
         if not queryset.exists():
             return Response({'error': 'No se encontraron maestros'}, status=404)
@@ -620,6 +628,9 @@ class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 @extend_schema(tags=['Teachers'])
 class DniComprobation(generics.GenericAPIView):
+    '''
+    COMPROBACION SI EL PROFESOR EXISTE ANTES DE CREAR UN NUEVO PROFESOR
+    '''
     def post(self, request):
             document = request.data.get('document')
             user = CustomUser.objects.filter(document=document)
