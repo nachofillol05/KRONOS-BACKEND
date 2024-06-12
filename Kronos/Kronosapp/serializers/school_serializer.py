@@ -20,7 +20,7 @@ class ModuleSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
     def to_representation(self, instance):
-        instance.endTime = instance.endTime.replace(econd=0, microsecond=0)
+        instance.endTime = instance.endTime.replace(second=0, microsecond=0)
         return super().to_representation(instance)
 
 
