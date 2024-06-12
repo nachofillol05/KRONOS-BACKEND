@@ -16,7 +16,7 @@ from .views import (
     SubjectListCreate, 
     SubjectRetrieveUpdateDestroy,
     ModuleViewSet,
-    PreceptorListCreateView,
+    PreceptorsView,
     verifyToken
 )
 
@@ -36,7 +36,7 @@ urlpatterns = [
     # Schools
     path('schools/', SchoolsView.as_view(), name='schools'),
     path('schools/<int:pk>', SchoolView.as_view(), name='school'),
-    path('schools/<int:pk>/preceptors', PreceptorListCreateView.as_view(), name='preceptors'),
+    path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
     path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail'),

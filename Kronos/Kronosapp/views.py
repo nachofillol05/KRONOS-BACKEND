@@ -680,7 +680,6 @@ class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
 class ModuleViewSet(viewsets.ModelViewSet):
     queryset = Module.objects.all()
     serializer_class = ModuleSerializer
-    permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
@@ -710,10 +709,14 @@ class ModuleViewSet(viewsets.ModelViewSet):
         
 
 @extend_schema(tags=['Preceptors'])
-class PreceptorListCreateView(APIView):
+class PreceptorsView(APIView):
     """
     Endpoints que realiza acciones sobre los preceptores del colegio indicado en la ruta
     """
+    queryset = CustomUser.objects.all()
+    serializer_class = PreceptorSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     @extend_schema(
         summary='Obtener preceptores de una escuela',
@@ -721,7 +724,7 @@ class PreceptorListCreateView(APIView):
     )
     def get(self, request, *args, **kwargs):
         pk_school = self.kwargs.get('pk_school')
-        preceptors = CustomUser.objects.filter(years__school__id=pk_school).distinct()
+        preceptors = CustomUser.objects.filter(years__school=request.school).distinct()
         serializer = PreceptorSerializer(preceptors, many=True)
         return Response(serializer.data)
     
@@ -792,15 +795,19 @@ class PreceptorListCreateView(APIView):
             return Response({'detail': 'Year or User do not exist'}, status=status.HTTP_404_NOT_FOUND)
 
         if is_add:
+            if user in year.preceptors.all():
+                return Response({'detail': 'User is already a preceptor.'})
             year.preceptors.add(user)
+            status_code = status.HTTP_201_CREATED
         else:
             if user not in year.preceptors.all():
                 return Response({'error': 'The user is not associated with the year.'}, status=status.HTTP_400_BAD_REQUEST)
             year.preceptors.remove(user)
+            status_code = status.HTTP_200_OK
         
         year.save()
         serializer = YearSerializer(year)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status_code)
     
 class verifyToken(APIView):
     def post(self, request):
