@@ -15,7 +15,8 @@ from .views import (
     SubjectRetrieveUpdateDestroy,
     ModuleViewSet,
     PreceptorListCreateView,
-    verifyToken
+    verifyToken,
+    SchoolsView
 )
 
 
@@ -32,7 +33,7 @@ urlpatterns = [
     path('forgot-password/<uuid:token>/', change_password, name='forgot-password'),
     path('profile', ProfileView.as_view(), name='profile'),
     # Schools
-
+    path('user_schools/', SchoolsView.as_view(), name='user_schools'),
     path('schools/<int:pk>/preceptors', PreceptorListCreateView.as_view(), name='preceptors'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),

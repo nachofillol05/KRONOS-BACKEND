@@ -488,89 +488,27 @@ class ProfileView(generics.GenericAPIView):
         return Response(serializer.errors, status=400)
 
 
-'''@extend_schema(tags=['Schools'])
-class SchoolsView(generics.ListCreateAPIView):
-    """
-    GET: Listar escuelas
-    POST: Mostrar escuelas
-    """
-    queryset = School.objects.all()
-    
-    def get_serializer_class(self):
-        if self.request.method == 'GET':
-            return ReadSchoolSerializer
-        return CreateSchoolSerializer
-
-    @extend_schema(
-        summary="Listar las escuelas",
-        responses={
-            201: CreateSchoolSerializer,
-            400: OpenApiResponse(description="Datos inválidos")
-        }
-    )
-    def get(self, request, *args, **kwargs):
-        """
-        Lista todas las escuelas.
-        """
-        return super().list(request, *args, **kwargs)
-
-    @extend_schema(
-        summary="Crear una escuela",
-        request=CreateSchoolSerializer,
-        responses={
-            201: CreateSchoolSerializer,
-            400: OpenApiResponse(description="Datos inválidos")
-        }
-    )
-    def post(self, request, *args, **kwargs):
-        """
-        Crea una nueva escuela.
-        """
-        return super().create(request, *args, **kwargs)
-
-
 @extend_schema(tags=['Schools'])
-class SchoolView(generics.RetrieveUpdateDestroyAPIView):
+
+class SchoolsView(generics.ListAPIView):
+    '''
+    VISTA PARA LAS ESCUELAS DE UN USUARIO
+    '''
     queryset = School.objects.all()
     serializer_class = ReadSchoolSerializer
+    def get_queryset(self):
+        user = self.request.user
+        schools = TeacherSubjectSchool.objects.filter(teacher=user).distinct()
+        return schools
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+   
 
-    def get_serializer_class(self):
-        if self.request.method == 'PATCH':
-            return CreateSchoolSerializer
-        return super().get_serializer_class()
     
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response({'detail': 'School deleted'}, status=status.HTTP_200_OK)
     
-    @extend_schema(
-        summary='Obtener detalles de una escuela',
-        responses={200: ReadSchoolSerializer}
-    )
-    def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
 
-    @extend_schema(
-        summary='Actualizar detalles de una escuela',
-        request=CreateSchoolSerializer,
-        responses={200: ReadSchoolSerializer}
-    )
-    def patch(self, request, *args, **kwargs):
-        return super().patch(request, *args, **kwargs)
-
-    @extend_schema(
-        summary='Eliminar una escuela',
-        responses={200: 'School deleted'}
-    )
-    def delete(self, request, *args, **kwargs):
-        return super().delete(request, *args, **kwargs)
-    
-    @extend_schema(exclude=True)
-    def put(self, request, *args, **kwargs):
-        return super().patch(request, *args, **kwargs)
-
-'''
 
 @extend_schema(tags=['Teachers'])
 class TeacherListView(generics.ListAPIView):
