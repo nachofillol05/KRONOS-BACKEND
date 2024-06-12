@@ -9,7 +9,6 @@ class SchoolHeader(permissions.BasePermission):
     
     def has_permission(self, request, view):
         school_id = request.META.get('HTTP_SCHOOL_ID')
-        print(school_id)
         if not school_id:
             raise exceptions.PermissionDenied(self.MESSAGE_NOT_SCHOOL_ID)
         
@@ -28,17 +27,35 @@ class IsDirectiveOrOnlyRead(permissions.BasePermission):
     def has_permission(self, request, view):
         user: CustomUser = request.user
         school = request.school
-        
-        if request.method in permissions.SAFE_METHODS:
-            if user.is_teacher(school) or user.is_preceptor(school):
-                return True
 
-        if not user.is_directive(school):
-            raise exceptions.PermissionDenied(self.MESSAGE_NOT_SCHOOL_DIRECTOR)
+        is_safe_method = request.method in permissions.SAFE_METHODS
+        is_authorized = user.is_teacher(school) or user.is_preceptor(school)
         
-        return True
+        if is_safe_method:
+            if is_authorized:
+                return True
+        
+        return user.is_directive(school)
 
     def has_object_permission(self, request, view, obj):
-        return super().has_object_permission(request, view, obj)
-            
+        """
+        This method only checks if certain objects 
+        (school, module, year, course, subject and event) 
+        belong to the header school.
+        """
+        if isinstance(obj, CustomUser):
+            return True
         
+        school = request.school
+
+        if school == obj:
+            return True
+        if hasattr(obj, 'school'):
+            return obj.school == school
+        if hasattr(obj, 'year'):
+            return obj.year.school == school
+        if hasattr(obj, 'course'):
+            print(obj.course.year.school == school)
+            return obj.course.year.school == school
+        return False
+                 

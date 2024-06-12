@@ -11,7 +11,7 @@ from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from django.urls import reverse
-from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module
+from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module, Course
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from .serializers.preceptor_serializer import PreceptorSerializer, YearSerializer
@@ -568,13 +568,11 @@ class SchoolView(generics.RetrieveUpdateDestroyAPIView):
 @extend_schema(tags=['Teachers'])
 class TeacherListView(generics.ListAPIView):
     serializer_class = TeacherSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
-    def post(self, request, *args, **kwargs):
-        school_id = request.data.get('school_id')
-        if not school_id:
-            return Response({'error': 'se requiere el id de la escuela'}, status=400)
-
-        queryset = TeacherSubjectSchool.objects.filter(school=school_id)
+    def get(self, request, *args, **kwargs):
+        queryset = TeacherSubjectSchool.objects.filter(school=request.school)
 
         subject_id = request.data.get('subject_id')
         if subject_id:
@@ -602,6 +600,8 @@ class TeacherListView(generics.ListAPIView):
 class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = TeacherSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -641,24 +641,32 @@ class SubjectListCreate(generics.ListCreateAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
-    def get(self, request):
-        queryset = Subject.objects.all()
-        serializer = SubjectSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-    def post(self, request):
-        serializer = SubjectSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get_queryset(self):
+        school = self.request.school
+        return Subject.objects.filter(course__year__school=school)
+
+    def perform_create(self, serializer):
+        validated_data = serializer.validated_data
+        course = validated_data.get('course')
+        if course.year.school != self.request.school:
+            raise ValidationError({'course': ['You can only modify the school you belong to']})
         serializer.save()
-        return Response(
-            {'Saved': 'La materia ha sido creada', 'data': serializer.data},status=status.HTTP_201_CREATED)
+    
+    # def post(self, request):
+    #     serializer = SubjectSerializer(data=request.data)
+    #     if not serializer.is_valid():
+    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    #     serializer.save()
+    #     return Response(
+    #         {'Saved': 'La materia ha sido creada', 'data': serializer.data},status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=['Subjects'])
 class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     def delete(self, request, *args, **kwargs):
         response = super().delete(request, *args, **kwargs)
@@ -673,27 +681,26 @@ class ModuleViewSet(viewsets.ModelViewSet):
     queryset = Module.objects.all()
     serializer_class = ModuleSerializer
     permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     @extend_schema(
         parameters=[
-            OpenApiParameter(name='school_id', description='ID of the school', required=True, type=int),
             OpenApiParameter(name='day', description='Day of the week', required=False, type=str),
         ]
     )
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs) 
+        return super().create(request, *args, **kwargs)
+    
+    def perform_create(self, serializer):
+        validated_data = serializer.validated_data
+        school = validated_data.get('school')
+        if school != self.request.school:
+            raise ValidationError({'school': ['You can only modify the school you belong to']})
+        serializer.save()
 
     def get_queryset(self):
-        school_id = self.request.query_params.get('school_id')
-
-        if not school_id:
-            raise ValidationError({'school_id': 'This query parameter is required.'})
-        
-        school = School.objects.filter(pk=school_id)
-        if not school:
-            raise ValidationError({'school_id': 'There is no school with that ID.'})
-        
-        queryset = Module.objects.filter(school_id=school_id).order_by('moduleNumber')
+        queryset = Module.objects.filter(school=self.request.school).order_by('moduleNumber')
 
         day = self.request.query_params.get('day')
         if day:
