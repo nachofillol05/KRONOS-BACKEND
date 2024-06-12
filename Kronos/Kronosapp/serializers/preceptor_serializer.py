@@ -10,7 +10,6 @@ class YearSerializer(serializers.ModelSerializer):
 
 
 class PreceptorSerializer(UserSerializer):
-    years = YearSerializer(many=True)
 
     class Meta:
         model = CustomUser

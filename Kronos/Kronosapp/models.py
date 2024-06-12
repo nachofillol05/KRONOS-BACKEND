@@ -55,6 +55,12 @@ class CustomUser(AbstractUser):
     def is_directive(self, school: School):
         return self in school.directives.all()
     
+    def is_teacher(self, school: School):
+        return TeacherSubjectSchool.objects.filter(school=school, teacher=self).exists()
+    
+    def is_preceptor(self, school: School):
+        return Year.objects.filter(school=school, preceptors=self).exists()
+    
     def __str__(self) -> str:
         return f'{self.pk} {self.username}'
 
@@ -107,6 +113,9 @@ class Course(models.Model):
     description = models.CharField(max_length=255)
     year = models.ForeignKey(Year, on_delete=models.CASCADE)
 
+    def __str__(self) -> str:
+        return f"{self.name} - {self.year}"
+
 
 class Subject(models.Model):
     name = models.CharField(max_length=255)
@@ -116,6 +125,9 @@ class Subject(models.Model):
     color = models.CharField(max_length=6)
     abbreviation = models.CharField(max_length=10)
     course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self) -> str:
+        return f"{self.name} - {self.course}"
 
 
 class TeacherSubjectSchool(models.Model):
