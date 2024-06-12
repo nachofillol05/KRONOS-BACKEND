@@ -18,6 +18,10 @@ class ModuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
         fields = '__all__'
+    
+    def to_representation(self, instance):
+        instance.endTime = instance.endTime.replace(econd=0, microsecond=0)
+        return super().to_representation(instance)
 
 
 class ReadSchoolSerializer(serializers.ModelSerializer):
