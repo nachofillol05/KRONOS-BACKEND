@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from corsheaders.defaults import default_headers
+
 
 # Initialize load python-dotenv.
 load_dotenv()
@@ -70,6 +72,12 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     # Añade otros dominios permitidos aquí
 ]
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'school-id',
+]
+CORS_ALLOW_CREDENTIALS = True
+
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
