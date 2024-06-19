@@ -574,11 +574,11 @@ class TeacherListView(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         queryset = TeacherSubjectSchool.objects.filter(school=request.school)
 
-        subject_id = request.data.get('subject_id')
+        subject_id = request.query_params.get('subject_id')
         if subject_id:
             queryset = queryset.filter(subject_id=subject_id)
 
-        search_name = request.data.get('search_name')
+        search_name = request.query_params.get('search_name')
         if search_name:
             queryset = queryset.filter(
                 teacher__first_name__icontains=search_name) | queryset.filter(
