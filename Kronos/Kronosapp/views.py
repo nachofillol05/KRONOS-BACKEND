@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.http import JsonResponse, FileResponse
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
-from django_filters.rest_framework import DjangoFilterBackend
+#from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -583,13 +583,26 @@ class DniComprobation(generics.GenericAPIView):
 
 
 @extend_schema(tags=['Subjects'])
+
 class SubjectListCreate(generics.ListCreateAPIView):
+    '''
+    LISTAR Y CREAR MATERIAS
+    '''
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
 
     def get(self, request):
+
+        start_time = request.query_params.get('start_time')
+        end_time = request.query_params.get('end_time')
+
         queryset = Subject.objects.all()
-        print(queryset)
+        if start_time and end_time:
+            queryset = queryset.filter(
+                teachersubjectschool__schedules__module__startTime__gte=start_time,
+                teachersubjectschool__schedules__module__endTime__lte=end_time
+            ).distinct()
+
         serializer = SubjectSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
