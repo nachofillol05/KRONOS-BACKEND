@@ -4,6 +4,7 @@ from django.urls import reverse
 from django.http import JsonResponse, FileResponse
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
+from django.db.models import Q
 #from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework.views import APIView
@@ -595,13 +596,25 @@ class SubjectListCreate(generics.ListCreateAPIView):
 
         start_time = request.query_params.get('start_time')
         end_time = request.query_params.get('end_time')
+        teacher = request.query_params.get('teacher')
+        name = request.query_params.get('name')
 
         queryset = Subject.objects.all()
+        # Filter by start_time and end_time
         if start_time and end_time:
             queryset = queryset.filter(
                 teachersubjectschool__schedules__module__startTime__gte=start_time,
                 teachersubjectschool__schedules__module__endTime__lte=end_time
             ).distinct()
+        # Filter by teacher
+        if teacher:
+            queryset = queryset.filter(
+                teachersubjectschool__teacher__id=teacher
+            ).distinct()
+        # Filter by subject name
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+
 
         serializer = SubjectSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
