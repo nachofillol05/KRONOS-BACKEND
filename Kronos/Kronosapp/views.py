@@ -798,3 +798,25 @@ class verifyToken(APIView):
         user = token.user
         print(user)
         return JsonResponse({'user': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, 'document': user.document, 'email_verified': user.email_verified, 'is_active': user.is_active, 'is_staff': user.is_staff, 'is_superuser': user.is_superuser, 'date_joined': user.date_joined, 'last_login': user.last_login, 'verification_token': user.verification_token, 'id': user.id})
+
+class ContactarPersonal(generics.GenericAPIView):
+    def post(self, request):
+        remitente = "proyecto.villada.solidario@gmail.com"
+        destinatario = request.data.get('email')
+        titulo = request.data.get('asunto')
+        contenido = request.data.get('contenido')
+        
+        mensaje = EmailMessage()
+        mensaje["From"] = remitente
+        mensaje["To"] = destinatario
+        mensaje["Subject"] = titulo
+        mensaje.set_content(contenido)
+        
+        try:
+            smtp = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+            smtp.login(remitente, "bptf tqtv hjsb zfpl")
+            smtp.send_message(mensaje)
+            smtp.quit()
+            return Response({"message": "Correo enviado correctamente"}, status=status.HTTP_200_OK)
+        except smtplib.SMTPException as e:
+            return Response({"message": "Error al enviar el correo electrónico"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
