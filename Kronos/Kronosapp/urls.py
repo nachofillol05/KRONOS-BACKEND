@@ -7,8 +7,6 @@ from .views import (
     OlvideMiContrasenia,
     change_password,
     ProfileView,
-    SchoolsView,
-    SchoolView,
     TeacherListView,
     TeacherDetailView,
     ExcelToteacher,
@@ -16,8 +14,8 @@ from .views import (
     SubjectListCreate, 
     SubjectRetrieveUpdateDestroy,
     ModuleViewSet,
-    PreceptorsView,
-    verifyToken
+    verifyToken,
+    SchoolsView
 )
 
 
@@ -34,9 +32,8 @@ urlpatterns = [
     path('forgot-password/<uuid:token>/', change_password, name='forgot-password'),
     path('profile', ProfileView.as_view(), name='profile'),
     # Schools
-    path('schools/', SchoolsView.as_view(), name='schools'),
-    path('schools/<int:pk>', SchoolView.as_view(), name='school'),
-    path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
+    path('user_schools/', SchoolsView.as_view(), name='user_schools'),
+    path('schools/<int:pk>/preceptors', PreceptorListCreateView.as_view(), name='preceptors'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
     path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail'),

@@ -1,5 +1,12 @@
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponse
+from django.urls import reverse
+from django.http import JsonResponse, FileResponse
+from django.conf import settings
+from django.contrib.auth.hashers import make_password
+from django.db.models import Q
+#from django_filters.rest_framework import DjangoFilterBackend
+
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
@@ -9,28 +16,24 @@ from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
+from rest_framework.authtoken.models import Token
+
+from email.message import EmailMessage
+from validate_email_address import validate_email
+import smtplib
+import pandas as pd
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from django.urls import reverse
 from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module, Course
+
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from .serializers.preceptor_serializer import PreceptorSerializer, YearSerializer
 from .serializers.user_serializer import UserSerializer
 from .serializers.Subject_serializer import SubjectSerializer
-from email.message import EmailMessage
-import smtplib
-from rest_framework.authtoken.models import Token
-from django.contrib.auth.hashers import make_password
-import pandas as pd
-from django.http import JsonResponse, FileResponse
-from validate_email_address import validate_email
-from django.conf import settings
 
 
 
-'''
-INICIAR SESION
-'''
 @extend_schema(
     tags=['Users'],
     description='Permite a un usuario existente iniciar sesión en el sistema.',
@@ -86,6 +89,9 @@ INICIAR SESION
     }
 )
 class LoginView(generics.GenericAPIView):
+    '''
+    INICIAR SESION
+    '''
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -103,11 +109,6 @@ class LoginView(generics.GenericAPIView):
 
 
 
-
-
-'''
-REGISTRAR USUARIOS
-'''
 @extend_schema(
     tags=['Users'],
     description="Registra un nuevo usuario. puede ser un profesor, un preceptor o un directivo.",
@@ -170,6 +171,9 @@ REGISTRAR USUARIOS
     }
 )
 class RegisterView(generics.GenericAPIView):
+    '''
+    REGISTRAR USUARIOS
+    '''
     def post(self, request):
         first_name = request.data.get('first_name')
         last_name = request.data.get('last_name')
@@ -184,9 +188,7 @@ class RegisterView(generics.GenericAPIView):
 
 
 
-'''
-REGISTRAR USUARIOS EN CANTIDAD DESDE UN EXCEL
-'''
+
 @extend_schema(
     tags=['Teachers'],
     description="Registra a los usuarios desde un archivo excel. El archivo debe tener un formato especifico.",
@@ -204,6 +206,9 @@ REGISTRAR USUARIOS EN CANTIDAD DESDE UN EXCEL
 )
 class ExcelToteacher(generics.GenericAPIView):
 
+    '''
+    DESCARGAR EXCEL CON EL FORMATO ADECUADO
+    '''
     def get(self, request):
         file_path = settings.BASE_DIR / 'Static' / 'Profesores.xls'
         if file_path.exists():
@@ -211,7 +216,9 @@ class ExcelToteacher(generics.GenericAPIView):
         else:
             return JsonResponse({'error': 'Archivo no encontrado'}, status=404)
 
-
+    '''
+    REGISTRAR USUARIOS EN CANTIDAD DESDE UN EXCEL
+    '''
     def post(self, request):
         archivo = 'Static/Profesores.xls'
         df = pd.read_excel(archivo, sheet_name=0, header=0)
@@ -248,10 +255,11 @@ class ExcelToteacher(generics.GenericAPIView):
 
 
 
-'''
-FUNCION CREAR USUARIOS Y MANDAR MAILS. LA LLAMAN DESDE: RegisterView y ExcelToteacher
-'''
+
 def send_email(request, username, email, password, document, first_name, last_name):
+    '''
+    FUNCION CREAR USUARIOS Y MANDAR MAILS. LA LLAMAN DESDE: RegisterView y ExcelToteacher
+    '''
     if CustomUser.objects.filter(username=username).exists():
         return 'Nombre de usuario ya en uso'
     else:
@@ -483,86 +491,25 @@ class ProfileView(generics.GenericAPIView):
 
 
 @extend_schema(tags=['Schools'])
-class SchoolsView(generics.ListCreateAPIView):
-    """
-    GET: Listar escuelas
-    POST: Mostrar escuelas
-    """
-    queryset = School.objects.all()
-    
-    def get_serializer_class(self):
-        if self.request.method == 'GET':
-            return ReadSchoolSerializer
-        return CreateSchoolSerializer
 
-    @extend_schema(
-        summary="Listar las escuelas",
-        responses={
-            201: CreateSchoolSerializer,
-            400: OpenApiResponse(description="Datos inválidos")
-        }
-    )
-    def get(self, request, *args, **kwargs):
-        """
-        Lista todas las escuelas.
-        """
-        return super().list(request, *args, **kwargs)
-
-    @extend_schema(
-        summary="Crear una escuela",
-        request=CreateSchoolSerializer,
-        responses={
-            201: CreateSchoolSerializer,
-            400: OpenApiResponse(description="Datos inválidos")
-        }
-    )
-    def post(self, request, *args, **kwargs):
-        """
-        Crea una nueva escuela.
-        """
-        return super().create(request, *args, **kwargs)
-
-
-@extend_schema(tags=['Schools'])
-class SchoolView(generics.RetrieveUpdateDestroyAPIView):
+class SchoolsView(generics.ListAPIView):
+    '''
+    VISTA PARA LAS ESCUELAS DE UN USUARIO
+    '''
     queryset = School.objects.all()
     serializer_class = ReadSchoolSerializer
+    def get_queryset(self):
+        user = self.request.user
+        schools = TeacherSubjectSchool.objects.filter(teacher=user).distinct()
+        return schools
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+   
 
-    def get_serializer_class(self):
-        if self.request.method == 'PATCH':
-            return CreateSchoolSerializer
-        return super().get_serializer_class()
     
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response({'detail': 'School deleted'}, status=status.HTTP_200_OK)
     
-    @extend_schema(
-        summary='Obtener detalles de una escuela',
-        responses={200: ReadSchoolSerializer}
-    )
-    def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
-
-    @extend_schema(
-        summary='Actualizar detalles de una escuela',
-        request=CreateSchoolSerializer,
-        responses={200: ReadSchoolSerializer}
-    )
-    def patch(self, request, *args, **kwargs):
-        return super().patch(request, *args, **kwargs)
-
-    @extend_schema(
-        summary='Eliminar una escuela',
-        responses={200: 'School deleted'}
-    )
-    def delete(self, request, *args, **kwargs):
-        return super().delete(request, *args, **kwargs)
-    
-    @extend_schema(exclude=True)
-    def put(self, request, *args, **kwargs):
-        return super().patch(request, *args, **kwargs)
 
 
 @extend_schema(tags=['Teachers'])
@@ -572,17 +519,21 @@ class TeacherListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     def get(self, request, *args, **kwargs):
-        queryset = TeacherSubjectSchool.objects.filter(school=request.school)
 
-        subject_id = request.query_params.get('subject_id')
+        subject_id = request.GET.get('subject_id')
+        search_name = request.GET.get('search_name')
+
+        queryset = TeacherSubjectSchool.objects.all()
+
+        
         if subject_id:
             queryset = queryset.filter(subject_id=subject_id)
 
-        search_name = request.query_params.get('search_name')
         if search_name:
             queryset = queryset.filter(
                 teacher__first_name__icontains=search_name) | queryset.filter(
                 teacher__last_name__icontains=search_name)
+
 
         if not queryset.exists():
             return Response({'error': 'No se encontraron maestros'}, status=404)
@@ -621,6 +572,9 @@ class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 @extend_schema(tags=['Teachers'])
 class DniComprobation(generics.GenericAPIView):
+    '''
+    COMPROBACION SI EL PROFESOR EXISTE ANTES DE CREAR UN NUEVO PROFESOR
+    '''
     def post(self, request):
             document = request.data.get('document')
             user = CustomUser.objects.filter(document=document)
@@ -635,16 +589,44 @@ class DniComprobation(generics.GenericAPIView):
 
 
 @extend_schema(tags=['Subjects'])
+
 class SubjectListCreate(generics.ListCreateAPIView):
+    '''
+    LISTAR Y CREAR MATERIAS
+    '''
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
-    def get_queryset(self):
-        school = self.request.school
-        return Subject.objects.filter(course__year__school=school)
+    def get(self, request):
 
+        start_time = request.query_params.get('start_time')
+        end_time = request.query_params.get('end_time')
+        teacher = request.query_params.get('teacher')
+        name = request.query_params.get('name')
+        school = self.request.school
+        
+        queryset = Subject.objects.filter(course__year__school=school)
+        # Filter by start_time and end_time
+        if start_time and end_time:
+            queryset = queryset.filter(
+                teachersubjectschool__schedules__module__startTime__gte=start_time,
+                teachersubjectschool__schedules__module__endTime__lte=end_time
+            ).distinct()
+        # Filter by teacher
+        if teacher:
+            queryset = queryset.filter(
+                teachersubjectschool__teacher__id=teacher
+            ).distinct()
+        # Filter by subject name
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+
+
+        serializer = SubjectSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
     def perform_create(self, serializer):
         validated_data = serializer.validated_data
         course = validated_data.get('course')
