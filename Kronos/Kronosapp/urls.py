@@ -14,7 +14,6 @@ from .views import (
     SubjectListCreate, 
     SubjectRetrieveUpdateDestroy,
     ModuleViewSet,
-    PreceptorListCreateView,
     verifyToken,
     SchoolsView
 )

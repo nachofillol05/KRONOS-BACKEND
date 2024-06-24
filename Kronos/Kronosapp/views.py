@@ -10,6 +10,7 @@ from django.db.models import Q
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
+from .permissions import SchoolHeader, IsDirectiveOrOnlyRead
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import generics, status, exceptions
 from rest_framework.response import Response
@@ -22,8 +23,8 @@ from validate_email_address import validate_email
 import smtplib
 import pandas as pd
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
-
-from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module
+from django.urls import reverse
+from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module, Course
 
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
@@ -514,8 +515,11 @@ class SchoolsView(generics.ListAPIView):
 @extend_schema(tags=['Teachers'])
 class TeacherListView(generics.ListAPIView):
     serializer_class = TeacherSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     def get(self, request, *args, **kwargs):
+
         subject_id = request.GET.get('subject_id')
         search_name = request.GET.get('search_name')
 
@@ -525,7 +529,6 @@ class TeacherListView(generics.ListAPIView):
         if subject_id:
             queryset = queryset.filter(subject_id=subject_id)
 
-        
         if search_name:
             queryset = queryset.filter(
                 teacher__first_name__icontains=search_name) | queryset.filter(
@@ -548,6 +551,8 @@ class TeacherListView(generics.ListAPIView):
 class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = TeacherSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -591,6 +596,8 @@ class SubjectListCreate(generics.ListCreateAPIView):
     '''
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     def get(self, request):
 
@@ -598,8 +605,9 @@ class SubjectListCreate(generics.ListCreateAPIView):
         end_time = request.query_params.get('end_time')
         teacher = request.query_params.get('teacher')
         name = request.query_params.get('name')
-
-        queryset = Subject.objects.all()
+        school = self.request.school
+        
+        queryset = Subject.objects.filter(course__year__school=school)
         # Filter by start_time and end_time
         if start_time and end_time:
             queryset = queryset.filter(
@@ -619,19 +627,28 @@ class SubjectListCreate(generics.ListCreateAPIView):
         serializer = SubjectSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-    def post(self, request):
-        serializer = SubjectSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def perform_create(self, serializer):
+        validated_data = serializer.validated_data
+        course = validated_data.get('course')
+        if course.year.school != self.request.school:
+            raise ValidationError({'course': ['You can only modify the school you belong to']})
         serializer.save()
-        return Response(
-            {'Saved': 'La materia ha sido creada', 'data': serializer.data},status=status.HTTP_201_CREATED)
+    
+    # def post(self, request):
+    #     serializer = SubjectSerializer(data=request.data)
+    #     if not serializer.is_valid():
+    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    #     serializer.save()
+    #     return Response(
+    #         {'Saved': 'La materia ha sido creada', 'data': serializer.data},status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=['Subjects'])
 class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     def delete(self, request, *args, **kwargs):
         response = super().delete(request, *args, **kwargs)
@@ -645,28 +662,26 @@ class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
 class ModuleViewSet(viewsets.ModelViewSet):
     queryset = Module.objects.all()
     serializer_class = ModuleSerializer
-    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     @extend_schema(
         parameters=[
-            OpenApiParameter(name='school_id', description='ID of the school', required=True, type=int),
             OpenApiParameter(name='day', description='Day of the week', required=False, type=str),
         ]
     )
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs) 
+        return super().create(request, *args, **kwargs)
+    
+    def perform_create(self, serializer):
+        validated_data = serializer.validated_data
+        school = validated_data.get('school')
+        if school != self.request.school:
+            raise ValidationError({'school': ['You can only modify the school you belong to']})
+        serializer.save()
 
     def get_queryset(self):
-        school_id = self.request.query_params.get('school_id')
-
-        if not school_id:
-            raise ValidationError({'school_id': 'This query parameter is required.'})
-        
-        school = School.objects.filter(pk=school_id)
-        if not school:
-            raise ValidationError({'school_id': 'There is no school with that ID.'})
-        
-        queryset = Module.objects.filter(school_id=school_id).order_by('moduleNumber')
+        queryset = Module.objects.filter(school=self.request.school).order_by('moduleNumber')
 
         day = self.request.query_params.get('day')
         if day:
@@ -676,10 +691,14 @@ class ModuleViewSet(viewsets.ModelViewSet):
         
 
 @extend_schema(tags=['Preceptors'])
-class PreceptorListCreateView(APIView):
+class PreceptorsView(APIView):
     """
     Endpoints que realiza acciones sobre los preceptores del colegio indicado en la ruta
     """
+    queryset = CustomUser.objects.all()
+    serializer_class = PreceptorSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     @extend_schema(
         summary='Obtener preceptores de una escuela',
@@ -687,7 +706,7 @@ class PreceptorListCreateView(APIView):
     )
     def get(self, request, *args, **kwargs):
         pk_school = self.kwargs.get('pk_school')
-        preceptors = CustomUser.objects.filter(years__school__id=pk_school).distinct()
+        preceptors = CustomUser.objects.filter(years__school=request.school).distinct()
         serializer = PreceptorSerializer(preceptors, many=True)
         return Response(serializer.data)
     
@@ -758,15 +777,19 @@ class PreceptorListCreateView(APIView):
             return Response({'detail': 'Year or User do not exist'}, status=status.HTTP_404_NOT_FOUND)
 
         if is_add:
+            if user in year.preceptors.all():
+                return Response({'detail': 'User is already a preceptor.'})
             year.preceptors.add(user)
+            status_code = status.HTTP_201_CREATED
         else:
             if user not in year.preceptors.all():
                 return Response({'error': 'The user is not associated with the year.'}, status=status.HTTP_400_BAD_REQUEST)
             year.preceptors.remove(user)
+            status_code = status.HTTP_200_OK
         
         year.save()
         serializer = YearSerializer(year)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status_code)
     
 class verifyToken(APIView):
     def post(self, request):

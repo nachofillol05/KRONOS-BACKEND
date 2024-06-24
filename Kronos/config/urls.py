@@ -4,8 +4,8 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
 
-urlpatterns = [
-    path('admin/', admin.site.urls),
+urlpatterns = 
+    path('admin/', admin.site.urls, name="admin_site"),
     path('api/', include('Kronosapp.urls')),
     # yaml UI
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
