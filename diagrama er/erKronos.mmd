@@ -1,0 +1,152 @@
+erDiagram
+    Modules }|--|| Schools : Belongs 
+    Schools }|--|| ContactInformation : Has 
+    Users }|--|| ContactInformation : Has 
+    Users }|--|| DocumentTypes : Has 
+    Users }|--|| Nationalities : Has 
+    Users }|--|| Roles : Has 
+    TeacherAvailability }|--|| AvailabilityStates : Has 
+    TeacherAvailability ||--|{ Modules : Has 
+    TeacherAvailability ||--|{ Users : Has 
+    Years ||--|{ Courses : Belongs 
+    Subjects }|--|| Courses : Belongs 
+    TeacherSubjectSchool }|--|| Schools : Belongs 
+    TeacherSubjectSchool }|--|| Subjects : Belongs 
+    TeacherSubjectSchool }|--|| Users : Belongs 
+    Schedules }|--|| Actions : Has 
+    Schedules }|--|| Modules : Has 
+    Schedules }|--|| TeacherSubjectSchool : Has 
+    Events }|--|| Schools : Belongs
+    Events }|--|| EventTypes : Belongs
+    TeacherEvent }|--|| Users : Belongs
+    TeacherEvent }|--|| Events : Belongs
+
+    Modules{
+        int moduleId PK
+        int moduleNumber
+        int dayId FK
+        time endTime
+        time startTime
+        int schoolId FK
+        enum day
+        %%enum day(Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday)
+    }
+    ContactInformation {
+        int contactInfoId PK
+        str phoneNumber
+        str postalCode
+        str street
+        str streetNumber
+        str city
+        str province
+        str country
+    }
+    Schools{
+        int schoolId PK
+        varchar name
+        varchar abbreviation
+        image logo
+        varchar email
+        varchar phoneNumber
+        int contactInfoId FK
+    }
+    AvailabilityStates{
+        int availabilityStateId PK
+        varchar name
+        boolean isEnabled
+    }
+    DocumentTypes {
+        int documentTypeId PK
+        varchar name
+        varchar description
+    }
+    Nationalities {
+        int nationalityId PK
+        varchar name
+        varchar description
+    }
+    Roles{
+        int roleId PK
+        varchar name
+        varchar description
+    }
+    Users{
+        int userId PK
+        varchar firstName
+        varchar lastName
+        enum gender
+        varchar email
+        varchar cellphone
+        varchar document
+        int hoursToWork
+        int documentTypeId FK
+        int nationalityId FK
+        int contactInfoId FK
+        int roleId FK
+    }
+    TeacherAvailability{
+        int moduleId PK,FK
+        int teacherId PK,FK
+        datetime loadDate
+        int availabilityStateId FK
+    }
+    Years{
+        int yearId PK
+        varchar name
+        varchar description
+        varchar number
+    }
+    Courses{
+        int courseId PK
+        varchar name
+        varchar description
+        int yearId FK
+    }
+    Subjects{
+        int subjectId PK
+        varchar name
+        varchar studyPlan
+        varchar description
+        int weeklyHours
+        varchar color
+        varchar abbreviation
+        int yearId FK
+        int courseId FK
+    }
+    TeacherSubjectSchool{
+        int schoolId PK, FK
+        int subjectId PK, FK   
+        int teacherId PK, FK
+    }
+    Actions{
+        int actionId PK
+        varchar name
+        boolean isEnabled
+    }
+    Schedules{
+        int scheduleId PK
+        datetime date
+        int actionId FK
+        int moduleId FK
+        int tssId FK
+    }
+    EventTypes{
+        int eventTypeId PK
+        varchar name
+        varchar description
+    }
+
+    Events{
+        int eventId PK
+        varchar name
+        varchar description
+        datetime startDate
+        datetime endDate
+        int schoolId FK
+        int eventTypeId FK
+    }
+    TeacherEvent{
+        int teacherId PK, FK
+        int eventId PK, FK
+    }
+

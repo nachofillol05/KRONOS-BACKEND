@@ -117,6 +117,7 @@ class Year(models.Model):
 
     def __str__(self) -> str:
         return f'{self.pk}. N°{self.number} - {self.name} - {self.school}'
+    
 
 
 class Course(models.Model):
@@ -126,6 +127,7 @@ class Course(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name} - {self.year}"
+    
 
 class Subject(models.Model):
     name = models.CharField(max_length=255)
@@ -189,3 +191,9 @@ class Event(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name} - {self.school} - {self.eventType}"
+
+
+
+
+
+        

@@ -15,7 +15,12 @@ from .views import (
     SubjectRetrieveUpdateDestroy,
     ModuleViewSet,
     verifyToken,
-    SchoolsView
+    SchoolsView,
+    CourseListCreate, 
+    CourseRetrieveUpdateDestroy,
+    YearListCreate,
+    YearRetrieveUpdateDestroy,
+    PreceptorsView
 )
 
 
@@ -33,10 +38,16 @@ urlpatterns = [
     path('profile', ProfileView.as_view(), name='profile'),
     # Schools
     path('user_schools/', SchoolsView.as_view(), name='user_schools'),
-    path('schools/<int:pk>/preceptors', PreceptorListCreateView.as_view(), name='preceptors'),
+    path('schools/<int:pk>/preceptors', PreceptorsView.as_view(), name='preceptors'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
     path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail'),
+    # courses
+    path('courses/', CourseListCreate.as_view(), name='course-list-create'),
+    path('courses/<int:pk>/', CourseRetrieveUpdateDestroy.as_view(), name='course-detail'),
+    # Year
+    path('years/', YearListCreate.as_view(), name='year-list-create'),
+    path('years/<int:pk>/', YearRetrieveUpdateDestroy.as_view(), name='year-detail'),
     # Teachers
     path('teachers/', TeacherListView.as_view(), name='get_teachers'),
     path('teacher/<int:pk>', TeacherDetailView.as_view(), name='detail_teacher'),

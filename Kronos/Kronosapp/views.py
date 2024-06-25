@@ -31,7 +31,8 @@ from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSeri
 from .serializers.preceptor_serializer import PreceptorSerializer, YearSerializer
 from .serializers.user_serializer import UserSerializer
 from .serializers.Subject_serializer import SubjectSerializer
-
+from .serializers.course_serializer import CourseSerializer
+from .serializers.year_serializer import YearSerializer
 
 
 @extend_schema(
@@ -657,6 +658,97 @@ class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
         response = super().put(request, *args, **kwargs)
         return Response({'Updated': 'La materia ha sido actualizada', 'data': response.data}, status=status.HTTP_200_OK)
+
+
+
+
+class CourseListCreate(generics.ListCreateAPIView):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+
+    def get(self, request):
+        queryset = Course.objects.all()
+        print(queryset)
+        serializer = CourseSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        year_number = request.data.get('year')
+
+        # Verificar si el año existe utilizando el campo 'number'
+        try:
+            year = Year.objects.get(number=year_number)
+        except Year.DoesNotExist:
+            return Response({'Error': 'El año especificado no existe.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Crear un diccionario mutable a partir de request.data
+        data = request.data.copy()
+        data['year'] = year
+
+        # Crear el curso si el año existe
+        serializer = CourseSerializer(data=data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save()
+        return Response(
+            {'Saved': 'El curso ha sido creado', 'data': serializer.data},
+            status=status.HTTP_201_CREATED
+        )
+
+class CourseRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        return Response({'Deleted': 'El curso ha sido eliminado'}, status=status.HTTP_204_NO_CONTENT)
+    
+    def put(self, req5uest, *args, **kwargs):
+        response = super().put(request, *args, **kwargs)
+        return Response({'Updated': 'El curso ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
+
+
+
+
+class YearListCreate(generics.ListCreateAPIView):
+    queryset = Year.objects.all()
+    serializer_class = YearSerializer
+
+    def get(self, request):
+        queryset = Year.objects.all()
+        print(queryset)
+        serializer = YearSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        serializer = YearSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(
+            {'Saved': 'El año ha sido creado', 'data': serializer.data},status=status.HTTP_201_CREATED)
+    
+    
+
+class YearRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Year.objects.all()
+    serializer_class = YearSerializer
+
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        return Response({'Deleted': 'El año ha sido eliminado'}, status=status.HTTP_204_NO_CONTENT)
+    
+    def put(self, request, *args, **kwargs):
+        response = super().put(request, *args, **kwargs)
+        return Response({'Updated': 'El año ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
+
+
+
+
+
+
+
 
 
 class ModuleViewSet(viewsets.ModelViewSet):
