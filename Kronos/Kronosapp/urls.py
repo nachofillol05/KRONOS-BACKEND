@@ -20,7 +20,8 @@ from .views import (
     CourseRetrieveUpdateDestroy,
     YearListCreate,
     YearRetrieveUpdateDestroy,
-    PreceptorsView
+    PreceptorsView,
+    ScheduleCreation
 )
 
 
@@ -55,6 +56,8 @@ urlpatterns = [
     path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
     
     path('verifyToken/', verifyToken.as_view(), name='verifyToken'),
+
+    path('create_schedule/', ScheduleCreation.as_view(), name='create_schedule')
 ]
 
 urlpatterns += router.urls

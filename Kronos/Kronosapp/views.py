@@ -25,6 +25,7 @@ import pandas as pd
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from django.urls import reverse
 from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module, Course
+from .schedule_creation import schedule_creation
 
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
@@ -528,7 +529,7 @@ class TeacherListView(generics.ListAPIView):
 
         
         if subject_id:
-            queryset = queryset.filter(subject_id=subject_id)
+            queryset = queryset.filter(subject_id=subject_id).distinct()
 
         if search_name:
             queryset = queryset.filter(
@@ -704,7 +705,7 @@ class CourseRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
         response = super().delete(request, *args, **kwargs)
         return Response({'Deleted': 'El curso ha sido eliminado'}, status=status.HTTP_204_NO_CONTENT)
     
-    def put(self, req5uest, *args, **kwargs):
+    def put(self, request, *args, **kwargs):
         response = super().put(request, *args, **kwargs)
         return Response({'Updated': 'El curso ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
 
@@ -912,3 +913,10 @@ class ContactarPersonal(generics.GenericAPIView):
             return Response({"message": "Correo enviado correctamente"}, status=status.HTTP_200_OK)
         except smtplib.SMTPException as e:
             return Response({"message": "Error al enviar el correo electrónico"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ScheduleCreation(generics.GenericAPIView):
+    def get(self, request, *args, **kwargs):
+        resultado = schedule_creation()
+        return Response(resultado)
+    
