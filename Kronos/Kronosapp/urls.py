@@ -35,7 +35,7 @@ urlpatterns = [
     path('Register/', RegisterView.as_view(), name='register'),
     path('ForgotPassword/', OlvideMiContrasenia.as_view(), name='OlvideMiContrasenia'),
     path('forgot-password/<uuid:token>/', change_password, name='forgot-password'),
-    path('profile', ProfileView.as_view(), name='profile'),
+    path('profile/', ProfileView.as_view(), name='profile'),
     # Schools
     path('user_schools/', SchoolsView.as_view(), name='user_schools'),
     path('schools/<int:pk>/preceptors', PreceptorsView.as_view(), name='preceptors'),

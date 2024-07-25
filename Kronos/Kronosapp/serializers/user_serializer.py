@@ -1,15 +1,28 @@
 from rest_framework import serializers
-from ..models import CustomUser, ContactInformation
+from ..models import CustomUser, ContactInformation, DocumentType, Nationality
 
 
 class ContactInforSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactInformation
-        fields = '__all__' 
+        fields = '__all__'
+    
+class DocumentTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentType
+        fields = '__all__'
+
+class NationalitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Nationality
+        fields = '__all__'
+
 
 
 class UserSerializer(serializers.ModelSerializer):
     contactInfo = ContactInforSerializer()
+    documentType = DocumentType()
+    nationality = Nationality()
 
     class Meta:
         model = CustomUser
