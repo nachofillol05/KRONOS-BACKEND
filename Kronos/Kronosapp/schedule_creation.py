@@ -102,11 +102,12 @@ def schedule_creation():
             if pulp.value(asignacion[materia, horario_curso]) == 1:
                 materias_sin_asignar[materia] -= 1
     # Mostrar resultados
+    subject_errors = []
     for materia, horas_restantes in materias_sin_asignar.items():
         if horas_restantes > 0:
-            print(f"Materia {materia} le quedaron {horas_restantes} horas sin asignar")
-        else:
-            print(f"Materia {materia} fue completamente asignada")
+            subject_errors.append(f"Materia {materia} le quedaron {horas_restantes} horas sin asignar")
+        #else:
+            #print(f"Materia {materia} fue completamente asignada")
 
     """for materia in materias:
         for horario_curso in horarios_cursos:
@@ -132,5 +133,5 @@ def schedule_creation():
     lista_horario = []
     for horario_curso, materia in horario.items():
         lista_horario.append(f"{horario_curso}: {materia}")
-
-    return lista_horario
+    result = [lista_horario, subject_errors]
+    return result 
