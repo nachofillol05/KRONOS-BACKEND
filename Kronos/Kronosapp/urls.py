@@ -21,7 +21,8 @@ from .views import (
     YearListCreate,
     YearRetrieveUpdateDestroy,
     PreceptorsView,
-    ScheduleCreation
+    Newscheduleview,
+    NewScheduleCreation
 )
 
 
@@ -57,7 +58,9 @@ urlpatterns = [
     
     path('verifyToken/', verifyToken.as_view(), name='verifyToken'),
 
-    path('create_schedule/', ScheduleCreation.as_view(), name='create_schedule')
+    path('new_schedule/', Newscheduleview.as_view(), name='create_schedule'),
+    path('create_schedule/', NewScheduleCreation.as_view(), name='create_schedule')
+
 ]
 
 urlpatterns += router.urls

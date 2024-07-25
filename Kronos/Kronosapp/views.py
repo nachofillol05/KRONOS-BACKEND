@@ -5,6 +5,7 @@ from django.http import JsonResponse, FileResponse
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.db.models import Q
+from django.core.cache import cache
 #from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework.views import APIView
@@ -18,13 +19,14 @@ from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.authtoken.models import Token
 
+from datetime import datetime
 from email.message import EmailMessage
 from validate_email_address import validate_email
 import smtplib
 import pandas as pd
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from django.urls import reverse
-from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module, Course
+from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module, Course, Schedules, Action
 from .schedule_creation import schedule_creation
 
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
@@ -34,6 +36,7 @@ from .serializers.user_serializer import UserSerializer
 from .serializers.Subject_serializer import SubjectSerializer
 from .serializers.course_serializer import CourseSerializer
 from .serializers.year_serializer import YearSerializer
+from .serializers.module_serializer import ModuleSerializer
 
 
 @extend_schema(
@@ -915,8 +918,29 @@ class ContactarPersonal(generics.GenericAPIView):
             return Response({"message": "Error al enviar el correo electrónico"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class ScheduleCreation(generics.GenericAPIView):
+class Newscheduleview(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         resultado = schedule_creation()
+        modules = resultado[0]
+        cache.set('schedule_result', modules, timeout=3600)  # Guardar por 1 hora
         return Response(resultado)
-    
+
+'''
+class NewScheduleCreation(generics.GenericAPIView):
+    def post(self, request):
+        modules = cache.get('schedule_result')
+        if modules is None:
+            return Response({'error': 'Schedule not found'}, status=404)
+        else: 
+            for module in modules:
+                day=module.split('_')[0]
+                moduleNumber=module.split('_')[1][-1]
+                School = 1
+                modulo = Module.objects.filter(day=day, moduleNumber=moduleNumber)
+                action = Action.objects.filter(name = "agregar materia")
+                #moduleNumber =module
+                #Module.objects.filter(day=day)
+                newschedule = Schedules(date=datetime.now(), action=action, module=modulo, tssId= )
+                return Response("serializer")
+            
+'''
