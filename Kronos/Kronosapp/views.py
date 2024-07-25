@@ -946,34 +946,7 @@ class EventRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
         response = super().put(request, *args, **kwargs)
         return Response({'Updated': 'El evento ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
 
-class EventTypeListCreate(generics.ListCreateAPIView):
+
+class EventTypeViewSet(generics.ListAPIView):
     queryset = EventType.objects.all()
     serializer_class = EventTypeSerializer
-
-    def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        serializer.save()
-        return Response(
-            {'Saved': 'El tipo de evento ha sido creado', 'data': serializer.data},
-            status=status.HTTP_201_CREATED
-        )
-
-class EventTypeRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
-    queryset = EventType.objects.all()
-    serializer_class = EventTypeSerializer
-
-    def delete(self, request, *args, **kwargs):
-        response = super().delete(request, *args, **kwargs)
-        return Response({'Deleted': 'El tipo de evento ha sido eliminado'}, status=status.HTTP_204_NO_CONTENT)
-
-    def put(self, request, *args, **kwargs):
-        response = super().put(request, *args, **kwargs)
-        return Response({'Updated': 'El tipo de evento ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
-

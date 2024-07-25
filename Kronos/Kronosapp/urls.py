@@ -23,8 +23,7 @@ from .views import (
     PreceptorsView,
     EventListCreate,
     EventRetrieveUpdateDestroy,
-    EventTypeListCreate,
-    EventTypeRetrieveUpdateDestroy,
+    EventTypeViewSet,
 )
 
 
@@ -39,7 +38,7 @@ urlpatterns = [
     path('Register/', RegisterView.as_view(), name='register'),
     path('ForgotPassword/', OlvideMiContrasenia.as_view(), name='OlvideMiContrasenia'),
     path('forgot-password/<uuid:token>/', change_password, name='forgot-password'),
-    path('profile', ProfileView.as_view(), name='profile'),
+    path('profile/', ProfileView.as_view(), name='profile'),
     # Schools
     path('user_schools/', SchoolsView.as_view(), name='user_schools'),
     path('schools/<int:pk>/preceptors', PreceptorsView.as_view(), name='preceptors'),
@@ -61,8 +60,7 @@ urlpatterns = [
     path('events/', EventListCreate.as_view(), name='event-list-create'),
     path('events/<int:pk>/', EventRetrieveUpdateDestroy.as_view(), name='event-detail'),
     # EventType
-    path('typeevent/', EventTypeListCreate.as_view(), name='eventType-list-create'),
-    path('typeevent/<int:pk>/', EventTypeRetrieveUpdateDestroy.as_view(), name='eventType-detail'),
+    path('typeevent/', EventTypeViewSet.as_view(), name='eventType-list-create'),
 
     # Verify Token
     path('verifyToken/', verifyToken.as_view(), name='verifyToken'),
