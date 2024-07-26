@@ -924,23 +924,56 @@ class Newscheduleview(generics.GenericAPIView):
         modules = resultado[0]
         cache.set('schedule_result', modules, timeout=3600)  # Guardar por 1 hora
         return Response(resultado)
+    
 
 '''
 class NewScheduleCreation(generics.GenericAPIView):
     def post(self, request):
-        modules = cache.get('schedule_result')
-        if modules is None:
+        results = cache.get('schedule_result')
+        if results is None:
             return Response({'error': 'Schedule not found'}, status=404)
         else: 
-            for module in modules:
-                day=module.split('_')[0]
-                moduleNumber=module.split('_')[1][-1]
-                School = 1
-                modulo = Module.objects.filter(day=day, moduleNumber=moduleNumber)
+            for module in results:
+                
+                modulo = Module.objects.filter(day=results[0][0].dia, moduleNumber=results[0].hora)
                 action = Action.objects.filter(name = "agregar materia")
-                #moduleNumber =module
-                #Module.objects.filter(day=day)
-                newschedule = Schedules(date=datetime.now(), action=action, module=modulo, tssId= )
-                return Response("serializer")
+
+                newschedule = Schedules(date=datetime.now(), action=action, module=modulo, tssId= results[0].tss_id)
+                return Response("serializer")'''
             
-'''
+
+class NewScheduleCreation(generics.GenericAPIView):
+    def post(self, request):
+        results = cache.get('schedule_result')
+        if results is None:
+            return Response({'error': 'Schedule not found'}, status=404)
+        else: 
+            for module in results:
+                # Acceso a los datos
+                dia = module['dia']
+                hora = module['hora']
+                tss_id = module['tss_id']
+                school_id = module['school_id']
+
+                # Buscar el módulo correspondiente
+                try:
+                    modulo = Module.objects.get(day=dia, moduleNumber=hora, school=school_id)
+                except Module.DoesNotExist:
+                    return Response({'error': f'Module for day {dia} and hour {hora} not found'}, status=404)
+                # Buscar el tss correspondiente
+                try:
+                    tss = TeacherSubjectSchool.objects.get(id=tss_id)
+                except Module.DoesNotExist:
+                    return Response({'error': f'Teacher not found'}, status=404)
+
+                # Buscar la acción correspondiente
+                try:
+                    action = Action.objects.get(name="agregar materia")
+                except Action.DoesNotExist:
+                    return Response({'error': 'Action "agregar materia" not found'}, status=404)
+
+                # Crear la instancia de Schedules
+                newschedule = Schedules(date=datetime.now(), action=action, module=modulo, tssId=tss)
+                newschedule.save()
+
+            return Response({'message': 'Schedules created successfully'})

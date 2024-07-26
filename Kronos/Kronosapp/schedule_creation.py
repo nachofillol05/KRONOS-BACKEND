@@ -8,16 +8,19 @@ def obtener_materias_dinamicamente():
     tss_records = TeacherSubjectSchool.objects.all()
 
     for tss in tss_records:
+        tss_id = tss.id
         subject = tss.subject
         teacher = tss.teacher
-        school = tss.school
+        school = tss.school.id
         course = subject.course
 
         if course and course.name not in materias:
             materias[subject.name, course.name] = {
                 "horas": subject.weeklyHours,
                 "disponibilidad": [],
-                "profesor": f"{teacher.first_name} {teacher.last_name}"
+                "profesor": f"{teacher.first_name} {teacher.last_name}",
+                "tss_id": tss_id,
+                "school_id": school
             }
 
         # Obtener la disponibilidad del profesor
@@ -121,7 +124,7 @@ def schedule_creation():
     for curso in curso:
         for dia in dias:
             for hora in range(1, 11):
-                horario[f"{dia}_Hora{hora}_Curso{curso.name}"] = None
+                horario[f"{dia}_{hora}_{curso.name}"] = None
 
     # Llenar horario con las materias asignadas
     for materia in materias:
@@ -132,6 +135,16 @@ def schedule_creation():
     # Mostrar horario
     lista_horario = []
     for horario_curso, materia in horario.items():
-        lista_horario.append(f"{horario_curso}: {materia}")
+        if materia is not None:
+            dia, hora, curso_str = horario_curso.split("_")
+            tss_id = materias[materia]["tss_id"]
+            school = materias[materia]["school_id"]
+            lista_horario.append({
+                "dia": dia,
+                "hora": int(hora.replace("Hora", "")),
+                "curso": curso_str.replace("Curso", ""),
+                "tss_id": tss_id,
+                "school_id": school
+            })
     result = [lista_horario, subject_errors]
-    return result 
+    return result
