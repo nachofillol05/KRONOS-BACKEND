@@ -5,6 +5,8 @@ from django.http import JsonResponse, FileResponse
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.db.models import Q
+from django.utils.dateparse import parse_datetime
+from datetime import datetime
 #from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework.views import APIView
@@ -919,6 +921,26 @@ class EventListCreate(generics.ListCreateAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
 
+    def get_queryset(self):
+        queryset = Event.objects.all()
+        name = self.request.query_params.get('name', None)
+        event_type = self.request.query_params.get('eventType', None)
+        max_date = self.request.query_params.get('maxDate', None)
+
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+        if event_type:
+            queryset = queryset.filter(eventType__name__icontains=event_type)
+        if max_date:
+            try:
+                max_date_parsed = datetime.strptime(max_date, '%d/%m/%Y')
+                queryset = queryset.filter(startDate__lte=max_date_parsed)
+            except ValueError:
+                pass
+
+
+        return queryset
+    
     def get(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
