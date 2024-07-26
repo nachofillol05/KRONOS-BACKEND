@@ -5,6 +5,8 @@ from django.http import JsonResponse, FileResponse
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.db.models import Q
+from django.utils.dateparse import parse_datetime
+from datetime import datetime
 #from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework.views import APIView
@@ -24,7 +26,7 @@ import smtplib
 import pandas as pd
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from django.urls import reverse
-from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module, Course
+from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module, Course, EventType, Event
 
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
@@ -33,7 +35,7 @@ from .serializers.user_serializer import UserSerializer
 from .serializers.Subject_serializer import SubjectSerializer
 from .serializers.course_serializer import CourseSerializer
 from .serializers.year_serializer import YearSerializer
-
+from .serializers.event_serializer import EventSerializer, EventTypeSerializer
 
 @extend_schema(
     tags=['Users'],
@@ -912,3 +914,61 @@ class ContactarPersonal(generics.GenericAPIView):
             return Response({"message": "Correo enviado correctamente"}, status=status.HTTP_200_OK)
         except smtplib.SMTPException as e:
             return Response({"message": "Error al enviar el correo electrónico"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+class EventListCreate(generics.ListCreateAPIView):
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer
+
+    def get_queryset(self):
+        queryset = Event.objects.all()
+        name = self.request.query_params.get('name', None)
+        event_type = self.request.query_params.get('eventType', None)
+        max_date = self.request.query_params.get('maxDate', None)
+
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+        if event_type:
+            queryset = queryset.filter(eventType__name__icontains=event_type)
+        if max_date:
+            try:
+                max_date_parsed = datetime.strptime(max_date, '%d/%m/%Y')
+                queryset = queryset.filter(startDate__lte=max_date_parsed)
+            except ValueError:
+                pass
+
+
+        return queryset
+    
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(
+            {'Saved': 'El evento ha sido creado', 'data': serializer.data},
+            status=status.HTTP_201_CREATED
+        )
+
+class EventRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer
+
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        return Response({'Deleted': 'El evento ha sido eliminado'}, status=status.HTTP_204_NO_CONTENT)
+
+    def put(self, request, *args, **kwargs):
+        response = super().put(request, *args, **kwargs)
+        return Response({'Updated': 'El evento ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
+
+
+class EventTypeViewSet(generics.ListAPIView):
+    queryset = EventType.objects.all()
+    serializer_class = EventTypeSerializer

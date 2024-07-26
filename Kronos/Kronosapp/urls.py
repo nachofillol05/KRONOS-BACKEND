@@ -20,7 +20,10 @@ from .views import (
     CourseRetrieveUpdateDestroy,
     YearListCreate,
     YearRetrieveUpdateDestroy,
-    PreceptorsView
+    PreceptorsView,
+    EventListCreate,
+    EventRetrieveUpdateDestroy,
+    EventTypeViewSet,
 )
 
 
@@ -53,7 +56,13 @@ urlpatterns = [
     path('teacher/<int:pk>', TeacherDetailView.as_view(), name='detail_teacher'),
     path('create_teacher/', DniComprobation.as_view(), name='Comprobation_DNI'),
     path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
-    
+    # Event
+    path('events/', EventListCreate.as_view(), name='event-list-create'),
+    path('events/<int:pk>/', EventRetrieveUpdateDestroy.as_view(), name='event-detail'),
+    # EventType
+    path('typeevent/', EventTypeViewSet.as_view(), name='eventType-list-create'),
+
+    # Verify Token
     path('verifyToken/', verifyToken.as_view(), name='verifyToken'),
 ]
 
