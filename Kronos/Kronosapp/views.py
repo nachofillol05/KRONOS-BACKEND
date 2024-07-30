@@ -775,13 +775,23 @@ class ModuleViewSet(viewsets.ModelViewSet):
         serializer.save()
 
     def get_queryset(self):
-        queryset = Module.objects.filter(school=self.request.school).order_by('moduleNumber')
+        queryset = Module.objects.all()
+        start_time = self.request.query_params.get('startTime', None)
+        end_time = self.request.query_params.get('endTime', None)
+        day = self.request.query_params.get('day', None)
+        module_number = self.request.query_params.get('moduleNumber', None)
 
-        day = self.request.query_params.get('day')
+        if start_time:
+            queryset = queryset.filter(startTime=start_time)
+        if end_time:
+            queryset = queryset.filter(endTime=end_time)
         if day:
             queryset = queryset.filter(day=day)
-        
+        if module_number:
+            queryset = queryset.filter(moduleNumber=module_number)
+
         return queryset
+
         
 
 @extend_schema(tags=['Preceptors'])
@@ -972,3 +982,51 @@ class EventRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
 class EventTypeViewSet(generics.ListAPIView):
     queryset = EventType.objects.all()
     serializer_class = EventTypeSerializer
+
+
+    
+class TeacherAvailabilityListCreate(generics.ListCreateAPIView):
+    queryset = TeacherSubjectSchool.objects.all()
+    serializer_class = TeacherSerializer
+
+    def get_queryset(self):
+        queryset = TeacherSubjectSchool.objects.all()
+        teacher = self.request.query_params.get('teacher', None)
+        subject = self.request.query_params.get('subject', None)
+        school = self.request.query_params.get('school', None)
+
+        if teacher:
+            queryset = queryset.filter(teacher=teacher)
+        if subject:
+            queryset = queryset.filter(subject=subject)
+        if school:
+            queryset = queryset.filter(school=school)
+
+        return queryset
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(
+            {'Saved': 'La disponibilidad ha sido creada', 'data': serializer.data},
+            status=status.HTTP_201_CREATED
+        )
+
+class TeacherAvailabilityRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = TeacherSubjectSchool.objects.all()
+    serializer_class = TeacherSerializer
+
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        return Response({'Deleted': 'La disponibilidad ha sido eliminada'}, status=status.HTTP_204_NO_CONTENT)
+    
+    def put(self, request, *args, **kwargs):
+        response = super().put(request, *args, **kwargs)
+        return Response({'Updated': 'La disponibilidad ha sido actualizada', 'data': response.data}, status=status.HTTP_200_OK)

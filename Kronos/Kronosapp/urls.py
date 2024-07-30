@@ -24,6 +24,8 @@ from .views import (
     EventListCreate,
     EventRetrieveUpdateDestroy,
     EventTypeViewSet,
+    ModuleListCreate,
+    ModuleRetrieveUpdateDestroy,
 )
 
 
@@ -61,7 +63,10 @@ urlpatterns = [
     path('events/<int:pk>/', EventRetrieveUpdateDestroy.as_view(), name='event-detail'),
     # EventType
     path('typeevent/', EventTypeViewSet.as_view(), name='eventType-list-create'),
-
+    # Modules
+    path('modules/', ModuleListCreate.as_view(), name='module-list-create'),
+    path('modules/<int:pk>/', ModuleRetrieveUpdateDestroy.as_view(), name='module-detail'),
+    
     # Verify Token
     path('verifyToken/', verifyToken.as_view(), name='verifyToken'),
 ]
