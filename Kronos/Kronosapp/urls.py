@@ -22,7 +22,10 @@ from .views import (
     YearRetrieveUpdateDestroy,
     PreceptorsView,
     Newscheduleview,
-    NewScheduleCreation
+    NewScheduleCreation,
+    EventListCreate,
+    EventRetrieveUpdateDestroy,
+    EventTypeViewSet
 )
 
 
@@ -37,7 +40,7 @@ urlpatterns = [
     path('Register/', RegisterView.as_view(), name='register'),
     path('ForgotPassword/', OlvideMiContrasenia.as_view(), name='OlvideMiContrasenia'),
     path('forgot-password/<uuid:token>/', change_password, name='forgot-password'),
-    path('profile', ProfileView.as_view(), name='profile'),
+    path('profile/', ProfileView.as_view(), name='profile'),
     # Schools
     path('user_schools/', SchoolsView.as_view(), name='user_schools'),
     path('schools/<int:pk>/preceptors', PreceptorsView.as_view(), name='preceptors'),
@@ -55,7 +58,13 @@ urlpatterns = [
     path('teacher/<int:pk>', TeacherDetailView.as_view(), name='detail_teacher'),
     path('create_teacher/', DniComprobation.as_view(), name='Comprobation_DNI'),
     path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
-    
+    # Event
+    path('events/', EventListCreate.as_view(), name='event-list-create'),
+    path('events/<int:pk>/', EventRetrieveUpdateDestroy.as_view(), name='event-detail'),
+    # EventType
+    path('typeevent/', EventTypeViewSet.as_view(), name='eventType-list-create'),
+
+    # Verify Token
     path('verifyToken/', verifyToken.as_view(), name='verifyToken'),
 
     path('new_schedule/', Newscheduleview.as_view(), name='create_schedule'),
