@@ -5,9 +5,9 @@ from django.http import JsonResponse, FileResponse
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.db.models import Q
+from django.core.cache import cache
 from django.utils.dateparse import parse_datetime
 from datetime import datetime
-#from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -20,13 +20,15 @@ from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.authtoken.models import Token
 
+from datetime import datetime
 from email.message import EmailMessage
 from validate_email_address import validate_email
 import smtplib
 import pandas as pd
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from django.urls import reverse
-from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module, Course, EventType, Event
+from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module, Course, Schedules, Action, EventType, Event
+from .schedule_creation import schedule_creation
 
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
@@ -35,6 +37,7 @@ from .serializers.user_serializer import UserSerializer
 from .serializers.Subject_serializer import SubjectSerializer
 from .serializers.course_serializer import CourseSerializer
 from .serializers.year_serializer import YearSerializer
+from .serializers.module_serializer import ModuleSerializer
 from .serializers.event_serializer import EventSerializer, EventTypeSerializer
 
 @extend_schema(
@@ -530,7 +533,7 @@ class TeacherListView(generics.ListAPIView):
 
         
         if subject_id:
-            queryset = queryset.filter(subject_id=subject_id)
+            queryset = queryset.filter(subject_id=subject_id).distinct()
 
         if search_name:
             queryset = queryset.filter(
@@ -706,7 +709,7 @@ class CourseRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
         response = super().delete(request, *args, **kwargs)
         return Response({'Deleted': 'El curso ha sido eliminado'}, status=status.HTTP_204_NO_CONTENT)
     
-    def put(self, req5uest, *args, **kwargs):
+    def put(self, request, *args, **kwargs):
         response = super().put(request, *args, **kwargs)
         return Response({'Updated': 'El curso ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
 
@@ -914,7 +917,51 @@ class ContactarPersonal(generics.GenericAPIView):
             return Response({"message": "Correo enviado correctamente"}, status=status.HTTP_200_OK)
         except smtplib.SMTPException as e:
             return Response({"message": "Error al enviar el correo electrónico"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+          
+          
+class Newscheduleview(generics.GenericAPIView):
+    def get(self, request, *args, **kwargs):
+        result = schedule_creation()
+        modules = result[0]
+        cache.set('schedule_result', modules, timeout=3600)  # Guardar por 1 hora
+        return Response(result)
+    
+
+class NewScheduleCreation(generics.GenericAPIView):
+    def post(self, request):
+        results = cache.get('schedule_result')
+        if results is None:
+            return Response({'error': 'Schedule not found'}, status=404)
+        else: 
+            for module in results:
+                # Acceso a los datos
+                day = module['dia']
+                hour = module['hora']
+                tss_id = module['tss_id']
+                school_id = module['school_id']
+
+                # Buscar el módulo correspondiente
+                try:
+                    module = Module.objects.get(day=day, moduleNumber=hour, school=school_id)
+                except Module.DoesNotExist:
+                    return Response({'error': f'Module for day {day} and hour {hour} not found'}, status=404)
+                # Buscar el tss correspondiente
+                try:
+                    tss = TeacherSubjectSchool.objects.get(id=tss_id)
+                except Module.DoesNotExist:
+                    return Response({'error': f'Teacher not found'}, status=404)
+
+                # Buscar la acción correspondiente
+                try:
+                    action = Action.objects.get(name="agregar materia")
+                except Action.DoesNotExist:
+                    return Response({'error': 'Action "agregar materia" not found'}, status=404)
+
+                # Crear la instancia de Schedules
+                newschedule = Schedules(date=datetime.now(), action=action, module=module, tssId=tss)
+                newschedule.save()
+
+            return Response({'message': 'Schedules created successfully'})  
 
 
 class EventListCreate(generics.ListCreateAPIView):
@@ -955,6 +1002,7 @@ class EventListCreate(generics.ListCreateAPIView):
             {'Saved': 'El evento ha sido creado', 'data': serializer.data},
             status=status.HTTP_201_CREATED
         )
+      
 
 class EventRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Event.objects.all()
