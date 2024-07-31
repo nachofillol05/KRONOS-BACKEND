@@ -27,7 +27,7 @@ import smtplib
 import pandas as pd
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from django.urls import reverse
-from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module, Course, Schedules, Action, EventType, Event
+from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module, Course, Schedules, Action, EventType, Event, DocumentType
 from .schedule_creation import schedule_creation
 
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
@@ -39,7 +39,7 @@ from .serializers.course_serializer import CourseSerializer
 from .serializers.year_serializer import YearSerializer
 from .serializers.module_serializer import ModuleSerializer
 from .serializers.event_serializer import EventSerializer, EventTypeSerializer
-
+from .serializers.documenttype_serializer import DocumentTypeSerializer
 @extend_schema(
     tags=['Users'],
     description='Permite a un usuario existente iniciar sesión en el sistema.',
@@ -1020,3 +1020,9 @@ class EventRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
 class EventTypeViewSet(generics.ListAPIView):
     queryset = EventType.objects.all()
     serializer_class = EventTypeSerializer
+
+
+
+class DocumentTypeViewSet(generics.ListAPIView):
+    queryset = DocumentType.objects.all()
+    serializer_class = DocumentTypeSerializer

@@ -25,7 +25,8 @@ from .views import (
     NewScheduleCreation,
     EventListCreate,
     EventRetrieveUpdateDestroy,
-    EventTypeViewSet
+    EventTypeViewSet,
+    DocumentTypeViewSet
 )
 
 
@@ -63,7 +64,8 @@ urlpatterns = [
     path('events/<int:pk>/', EventRetrieveUpdateDestroy.as_view(), name='event-detail'),
     # EventType
     path('typeevent/', EventTypeViewSet.as_view(), name='eventType-list-create'),
-
+    #DocumentType
+    path('documentTypes/', DocumentTypeViewSet.as_view(), name='document-type-list-create'),
     # Verify Token
     path('verifyToken/', verifyToken.as_view(), name='verifyToken'),
 
