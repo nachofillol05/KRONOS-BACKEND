@@ -176,6 +176,7 @@ class LoginView(generics.GenericAPIView):
             }
     }
 )
+
 class RegisterView(generics.GenericAPIView):
     '''
     REGISTRAR USUARIOS
@@ -187,7 +188,8 @@ class RegisterView(generics.GenericAPIView):
         document = request.data.get('document')
         email = request.data.get('email')
         password = request.data.get('password')
-        mensaje = send_email(request, username, email, password, document, first_name, last_name)
+        documentType = request.data.get('documentType')
+        mensaje = send_email(request, username, email, password, document, first_name, last_name, documentType)
         return Response({'detail':mensaje}, status=status.HTTP_201_CREATED)
 
 
@@ -262,7 +264,7 @@ class ExcelToteacher(generics.GenericAPIView):
 
 
 
-def send_email(request, username, email, password, document, first_name, last_name):
+def send_email(request, username, email, password, document, first_name, last_name, documentType):
     '''
     FUNCION CREAR USUARIOS Y MANDAR MAILS. LA LLAMAN DESDE: RegisterView y ExcelToteacher
     '''
@@ -272,7 +274,8 @@ def send_email(request, username, email, password, document, first_name, last_na
         if CustomUser.objects.filter(email=email).exists():
             return 'mail ya en uso'
         else:
-            user = CustomUser.objects.create_user(username=username, email=email, password=password, first_name=first_name, last_name=last_name, document=document)
+            document_type_instance = DocumentType.objects.get(pk=documentType)
+            user = CustomUser.objects.create_user(username=username, email=email, password=password, first_name=first_name, last_name=last_name, document=document, documentType=document_type_instance)
             token = Token.objects.create(user=user)
             verification_url = request.build_absolute_uri(
             reverse('verify-email', args=[str(user.verification_token)])
@@ -290,7 +293,7 @@ def send_email(request, username, email, password, document, first_name, last_na
             smtp.sendmail(remitente, destinatario, email.as_string())
             smtp.quit()
             return {"token":token.key,"mensaje":'Correo electrónico enviado con éxito'}
-
+            
 
 @extend_schema(
     tags=['Users'], 
