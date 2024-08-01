@@ -26,7 +26,8 @@ from .views import (
     EventListCreate,
     EventRetrieveUpdateDestroy,
     EventTypeViewSet,
-    DocumentTypeViewSet
+    DocumentTypeViewSet,
+    ContactarPersonal
 )
 
 
@@ -67,6 +68,9 @@ urlpatterns = [
     #DocumentType
     path('documentTypes/', DocumentTypeViewSet.as_view(), name='document-type-list-create'),
     # Verify Token
+
+    path('contacting-staff/', ContactarPersonal.as_view(), name='contacting-staff'),
+    
     path('verifyToken/', verifyToken.as_view(), name='verifyToken'),
 
     path('new_schedule/', Newscheduleview.as_view(), name='create_schedule'),
