@@ -180,18 +180,23 @@ class EventType(models.Model):
         return self.name
 
 
+class Role(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.CharField(max_length=255, blank=True)
+
+
 class Event(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255, blank=True)
     startDate = models.DateTimeField()
     endDate = models.DateTimeField()
     school = models.ForeignKey(School, on_delete=models.CASCADE)
+    roles = models.ManyToManyField(Role)
     eventType = models.ForeignKey(EventType, null=True, on_delete=models.SET_NULL)
     affiliated_teachers = models.ManyToManyField(CustomUser, blank=True)
 
-    def __str__(self) -> str:
-        return f"{self.name} - {self.school} - {self.eventType}"
-
+    def _str_(self) -> str:
+        return f"{self.name} - {self.school} - {self.eventType}" 
 
 
 
