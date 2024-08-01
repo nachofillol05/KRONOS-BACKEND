@@ -1,6 +1,16 @@
 from django.db import models
-import uuid
 from django.contrib.auth.models import AbstractUser
+import uuid
+from django.core.exceptions import ValidationError
+
+
+def validate_numeric(value):
+    if not value.isdigit():
+        raise ValidationError(
+            '%(value)s no es un número válido',
+            params={'value': value},
+        )
+
 
 class DocumentType(models.Model):
     name = models.CharField(max_length=255)
@@ -21,7 +31,7 @@ class Nationality(models.Model):
 class ContactInformation(models.Model):
     postalCode = models.CharField(max_length=20)
     street = models.CharField(max_length=255)
-    streetNumber = models.CharField(max_length=10)
+    streetNumber = models.CharField(max_length=10, validators=[validate_numeric])
     city = models.CharField(max_length=255)
     province = models.CharField(max_length=255)
 
@@ -43,15 +53,17 @@ class School(models.Model):
 
 class CustomUser(AbstractUser):
     GENDER_CHOICES = [
-        ('male', 'Masculino'),
-        ('female', 'Femenino')
+        ('masculino', 'Masculino'),
+        ('femenino', 'Femenino')
     ]
+    document = models.CharField(max_length=255, unique=True, blank=True, null=True, validators=[validate_numeric])
     first_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255, blank=True, null=True)
+    profile_picure = models.ImageField(upload_to='logos/', null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True)
     email = models.EmailField(max_length=255, unique=True)
-    document = models.CharField(max_length=255, blank=True, null=True)
     hoursToWork = models.IntegerField(blank=True, null=True)
+    phone = models.CharField(blank=True, null=True, validators=[validate_numeric])
     documentType = models.ForeignKey(DocumentType, on_delete=models.SET_NULL, blank=True, null=True)
     nationality = models.ForeignKey(Nationality, on_delete=models.SET_NULL, blank=True, null=True)
     contactInfo = models.OneToOneField(ContactInformation, on_delete=models.SET_NULL, blank=True, null=True)
@@ -59,6 +71,9 @@ class CustomUser(AbstractUser):
     verification_token = models.UUIDField(default=uuid.uuid4, blank=True, null=True, editable=False)
     dark_mode = models.BooleanField(default=False)
     color = models.SmallIntegerField(blank=True, null=True)
+
+    USERNAME_FIELD = 'document'
+    REQUIRED_FIELDS = ['email']
 
     def is_directive(self, school: School) -> bool:
         return self in school.directives.all()
@@ -112,12 +127,10 @@ class Year(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255, blank=True)
     number = models.CharField(max_length=10)
-    preceptors = models.ManyToManyField(CustomUser, related_name="years", blank=True)
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="years")
 
     def __str__(self) -> str:
-        return f'{self.pk}. N°{self.number} - {self.name} - {self.school}'
-    
+        return f'{self.pk}. N°{self.number} - {self.name} - {self.school}'    
 
 
 class Course(models.Model):
@@ -131,12 +144,11 @@ class Course(models.Model):
 
 class Subject(models.Model):
     name = models.CharField(max_length=255)
-    studyPlan = models.TextField()
     description = models.CharField(max_length=255, blank=True)
     weeklyHours = models.IntegerField()
-    color = models.CharField(max_length=7, blank=True)  # Including # for hex color
+    color = models.CharField(max_length=7, blank=True)
     abbreviation = models.CharField(max_length=10, blank=True)
-    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True)
+    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self) -> str:
         return self.name
@@ -145,10 +157,25 @@ class Subject(models.Model):
         return f"{self.name} - {self.course}"
 
 
+class CourseSubjects(models.Model):
+    studyPlan = models.TextField()
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+
+
 class TeacherSubjectSchool(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    subject = models.ForeignKey(CourseSubjects, on_delete=models.CASCADE)
     teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+
+    def __str__(self) -> str:
+        return f"{self.teacher} - {self.subject} - {self.school}"
+
+
+class PreceptorYearSchool(models.Model):
+    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    year = models.ForeignKey(Year, on_delete=models.CASCADE)
+    preceptor = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
         return f"{self.teacher} - {self.subject} - {self.school}"
@@ -180,20 +207,20 @@ class EventType(models.Model):
         return self.name
 
 
+class Role(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.CharField(max_length=255, blank=True)
+
+
 class Event(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255, blank=True)
     startDate = models.DateTimeField()
     endDate = models.DateTimeField()
     school = models.ForeignKey(School, on_delete=models.CASCADE)
+    roles = models.ManyToManyField(Role)
     eventType = models.ForeignKey(EventType, null=True, on_delete=models.SET_NULL)
     affiliated_teachers = models.ManyToManyField(CustomUser, blank=True)
 
     def __str__(self) -> str:
         return f"{self.name} - {self.school} - {self.eventType}"
-
-
-
-
-
-        
