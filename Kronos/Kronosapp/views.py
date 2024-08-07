@@ -503,14 +503,21 @@ class SchoolsView(generics.ListAPIView):
     '''
     queryset = School.objects.all()
     serializer_class = ReadSchoolSerializer
-    def get_queryset(self):
-        user = self.request.user
-        schools = TeacherSubjectSchool.objects.filter(teacher=user).distinct()
-        return schools
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if user:
+            schools = []
+            tss = TeacherSubjectSchool.objects.filter(teacher=user).distinct()
+            for i in tss:
+                if i.school not in schools:
+                    schools.append(i.school)
+            serializer = self.get_serializer(schools, many=True)
+            print(serializer.data)
+            return Response(serializer.data) 
+        return Response({"error": "Usuario no encontrado"}, status=404)
    
 
     
@@ -934,8 +941,8 @@ class NewScheduleCreation(generics.GenericAPIView):
         else: 
             for module in results:
                 # Acceso a los datos
-                day = module['dia']
-                hour = module['hora']
+                day = module['day']
+                hour = module['hour']
                 tss_id = module['tss_id']
                 school_id = module['school_id']
 
