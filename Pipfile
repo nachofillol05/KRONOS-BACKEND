@@ -16,6 +16,7 @@ l = "*"
 django-cors-headers = "*"
 drf-spectacular = "*"
 djangorestframework-simplejwt = "*"
+pulp = "*"
 
 [dev-packages]
 

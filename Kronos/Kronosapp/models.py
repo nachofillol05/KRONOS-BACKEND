@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager, AbstractUser
 import uuid
 from django.core.exceptions import ValidationError
 
@@ -10,6 +10,30 @@ def validate_numeric(value):
             '%(value)s no es un número válido',
             params={'value': value},
         )
+    
+
+class CustomUserManager(BaseUserManager):
+    def create_user(self, document, email, password=None, **extra_fields):
+        if not document:
+            raise ValueError('The Document field must be set')
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        user = self.model(document=document, email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, document, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(document, email, password, **extra_fields)
 
 
 class DocumentType(models.Model):
@@ -49,7 +73,7 @@ class School(models.Model):
 
     def __str__(self) -> str:
         return f"{self.pk} - {self.name} ({self.abbreviation})"
-
+    
 
 class CustomUser(AbstractUser):
     GENDER_CHOICES = [
@@ -63,7 +87,7 @@ class CustomUser(AbstractUser):
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True)
     email = models.EmailField(max_length=255, unique=True)
     hoursToWork = models.IntegerField(blank=True, null=True)
-    phone = models.CharField(blank=True, null=True, validators=[validate_numeric])
+    phone = models.CharField(max_length=25, blank=True, null=True, validators=[validate_numeric])
     documentType = models.ForeignKey(DocumentType, on_delete=models.SET_NULL, blank=True, null=True)
     nationality = models.ForeignKey(Nationality, on_delete=models.SET_NULL, blank=True, null=True)
     contactInfo = models.OneToOneField(ContactInformation, on_delete=models.SET_NULL, blank=True, null=True)
@@ -72,8 +96,10 @@ class CustomUser(AbstractUser):
     dark_mode = models.BooleanField(default=False)
     color = models.SmallIntegerField(blank=True, null=True)
 
+    username = None
     USERNAME_FIELD = 'document'
-    REQUIRED_FIELDS = ['email']
+
+    objects = CustomUserManager()
 
     def is_directive(self, school: School) -> bool:
         return self in school.directives.all()
@@ -85,7 +111,7 @@ class CustomUser(AbstractUser):
         return Year.objects.filter(school=school, preceptors=self).exists()
     
     def __str__(self) -> str:
-        return f'{self.pk} {self.username}'
+        return f'{self.pk} {self.email}'
 
 
 class Module(models.Model):
@@ -128,6 +154,7 @@ class Year(models.Model):
     description = models.CharField(max_length=255, blank=True)
     number = models.CharField(max_length=10)
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="years")
+    preceptors = models.ManyToManyField(CustomUser)
 
     def __str__(self) -> str:
         return f'{self.pk}. N°{self.number} - {self.name} - {self.school}'    
@@ -139,7 +166,7 @@ class Course(models.Model):
     year = models.ForeignKey(Year, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return f"{self.name} - {self.year}"
+        return f"({self.pk}) {self.name} - {self.year}"
     
 
 class Subject(models.Model):
@@ -154,7 +181,7 @@ class Subject(models.Model):
         return self.name
 
     def __str__(self) -> str:
-        return f"{self.name} - {self.course}"
+        return f"{self.name} - {self.school}"
 
 
 class CourseSubjects(models.Model):
@@ -165,17 +192,8 @@ class CourseSubjects(models.Model):
 
 class TeacherSubjectSchool(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE)
-    subject = models.ForeignKey(CourseSubjects, on_delete=models.CASCADE)
+    subject = models.ForeignKey(CourseSubjects, on_delete=models.SET_NULL, null=True, blank=True)
     teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-
-    def __str__(self) -> str:
-        return f"{self.teacher} - {self.subject} - {self.school}"
-
-
-class PreceptorYearSchool(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
-    year = models.ForeignKey(Year, on_delete=models.CASCADE)
-    preceptor = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
         return f"{self.teacher} - {self.subject} - {self.school}"
@@ -216,7 +234,7 @@ class Event(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255, blank=True)
     startDate = models.DateTimeField()
-    endDate = models.DateTimeField()
+    endDate = models.DateTimeField()    
     school = models.ForeignKey(School, on_delete=models.CASCADE)
     roles = models.ManyToManyField(Role)
     eventType = models.ForeignKey(EventType, null=True, on_delete=models.SET_NULL)

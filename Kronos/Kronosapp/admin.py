@@ -16,8 +16,7 @@ from .models import (
     Schedules,
     EventType,
     Event,
-    Nationality
-    
+    Nationality,
 )
 
 
