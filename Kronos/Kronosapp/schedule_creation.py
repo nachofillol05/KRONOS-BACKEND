@@ -127,11 +127,12 @@ def schedule_creation():
     for course_schedule, subject in schedule.items():
         if subject is not None:
             day, hour, course_str = course_schedule.split("_")
+            print(day, hour, course)
             tss_id = subjects[subject]["tss_id"]
             school = subjects[subject]["school_id"]
             schedule_list.append({
                 "day": day,
-                "hour": int(hour.replace("Hora", "")),
+                "hour": int(hour.replace("Hour", "")),
                 "course": course_str.replace("Curso", ""),
                 "tss_id": tss_id,
                 "school_id": school

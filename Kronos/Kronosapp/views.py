@@ -27,7 +27,6 @@ import smtplib
 import pandas as pd
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from django.urls import reverse
-from .models import CustomUser, School, TeacherSubjectSchool, Subject, Year, Module, Course, Schedules, Action, EventType, Event, CourseSubjects
 from .schedule_creation import schedule_creation
 from .utils import register_user
 
@@ -40,7 +39,22 @@ from .serializers.course_serializer import CourseSerializer
 from .serializers.year_serializer import YearSerializer
 from .serializers.module_serializer import ModuleSerializer
 from .serializers.event_serializer import EventSerializer, EventTypeSerializer
-
+from .serializers.documenttype_serializer import DocumentTypeSerializer
+from .models import(
+    CustomUser,
+    School,
+    TeacherSubjectSchool,
+    Subject,
+    Year, 
+    Module,
+    Course,
+    Schedules,
+    Action,
+    EventType,
+    Event,
+    CourseSubjects,
+    DocumentType
+)
 @extend_schema(
     tags=['Users'],
     description='Permite a un usuario existente iniciar sesión en el sistema.',
@@ -177,6 +191,7 @@ class LoginView(generics.GenericAPIView):
             }
     }
 )
+
 class RegisterView(generics.GenericAPIView):
     '''
     REGISTRAR USUARIOS
@@ -250,7 +265,7 @@ class ExcelToteacher(generics.GenericAPIView):
             return JsonResponse({'error': 'No se procesaron datos válidos'}, status=400)
 
 
-def send_email(request, email, password, document, first_name, last_name):
+def send_email(request, username, email, password, document, first_name, last_name, documentType):
     '''
     FUNCION CREAR USUARIOS Y MANDAR MAILS. LA LLAMAN DESDE: RegisterView y ExcelToteacher
     '''
@@ -260,7 +275,8 @@ def send_email(request, email, password, document, first_name, last_name):
         if CustomUser.objects.filter(email=email).exists():
             return 'mail ya en uso'
         else:
-            user = CustomUser.objects.create_user(email=email, password=password, first_name=first_name, last_name=last_name, document=document)
+            document_type_instance = DocumentType.objects.get(pk=documentType)
+            user = CustomUser.objects.create_user(username=username, email=email, password=password, first_name=first_name, last_name=last_name, document=document, documentType=document_type_instance)
             token = Token.objects.create(user=user)
             verification_url = request.build_absolute_uri(
             reverse('verify-email', args=[str(user.verification_token)])
@@ -278,7 +294,7 @@ def send_email(request, email, password, document, first_name, last_name):
             smtp.sendmail(remitente, destinatario, email.as_string())
             smtp.quit()
             return {"token":token.key,"mensaje":'Correo electrónico enviado con éxito'}
-
+            
 
 @extend_schema(
     tags=['Users'], 
@@ -492,14 +508,21 @@ class SchoolsView(generics.ListAPIView):
     '''
     queryset = School.objects.all()
     serializer_class = ReadSchoolSerializer
-    def get_queryset(self):
-        user = self.request.user
-        schools = TeacherSubjectSchool.objects.filter(teacher=user).distinct()
-        return schools
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if user:
+            schools = []
+            tss = TeacherSubjectSchool.objects.filter(teacher=user).distinct()
+            for i in tss:
+                if i.school not in schools:
+                    schools.append(i.school)
+            serializer = self.get_serializer(schools, many=True)
+            print(serializer.data)
+            return Response(serializer.data) 
+        return Response({"error": "Usuario no encontrado"}, status=404)
 
 
 @extend_schema(tags=['Teachers'])
@@ -784,7 +807,7 @@ class PreceptorsView(APIView):
     )
     def get(self, request, *args, **kwargs):
         school = self.school
-        preceptors  = PreceptorYearSchool.objects.filter(school=school).distinct('preceptor')
+        preceptors  = CustomUser.objects.filter(years__school=school).distinct('preceptor')
         print(preceptors)
         serializer = PreceptorSerializer(preceptors, many=True)
         return Response(serializer.data)
@@ -917,8 +940,8 @@ class NewScheduleCreation(generics.GenericAPIView):
         else: 
             for module in results:
                 # Acceso a los datos
-                day = module['dia']
-                hour = module['hora']
+                day = module['day']
+                hour = module['hour']
                 tss_id = module['tss_id']
                 school_id = module['school_id']
 
@@ -1002,3 +1025,9 @@ class EventRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
 class EventTypeViewSet(generics.ListAPIView):
     queryset = EventType.objects.all()
     serializer_class = EventTypeSerializer
+
+
+
+class DocumentTypeViewSet(generics.ListAPIView):
+    queryset = DocumentType.objects.all()
+    serializer_class = DocumentTypeSerializer
