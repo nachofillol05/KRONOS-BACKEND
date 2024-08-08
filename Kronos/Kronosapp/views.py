@@ -987,9 +987,10 @@ class EventListCreate(generics.ListCreateAPIView):
         if name:
             queryset = queryset.filter(name__icontains=name)
         if event_type:
-            queryset = queryset.filter(eventType__name__icontains=event_type)
+            queryset = queryset.filter(eventType_id=event_type)
         if max_date:
             try:
+                max_date = max_date.replace('%2F', '/')
                 max_date_parsed = datetime.strptime(max_date, '%d/%m/%Y')
                 queryset = queryset.filter(startDate__lte=max_date_parsed)
             except ValueError:
