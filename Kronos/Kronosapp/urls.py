@@ -5,6 +5,7 @@ from .views import (
     RegisterView,
     OlvideMiContrasenia,
     reset_password,
+    ChangePasswordView,
     ProfileView,
     TeacherListView,
     TeacherDetailView,
@@ -44,6 +45,7 @@ urlpatterns = [
     path('Register/', RegisterView.as_view(), name='register'),
     path('forgotPassword/', OlvideMiContrasenia.as_view(), name='OlvideMiContrasenia'),
     path('forgot-password/<uuid:token>/', reset_password, name='forgot-password'),
+    path('changePassword/', ChangePasswordView.as_view(), name='ChangePassword'),
     path('profile/', ProfileView.as_view(), name='profile'),
     # Schools
     path('user_schools/', SchoolsView.as_view(), name='user_schools'),

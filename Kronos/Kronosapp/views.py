@@ -1,10 +1,11 @@
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, password_validation
 from django.http import HttpResponse, JsonResponse, FileResponse
 from django.urls import reverse
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.db.models import Q
 from django.core.cache import cache
+from django.core.exceptions import ValidationError as ValidationErrorDjango
 from datetime import datetime
 
 from rest_framework.views import APIView
@@ -178,6 +179,35 @@ def reset_password(request, token):
             
     except CustomUser.DoesNotExist:
         return Response({"error": "Token de verificación no válido"}, status=404)
+    
+
+class ChangePasswordView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        current_password = request.data.get("current_password")
+        new_password = request.data.get("new_password")
+
+        if not current_password:
+            return Response({"error": "Se requiere el campo 'current_password' en el cuerpo de la solicitud."}, status=status.HTTP_400_BAD_REQUEST)
+        if not new_password:
+            return Response({"error": "Se requiere el campo 'new_password' en el cuerpo de la solicitud."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = request.user
+        if not user.check_password(current_password):
+            return Response({'error': 'La contraseña actual es incorrecta.'})
+        
+        try:
+            password_validation.validate_password(new_password, user)
+        except ValidationErrorDjango:
+            return Response({"error": "Contraseña invaida"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.set_password(new_password)
+        user.save()
+
+        return Response({"message": "Contraseña actualizada con éxito."}, status=status.HTTP_200_OK)
+
 
 
 class ProfileView(generics.GenericAPIView):
