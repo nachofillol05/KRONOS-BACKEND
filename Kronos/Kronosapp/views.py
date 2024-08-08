@@ -28,7 +28,7 @@ import pandas as pd
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from django.urls import reverse
 from .schedule_creation import schedule_creation
-from .utils import register_user
+from .utils import register_user, send_email
 
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
@@ -117,7 +117,9 @@ class LoginView(generics.GenericAPIView):
         username = request.data.get('username')
         password = request.data.get('password')
         try:
+            print(username, password)
             user = authenticate(request, document=username, password=password)
+            print(user)
             if user is not None:
                 login(request, user)
                 token, created = Token.objects.get_or_create(user=user)
@@ -263,37 +265,6 @@ class ExcelToteacher(generics.GenericAPIView):
             return JsonResponse({'results': results})
         else:
             return JsonResponse({'error': 'No se procesaron datos válidos'}, status=400)
-
-
-def send_email(request, username, email, password, document, first_name, last_name, documentType):
-    '''
-    FUNCION CREAR USUARIOS Y MANDAR MAILS. LA LLAMAN DESDE: RegisterView y ExcelToteacher
-    '''
-    if CustomUser.objects.filter(document=document).exists():
-        return 'Nombre de usuario ya en uso'
-    else:
-        if CustomUser.objects.filter(email=email).exists():
-            return 'mail ya en uso'
-        else:
-            document_type_instance = DocumentType.objects.get(pk=documentType)
-            user = CustomUser.objects.create_user(username=username, email=email, password=password, first_name=first_name, last_name=last_name, document=document, documentType=document_type_instance)
-            token = Token.objects.create(user=user)
-            verification_url = request.build_absolute_uri(
-            reverse('verify-email', args=[str(user.verification_token)])
-            )
-            remitente = "proyecto.villada.solidario@gmail.com"
-            destinatario = user.email
-            mensaje = 'Haz clic en el enlace para verificar tu correo electrónico: ' + verification_url
-            email = EmailMessage()
-            email["From"] = remitente
-            email["To"] = destinatario
-            email["Subject"] = 'Verifica tu correo electrónico'
-            email.set_content(mensaje)
-            smtp = smtplib.SMTP_SSL("smtp.gmail.com")
-            smtp.login(remitente, "bptf tqtv hjsb zfpl")
-            smtp.sendmail(remitente, destinatario, email.as_string())
-            smtp.quit()
-            return {"token":token.key,"mensaje":'Correo electrónico enviado con éxito'}
             
 
 @extend_schema(
@@ -386,32 +357,29 @@ def verify_email(request,token):
     }
 )
 class OlvideMiContrasenia(generics.GenericAPIView):
-    def get(self, request):
+    def post(self, request):
+        email = request.data.get('email')
+        
+        if not email:
+            return Response({"error": "Se requiere email en el cuerpo de la solicitud."}, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
-            token = request.data.get('token')
-            user = request.user
-            token = Token.objects.get(key=token)
-            user = token.user
-            remitente = user.email
-            verification_url = request.build_absolute_uri(
-                reverse('forgot-password', args=[str(user.verification_token)])
-            )
-            remitente = "proyecto.villada.solidario@gmail.com"
-            destinatario = user.email
-            
-            mensaje = 'Haz clic en el enlace para cambiar tu contrasenia: ' + verification_url
-            email = EmailMessage()
-            email["From"] = remitente
-            email["To"] = destinatario
-            email["Subject"] = 'Cambie su contraseña'
-            email.set_content(mensaje)
-            smtp = smtplib.SMTP_SSL("smtp.gmail.com")
-            smtp.login(remitente, "bptf tqtv hjsb zfpl")
-            smtp.sendmail(remitente, destinatario, email.as_string())
-            smtp.quit()
-            return Response('Correo enviado con exito', status=200)
-        except:
-            return Response('Error al enviar el correo', status=400)
+            user = CustomUser.objects.get(email=email)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "email no reconocido no válido"}, status=404)
+        
+        subject = 'Restablecer contraseña'
+        verification_url = request.build_absolute_uri(
+            reverse('forgot-password', args=[str(user.verification_token)])
+        )
+        message = 'Haz clic en el enlace para cambiar tu contrasenia: ' + verification_url 
+
+        try:
+            send_email(message=message, subject=subject, receiver=user.email)
+        except smtplib.SMTPException as e:
+            return {"error": "Error al enviar correo"}
+
+        return Response('Correo enviado con exito', status=200)
 
 @extend_schema(
     tags=['Users'],
@@ -447,18 +415,23 @@ class OlvideMiContrasenia(generics.GenericAPIView):
     }
 )
 @api_view(['POST'])
-def change_password(request, token):
+def reset_password(request, token):
     try:
         user = CustomUser.objects.get(verification_token=token)
-        if user.email_verified:
-            user.password = make_password('contrasenia temporal')#request.data.get('password') cuano se haga el front
-            user.save()
-            return Response('Contraseña cambiada', status=200)
-        else:
-            return Response('El correo no esta verificado', status=400)
+
+        if not user.email_verified:
+            return Response({"error": "Email no verificado"}, status=400)
+
+        new_password = request.data.get('new_password')
+        if not new_password:
+            return Response({"error": "Debe pasar una nueva contraseña"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.password = make_password(new_password)
+        user.save()
+        return Response({'result': 'Contraseña cambiada'}, status=200)    
             
     except CustomUser.DoesNotExist:
-        return Response('Token de verificación no válido', status=404)
+        return Response({"error": "Token de verificación no válido"}, status=404)
 
 
 @extend_schema(tags=['Users'])
