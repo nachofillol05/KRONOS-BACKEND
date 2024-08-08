@@ -45,7 +45,7 @@ urlpatterns = [
     path('profile/', ProfileView.as_view(), name='profile'),
     # Schools
     path('user_schools/', SchoolsView.as_view(), name='user_schools'),
-    path('schools/<int:pk>/preceptors', PreceptorsView.as_view(), name='preceptors'),
+    path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
     path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail'),

@@ -806,11 +806,10 @@ class PreceptorsView(APIView):
         responses={200: PreceptorSerializer(many=True)}
     )
     def get(self, request, *args, **kwargs):
-        school = self.school
-        preceptors  = CustomUser.objects.filter(years__school=school).distinct('preceptor')
-        print(preceptors)
+        school = self.request.school    
+        preceptors  = CustomUser.objects.filter(year__school=school).distinct()
         serializer = PreceptorSerializer(preceptors, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data)    
     
     @extend_schema(
         summary='Agregar preceptor',
@@ -872,11 +871,15 @@ class PreceptorsView(APIView):
         if not year_id or not user_id:
             return Response({'detail': 'year_id and user_id are requireds'}, status=status.HTTP_400_BAD_REQUEST)
         
+
         try:
             year = Year.objects.get(pk=year_id)
             user = CustomUser.objects.get(pk=user_id)
         except (Year.DoesNotExist, CustomUser.DoesNotExist):
             return Response({'detail': 'Year or User do not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        if year.school != request.school:
+            return Response({'detail': 'Year not recognized at school'})
 
         if is_add:
             if user in year.preceptors.all():
