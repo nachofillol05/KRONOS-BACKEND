@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from email.message import EmailMessage
 import smtplib
-from .serializers.user_serializer import RegisterSerializer
+from .serializers.user_serializer import RegisterSerializer, RegisterTeacherSubjectSchoolSerializer
 
 from .models import CustomUser
 from django.http import HttpResponse
@@ -23,10 +23,23 @@ def send_email(receiver, subject, message, sender="proyecto.villada.solidario@gm
     smtp.quit()
 
 def register_user(request, data):
+    print(data)
     serializer = RegisterSerializer(data=data)
     if not serializer.is_valid():
         return False, serializer.errors
     user = serializer.save()
+
+    print(request.school.pk)
+    data = {
+        'teacher': user.pk,
+        'school': request.school.pk
+    }
+    serializerschool = RegisterTeacherSubjectSchoolSerializer(data=data)
+    if not serializerschool.is_valid():
+        return False, serializerschool.errors
+    serializerschool.save()
+
+
     verification_url = request.build_absolute_uri(
         reverse('verify-email', args=[str(user.verification_token)])
     )

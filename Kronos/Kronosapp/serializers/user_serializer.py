@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import CustomUser, ContactInformation, DocumentType, Nationality
+from ..models import CustomUser, ContactInformation, DocumentType, Nationality, TeacherSubjectSchool
 
 
 class ContactInforSerializer(serializers.ModelSerializer):
@@ -13,15 +13,30 @@ class DocumentTypeSerializer(serializers.ModelSerializer):
         model = DocumentType
         fields = '__all__'
 
+class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeacherSubjectSchool
+        fields = 'Teacher', 'School'
+
 
 class NationalitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Nationality
         fields = '__all__'
+class RegisterTeacherSubjectSchoolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeacherSubjectSchool
+        fields = ['teacher', 'school']
+
+    def create(self, validated_data):
+        teacherschool = TeacherSubjectSchool.objects.create(**validated_data)
+        teacherschool.save()
+        return teacherschool
 
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField()
+    
     class Meta:
         model = CustomUser
         fields = [

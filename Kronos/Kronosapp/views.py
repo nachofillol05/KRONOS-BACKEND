@@ -78,6 +78,8 @@ class RegisterView(generics.GenericAPIView):
     '''
     REGISTRAR USUARIOS
     '''
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     def post(self, request):
         created, results = register_user(data=request.data, request=request)
         status_code = status.HTTP_201_CREATED if created else status.HTTP_400_BAD_REQUEST
