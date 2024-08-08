@@ -41,7 +41,7 @@ class DocumentType(models.Model):
     description = models.CharField(max_length=255, blank=True)
 
     def __str__(self) -> str:
-        return self.name
+        return f"{self.pk}, {self.name}"
 
 
 class Nationality(models.Model):

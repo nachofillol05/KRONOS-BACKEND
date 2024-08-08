@@ -1,12 +1,10 @@
 from django.contrib.auth import authenticate, login
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse, FileResponse
 from django.urls import reverse
-from django.http import JsonResponse, FileResponse
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.db.models import Q
 from django.core.cache import cache
-from django.utils.dateparse import parse_datetime
 from datetime import datetime
 
 from rest_framework.views import APIView
@@ -14,7 +12,7 @@ from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
 from .permissions import SchoolHeader, IsDirectiveOrOnlyRead
 from rest_framework.authentication import TokenAuthentication
-from rest_framework import generics, status, exceptions
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
@@ -26,7 +24,6 @@ from validate_email_address import validate_email
 import smtplib
 import pandas as pd
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
-from django.urls import reverse
 from .schedule_creation import schedule_creation
 from .utils import register_user, send_email
 
@@ -55,60 +52,8 @@ from .models import(
     CourseSubjects,
     DocumentType
 )
-@extend_schema(
-    tags=['Users'],
-    description='Permite a un usuario existente iniciar sesión en el sistema.',
-    request={
-        'application/json': {
-            'type': 'object',
-            'properties': {
-                'username': {
-                    'type': 'string',
-                    'example': 'superusername'
-                },
-                'password': {
-                    'type': 'string',
-                    'format': 'password',
-                    'example': 'pepe1234'
-                }
-            },
-            'required': ['username', 'password']
-        }
-    },
-    responses={
-        200: {
-            'type': 'object',
-            'properties': {
-                'token': {
-                    'type': 'string',
-                    'example': 'a18a0428a4d6cb797ba5923eb7315af9b8f182ad'
-                },
-                'message': {
-                    'type': 'string',
-                    'example': 'Login exitoso'
-                    }
-                }
-            },
-        401: {
-            'type': 'object',
-            'properties': {
-                'message': {
-                    'type': 'string',
-                    'example': 'El usuario o contraseña son incorrectos'
-                },
-            }
-        },
-        500: {
-            'type': 'object',
-            'properties': {
-                'message': {
-                    'type': 'string',
-                    'example': 'An error occurred during login'
-                }
-            }
-        }
-    }
-)
+
+
 class LoginView(generics.GenericAPIView):
     '''
     INICIAR SESION
@@ -131,69 +76,6 @@ class LoginView(generics.GenericAPIView):
             return Response({'message': 'An error occurred during login: ' + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
-@extend_schema(
-    tags=['Users'],
-    description="Registra un nuevo usuario. puede ser un profesor, un preceptor o un directivo.",
-    request={
-        'application/json': {
-            'type': 'object',
-            'properties': {
-                'first_name': {
-                    'type': 'string',
-                    'example': 'Monica'
-                },
-                'last_name': {
-                    'type': 'string',
-                    'example': 'Flores'
-                },
-                'document': {
-                    'type': 'string',
-                    'example': '123456789'
-                },
-                'email': {
-                    'type': 'string',
-                    'example': 'micorreo@correo.com'
-                },
-                'password': {
-                    'type': 'string',
-                    'format': 'password',
-                    'example': 'pepe1234'
-                }
-            },
-            'required': ['first_name', 'last_name', 'document', 'email', 'password']
-        }
-    },
-    responses={
-            200: {
-                'type': 'object',
-                'properties': {
-                    'token': {
-                        'type': 'string',
-                        'example': '354b333cfb962cfc4df0e8105e21275ad55e5450'
-                    },
-                    'mensaje': {
-                        'type': 'string',
-                        'example': 'Correo electrónico enviado con éxito'
-                    }
-                }
-            },
-            400: {
-                'type': 'object',
-                'properties': {
-                    'error': {
-                        'type': 'string',
-                        'example': 'Nombre de usuario ya en uso'
-                    },
-                    'err': {
-                        'type': 'string',
-                        'example': 'Mail ya en uso'
-                    }
-                }
-            }
-    }
-)
-
 class RegisterView(generics.GenericAPIView):
     '''
     REGISTRAR USUARIOS
@@ -203,27 +85,11 @@ class RegisterView(generics.GenericAPIView):
         status_code = status.HTTP_201_CREATED if created else status.HTTP_400_BAD_REQUEST
         return Response(results, status=status_code)
 
-
-@extend_schema(
-    tags=['Teachers'],
-    description="Registra a los usuarios desde un archivo excel. El archivo debe tener un formato especifico.",
-    request={
-        'application/json': {
-            'type': 'object',
-            'propieties': {
-                'file': {
-                    'type': 'file',
-                    'example': 'Profesores.xls'  
-                }
-            },               
-        }
-    }
-)
+'''
 class ExcelToteacher(generics.GenericAPIView):
-
-    '''
-    DESCARGAR EXCEL CON EL FORMATO ADECUADO
-    '''
+  
+    #DESCARGAR EXCEL CON EL FORMATO ADECUADO
+  
     def get(self, request):
         file_path = settings.BASE_DIR / 'Static' / 'Profesores.xls'
         if file_path.exists():
@@ -231,19 +97,19 @@ class ExcelToteacher(generics.GenericAPIView):
         else:
             return JsonResponse({'error': 'Archivo no encontrado'}, status=404)
 
-    '''
-    REGISTRAR USUARIOS EN CANTIDAD DESDE UN EXCEL
-    '''
+  
+    #REGISTRAR USUARIOS EN CANTIDAD DESDE UN EXCEL
+  
     def post(self, request):
         archivo = 'Static/Profesores.xls'
         df = pd.read_excel(archivo, sheet_name=0, header=0)
         results = []
-        '''
-        IMPLEMENTAR
-        archivo = request.FILES.get('archvio') 
-        if not archivo:
-            return JsonResponse({'error': 'No se proporcionó un archivo'}, status=400)
-        '''
+   
+        #IMPLEMENTAR
+        #archivo = request.FILES.get('archvio') 
+        #if not archivo:
+        #    return JsonResponse({'error': 'No se proporcionó un archivo'}, status=400)
+    
 
         for index, row in df.iterrows():
             if pd.notnull(row['DNI']):
@@ -265,97 +131,10 @@ class ExcelToteacher(generics.GenericAPIView):
             return JsonResponse({'results': results})
         else:
             return JsonResponse({'error': 'No se procesaron datos válidos'}, status=400)
-            
 
-@extend_schema(
-    tags=['Users'], 
-    description="Permite a un usuario verificar su dirección de correo electrónico haciendo clic en un enlace enviado por email después del registro.",
-    responses={
-        200: {
-            'type': 'object', 'properties': {
-                'mensaje': {
-                    'type': 'string',
-                    'example': 'Correo electrónico verificado con éxito'
-                }
-            }
-        },
-        400: {
-            'type': 'object', 'properties': {
-                'mensaje': {
-                    'type': 'string',
-                    'example': 'Correo electrónico ya verificado'
-                }
-            }
-        },
-        401: {
-            'type': 'object', 'properties': {
-                'mensaje': {
-                    'type': 'string',
-                    'example': 'Token de verificación no válido'
-                },
-            }
-        }
-    }
-)
-@api_view(['GET'])
-def verify_email(request,token):
-    try:
-        user = CustomUser.objects.get(verification_token=token)
-        if user.email_verified:
-            return HttpResponse('Correo electrónico ya verificado', status=400)
-        else:
-            user.email_verified = True
-            user.save()
-            return HttpResponse('Correo electrónico verificado con éxito', status=200)
-    except CustomUser.DoesNotExist:
-        return HttpResponse('Token de verificación no válido', status=404)
+'''
 
 
-@extend_schema(
-    tags=['Users'],
-    description='Permite a un usuario solicitar un enlace para restablecer su contraseña. El token es el enviado en el REQUEST BODY con la key de "token". Por ejemplo: {"token": mitoken} para identificar el usuario.',
-    request={
-        'application/json': {
-            'type': 'object',
-            'properties': {
-                'username': {
-                    'type': 'string',
-                    'example': 'superusername'
-                },
-                'password': {
-                    'type': 'string',
-                    'format': 'password',
-                    'example': 'aguantebelgrano'
-                }
-            },
-            'required': ['username', 'password']
-        },
-    },
-    responses={
-        200: {
-            'type': 'object',
-            'properties': {
-                'token': {
-                    'type': 'string',
-                    'example': 'a18a0428a4d6cb797ba5923eb7315af9b8f182ad'
-                },
-                'message': {
-                    'type': 'string',
-                    'example': 'Login exitoso'
-                    }
-                }
-            },
-        401: {
-            'type': 'object',
-            'properties': {
-                'message': {
-                    'type': 'string',
-                    'example': 'El usuario o contraseña son incorrectos'
-                },
-            }
-        }
-    }
-)
 class OlvideMiContrasenia(generics.GenericAPIView):
     def post(self, request):
         email = request.data.get('email')
@@ -381,40 +160,7 @@ class OlvideMiContrasenia(generics.GenericAPIView):
 
         return Response('Correo enviado con exito', status=200)
 
-@extend_schema(
-    tags=['Users'],
-    description='permite a un usuario restablecer su contraseña utilizando el token enviado por email.',
-    responses={
-        200: {
-            'type': 'object',
-            'properties': {
-                'message': {
-                    'type': 'string',
-                    'example': 'Contraseña cambiada'
-                }
-            }
-        },
-        400: {
-            'type': 'object',
-            'properties': {
-                'message': {
-                    'type': 'string',
-                    'example': 'El correo no esta verificado'
-                }
-            }
-        },
-        404: {
-            'type': 'object',
-            'properties': {
-                'message': {
-                    'type': 'string',
-                    'example': 'Token de verificacion no valido'
-                }
-            }
-        }
-    }
-)
-@api_view(['POST'])
+
 def reset_password(request, token):
     try:
         user = CustomUser.objects.get(verification_token=token)
@@ -434,7 +180,6 @@ def reset_password(request, token):
         return Response({"error": "Token de verificación no válido"}, status=404)
 
 
-@extend_schema(tags=['Users'])
 class ProfileView(generics.GenericAPIView):
     """
     Vista para obtener el perfil de un usuario autenticado
@@ -443,27 +188,12 @@ class ProfileView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
 
-    @extend_schema(
-        summary="Obtener información del perfil",
-        responses={
-            200: UserSerializer,
-            401: OpenApiResponse(description="No autenticado")
-        }
-    )
+
     def get(self, request):
         user = request.user
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @extend_schema(
-        summary="Actualizar información del perfil",
-        request=UserSerializer,
-        responses={
-            200: UserSerializer,
-            400: OpenApiResponse(description="Datos inválidos"),
-            401: OpenApiResponse(description="No autenticado")
-        }
-    )
     def put(self, request):
         usuario = request.user
         serializer = UserSerializer(usuario, data=request.data)
@@ -473,7 +203,6 @@ class ProfileView(generics.GenericAPIView):
         return Response(serializer.errors, status=400)
 
 
-@extend_schema(tags=['Schools'])
 
 class SchoolsView(generics.ListAPIView):
     '''
@@ -498,7 +227,7 @@ class SchoolsView(generics.ListAPIView):
         return Response({"error": "Usuario no encontrado"}, status=404)
 
 
-@extend_schema(tags=['Teachers'])
+
 class TeacherListView(generics.ListAPIView):
     serializer_class = TeacherSerializer
     authentication_classes = [TokenAuthentication]
@@ -531,7 +260,7 @@ class TeacherListView(generics.ListAPIView):
         return Response(serializer.data)
 
 
-@extend_schema(tags=['Teachers'])
+
 class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = TeacherSerializer
@@ -549,12 +278,12 @@ class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == "GET":
             return ReadSchoolSerializer
         return CreateSchoolSerializer
-        if self.request.method == 'PATCH':
+        if self.request.method == 'PATCH': #REVISAR
             return CreateTeacherSerializer
         return super().get_serializer_class()
 
 
-@extend_schema(tags=['Teachers'])
+
 class DniComprobation(generics.GenericAPIView):
     '''
     COMPROBACION SI EL PROFESOR EXISTE ANTES DE CREAR UN NUEVO PROFESOR
@@ -572,7 +301,6 @@ class DniComprobation(generics.GenericAPIView):
 
 
 
-@extend_schema(tags=['Subjects'])
 class SubjectListCreate(generics.ListCreateAPIView):
     '''
     LISTAR Y CREAR MATERIAS
@@ -626,7 +354,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
     #         {'Saved': 'La materia ha sido creada', 'data': serializer.data},status=status.HTTP_201_CREATED)
 
 
-@extend_schema(tags=['Subjects'])
+
 class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
@@ -724,14 +452,7 @@ class YearRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
         response = super().put(request, *args, **kwargs)
         return Response({'Updated': 'El año ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
-
-
-
-
-
-
-
-
+    
 
 class ModuleViewSet(viewsets.ModelViewSet):
     queryset = Module.objects.all()
@@ -764,7 +485,7 @@ class ModuleViewSet(viewsets.ModelViewSet):
         return queryset
         
 
-@extend_schema(tags=['Preceptors'])
+
 class PreceptorsView(APIView):
     """
     Endpoints que realiza acciones sobre los preceptores del colegio indicado en la ruta
@@ -774,35 +495,15 @@ class PreceptorsView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
-    @extend_schema(
-        summary='Obtener preceptores de una escuela',
-        responses={200: PreceptorSerializer(many=True)}
-    )
+   
     def get(self, request, *args, **kwargs):
         school = self.request.school    
         preceptors  = CustomUser.objects.filter(year__school=school).distinct()
         serializer = PreceptorSerializer(preceptors, many=True)
         return Response(serializer.data)    
     
-    @extend_schema(
-        summary='Agregar preceptor',
-        request={
-            'application/json': {
 
-                'type': 'object',
-                'properties': {
-                    'year_id': {'type': 'integer'},
-                    'user_id': {'type': 'integer'}
-                },
-                'required': ['year_id', 'user_id']
-            }
-        },
-        responses={
-            201: YearSerializer(),
-            400: OpenApiResponse(description="year_id and user_id are requireds"),
-            404: OpenApiResponse(description="Year or User do not exist")
-        }
-    )
+    
     def post(self, request, *args, **kwargs):
         """
         Se le indica el año y el usuario que sera añadido como preceptor.
@@ -810,26 +511,6 @@ class PreceptorsView(APIView):
         """
         return self.manage_user(request, is_add=True)
     
-    @extend_schema(
-        summary='Remover preceptor',
-        request={
-            'application/json': {
-
-                'type': 'object',
-                'properties': {
-                    'year_id': {'type': 'integer'},
-                    'user_id': {'type': 'integer'}
-                },
-                'required': ['year_id', 'user_id']
-            }
-        },
-        responses={
-            201: YearSerializer(),
-            400: OpenApiResponse(description="year_id and user_id are requireds"),
-            402: OpenApiResponse(description="The user is not associated with the year."),
-            404: OpenApiResponse(description="Year or User do not exist")
-        }
-    )
     def delete(self, request, *args, **kwargs):
         """
         Se le indica el año y el usuario que sera removido como preceptor.

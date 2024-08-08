@@ -2,14 +2,13 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 from .views import (
     LoginView,
-    verify_email,
     RegisterView,
     OlvideMiContrasenia,
     reset_password,
     ProfileView,
     TeacherListView,
     TeacherDetailView,
-    ExcelToteacher,
+    #ExcelToteacher,
     DniComprobation,
     SubjectListCreate, 
     SubjectRetrieveUpdateDestroy,
@@ -28,6 +27,9 @@ from .views import (
     EventTypeViewSet,
     DocumentTypeViewSet,
     ContactarPersonal
+)
+from .utils import (
+    verify_email
 )
 
 
@@ -59,7 +61,7 @@ urlpatterns = [
     path('teachers/', TeacherListView.as_view(), name='get_teachers'),
     path('teacher/<int:pk>', TeacherDetailView.as_view(), name='detail_teacher'),
     path('create_teacher/', DniComprobation.as_view(), name='Comprobation_DNI'),
-    path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
+    #path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
     # Event
     path('events/', EventListCreate.as_view(), name='event-list-create'),
     path('events/<int:pk>/', EventRetrieveUpdateDestroy.as_view(), name='event-detail'),

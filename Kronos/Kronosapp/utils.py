@@ -4,6 +4,10 @@ from email.message import EmailMessage
 import smtplib
 from .serializers.user_serializer import RegisterSerializer
 
+from .models import CustomUser
+from django.http import HttpResponse
+
+
 
 user = get_user_model()
 
@@ -30,4 +34,17 @@ def register_user(request, data):
     MESSAGE = 'Haz clic en el enlace para verificar tu correo electrónico: ' + verification_url
     send_email(receiver=user.email, subject=SUBJECT, message=MESSAGE)
     return True, serializer.data
+
+
+def verify_email(request,token):
+    try:
+        user = CustomUser.objects.get(verification_token=token)
+        if user.email_verified:
+            return HttpResponse('Correo electrónico ya verificado', status=400)
+        else:
+            user.email_verified = True
+            user.save()
+            return HttpResponse('Correo electrónico verificado con éxito', status=200)
+    except CustomUser.DoesNotExist:
+        return HttpResponse('Token de verificación no válido', status=404)
     
