@@ -190,7 +190,7 @@ class Event(models.Model):
     affiliated_teachers = models.ManyToManyField(CustomUser, blank=True)
 
     def __str__(self) -> str:
-        return f"{self.startDate}"
+        return f"{self.name} - {self.school} - {self.eventType}"
 
 
 
