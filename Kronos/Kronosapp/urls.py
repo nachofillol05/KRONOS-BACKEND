@@ -2,10 +2,10 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 from .views import (
     LoginView,
-    
     RegisterView,
     OlvideMiContrasenia,
-    #change_password,
+    reset_password,
+    ChangePasswordView,
     ProfileView,
     TeacherListView,
     TeacherDetailView,
@@ -43,12 +43,13 @@ urlpatterns = [
     path('login/', LoginView.as_view(), name='login'),
     path('verify-email/<uuid:token>/', verify_email, name='verify-email'),
     path('Register/', RegisterView.as_view(), name='register'),
-    path('ForgotPassword/', OlvideMiContrasenia.as_view(), name='OlvideMiContrasenia'),
-   #path('forgot-password/<uuid:token>/', change_password, name='forgot-password'),
+    path('forgotPassword/', OlvideMiContrasenia.as_view(), name='OlvideMiContrasenia'),
+    path('forgot-password/<uuid:token>/', reset_password, name='forgot-password'),
+    path('changePassword/', ChangePasswordView.as_view(), name='ChangePassword'),
     path('profile/', ProfileView.as_view(), name='profile'),
     # Schools
     path('user_schools/', SchoolsView.as_view(), name='user_schools'),
-    path('schools/<int:pk>/preceptors', PreceptorsView.as_view(), name='preceptors'),
+    path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
     path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail'),

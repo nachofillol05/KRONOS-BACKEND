@@ -1,10 +1,11 @@
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, password_validation
 from django.http import HttpResponse, JsonResponse, FileResponse
 from django.urls import reverse
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.db.models import Q
 from django.core.cache import cache
+from django.core.exceptions import ValidationError as ValidationErrorDjango
 from datetime import datetime
 
 from rest_framework.views import APIView
@@ -25,7 +26,7 @@ import smtplib
 import pandas as pd
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from .schedule_creation import schedule_creation
-from .utils import register_user
+from .utils import register_user, send_email
 
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
@@ -62,7 +63,9 @@ class LoginView(generics.GenericAPIView):
         username = request.data.get('username')
         password = request.data.get('password')
         try:
+            print(username, password)
             user = authenticate(request, document=username, password=password)
+            print(user)
             if user is not None:
                 login(request, user)
                 token, created = Token.objects.get_or_create(user=user)
@@ -136,47 +139,76 @@ class ExcelToteacher(generics.GenericAPIView):
 
 
 class OlvideMiContrasenia(generics.GenericAPIView):
-    def get(self, request):
+    def post(self, request):
+        email = request.data.get('email')
+        
+        if not email:
+            return Response({"error": "Se requiere email en el cuerpo de la solicitud."}, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
-            token = request.data.get('token')
-            user = request.user
-            token = Token.objects.get(key=token)
-            user = token.user
-            remitente = user.email
-            verification_url = request.build_absolute_uri(
-                reverse('forgot-password', args=[str(user.verification_token)])
-            )
-            remitente = "proyecto.villada.solidario@gmail.com"
-            destinatario = user.email
-            
-            mensaje = 'Haz clic en el enlace para cambiar tu contrasenia: ' + verification_url
-            email = EmailMessage()
-            email["From"] = remitente
-            email["To"] = destinatario
-            email["Subject"] = 'Cambie su contraseña'
-            email.set_content(mensaje)
-            smtp = smtplib.SMTP_SSL("smtp.gmail.com")
-            smtp.login(remitente, "bptf tqtv hjsb zfpl")
-            smtp.sendmail(remitente, destinatario, email.as_string())
-            smtp.quit()
-            return Response('Correo enviado con exito', status=200)
-        except:
-            return Response('Error al enviar el correo', status=400)
+            user = CustomUser.objects.get(email=email)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "email no reconocido no válido"}, status=404)
+        
+        subject = 'Restablecer contraseña'
+        verification_url = request.build_absolute_uri(
+            reverse('forgot-password', args=[str(user.verification_token)])
+        )
+        message = 'Haz clic en el enlace para cambiar tu contrasenia: ' + verification_url 
+
+        try:
+            send_email(message=message, subject=subject, receiver=user.email)
+        except smtplib.SMTPException as e:
+            return {"error": "Error al enviar correo"}
+
+        return Response('Correo enviado con exito', status=200)
 
 
-
-def change_password(request, token):
+def reset_password(request, token):
     try:
         user = CustomUser.objects.get(verification_token=token)
-        if user.email_verified:
-            user.password = make_password('contrasenia temporal')#request.data.get('password') cuano se haga el front
-            user.save()
-            return Response('Contraseña cambiada', status=200)
-        else:
-            return Response('El correo no esta verificado', status=400)
+
+        if not user.email_verified:
+            return Response({"error": "Email no verificado"}, status=400)
+
+        new_password = request.data.get('new_password')
+        if not new_password:
+            return Response({"error": "Debe pasar una nueva contraseña"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.password = make_password(new_password)
+        user.save()
+        return Response({'result': 'Contraseña cambiada'}, status=200)    
             
     except CustomUser.DoesNotExist:
-        return Response('Token de verificación no válido', status=404)
+        return Response({"error": "Token de verificación no válido"}, status=404)
+    
+
+class ChangePasswordView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        current_password = request.data.get("current_password")
+        new_password = request.data.get("new_password")
+
+        if not current_password:
+            return Response({"error": "Se requiere el campo 'current_password' en el cuerpo de la solicitud."}, status=status.HTTP_400_BAD_REQUEST)
+        if not new_password:
+            return Response({"error": "Se requiere el campo 'new_password' en el cuerpo de la solicitud."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = request.user
+        if not user.check_password(current_password):
+            return Response({'error': 'La contraseña actual es incorrecta.'})
+        
+        try:
+            password_validation.validate_password(new_password, user)
+        except ValidationErrorDjango:
+            return Response({"error": "Contraseña invaida"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.set_password(new_password)
+        user.save()
+
+        return Response({"message": "Contraseña actualizada con éxito."}, status=status.HTTP_200_OK)
 
 
 
@@ -452,14 +484,7 @@ class YearRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
         response = super().put(request, *args, **kwargs)
         return Response({'Updated': 'El año ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
-
-
-
-
-
-
-
-
+    
 
 class ModuleViewSet(viewsets.ModelViewSet):
     queryset = Module.objects.all()
@@ -504,11 +529,10 @@ class PreceptorsView(APIView):
 
    
     def get(self, request, *args, **kwargs):
-        school = self.school
-        preceptors  = CustomUser.objects.filter(years__school=school).distinct('preceptor')
-        print(preceptors)
+        school = self.request.school    
+        preceptors  = CustomUser.objects.filter(year__school=school).distinct()
         serializer = PreceptorSerializer(preceptors, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data)    
     
 
     
@@ -533,11 +557,15 @@ class PreceptorsView(APIView):
         if not year_id or not user_id:
             return Response({'detail': 'year_id and user_id are requireds'}, status=status.HTTP_400_BAD_REQUEST)
         
+
         try:
             year = Year.objects.get(pk=year_id)
             user = CustomUser.objects.get(pk=user_id)
         except (Year.DoesNotExist, CustomUser.DoesNotExist):
             return Response({'detail': 'Year or User do not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        if year.school != request.school:
+            return Response({'detail': 'Year not recognized at school'})
 
         if is_add:
             if user in year.preceptors.all():
