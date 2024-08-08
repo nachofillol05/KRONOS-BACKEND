@@ -52,7 +52,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         if CustomUser.objects.filter(email=value).exists():
             raise serializers.ValidationError("This email is already registered.")
         return value
-
+    def validate_document(self, value):
+        if CustomUser.objects.filter(document=value).exists():
+            raise serializers.ValidationError("This document is already registed")
+        return value
     def create(self, validated_data):
         password = validated_data.pop('password')
         user = CustomUser.objects.create(**validated_data)

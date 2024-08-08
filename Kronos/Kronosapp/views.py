@@ -83,11 +83,11 @@ class RegisterView(generics.GenericAPIView):
         status_code = status.HTTP_201_CREATED if created else status.HTTP_400_BAD_REQUEST
         return Response(results, status=status_code)
 
-
+'''
 class ExcelToteacher(generics.GenericAPIView):
-    '''
-    DESCARGAR EXCEL CON EL FORMATO ADECUADO
-    '''
+  
+    #DESCARGAR EXCEL CON EL FORMATO ADECUADO
+  
     def get(self, request):
         file_path = settings.BASE_DIR / 'Static' / 'Profesores.xls'
         if file_path.exists():
@@ -95,19 +95,19 @@ class ExcelToteacher(generics.GenericAPIView):
         else:
             return JsonResponse({'error': 'Archivo no encontrado'}, status=404)
 
-    '''
-    REGISTRAR USUARIOS EN CANTIDAD DESDE UN EXCEL
-    '''
+  
+    #REGISTRAR USUARIOS EN CANTIDAD DESDE UN EXCEL
+  
     def post(self, request):
         archivo = 'Static/Profesores.xls'
         df = pd.read_excel(archivo, sheet_name=0, header=0)
         results = []
-        '''
-        IMPLEMENTAR
-        archivo = request.FILES.get('archvio') 
-        if not archivo:
-            return JsonResponse({'error': 'No se proporcionó un archivo'}, status=400)
-        '''
+   
+        #IMPLEMENTAR
+        #archivo = request.FILES.get('archvio') 
+        #if not archivo:
+        #    return JsonResponse({'error': 'No se proporcionó un archivo'}, status=400)
+    
 
         for index, row in df.iterrows():
             if pd.notnull(row['DNI']):
@@ -130,52 +130,7 @@ class ExcelToteacher(generics.GenericAPIView):
         else:
             return JsonResponse({'error': 'No se procesaron datos válidos'}, status=400)
 
-
-def send_email(request, username, email, password, document, first_name, last_name, documentType):
-    '''
-    FUNCION CREAR USUARIOS Y MANDAR MAILS. LA LLAMAN DESDE: RegisterView y ExcelToteacher
-    '''
-    if CustomUser.objects.filter(document=document).exists():
-        return 'Nombre de usuario ya en uso'
-    else:
-        if CustomUser.objects.filter(email=email).exists():
-            return 'mail ya en uso'
-        else:
-            document_type_instance = DocumentType.objects.get(pk=documentType)
-            user = CustomUser.objects.create_user(username=username, email=email, password=password, first_name=first_name, last_name=last_name, document=document, documentType=document_type_instance)
-            token = Token.objects.create(user=user)
-            verification_url = request.build_absolute_uri(
-            reverse('verify-email', args=[str(user.verification_token)])
-            )
-            remitente = "proyecto.villada.solidario@gmail.com"
-            destinatario = user.email
-            mensaje = 'Haz clic en el enlace para verificar tu correo electrónico: ' + verification_url
-            email = EmailMessage()
-            email["From"] = remitente
-            email["To"] = destinatario
-            email["Subject"] = 'Verifica tu correo electrónico'
-            email.set_content(mensaje)
-            smtp = smtplib.SMTP_SSL("smtp.gmail.com")
-            smtp.login(remitente, "bptf tqtv hjsb zfpl")
-            smtp.sendmail(remitente, destinatario, email.as_string())
-            smtp.quit()
-            return {"token":token.key,"mensaje":'Correo electrónico enviado con éxito'}
-            
-
-# AGREGAR EN utils.py
-
-def verify_email(request,token):
-    try:
-        user = CustomUser.objects.get(verification_token=token)
-        if user.email_verified:
-            return HttpResponse('Correo electrónico ya verificado', status=400)
-        else:
-            user.email_verified = True
-            user.save()
-            return HttpResponse('Correo electrónico verificado con éxito', status=200)
-    except CustomUser.DoesNotExist:
-        return HttpResponse('Token de verificación no válido', status=404)
-
+'''
 
 
 class OlvideMiContrasenia(generics.GenericAPIView):

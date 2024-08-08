@@ -2,14 +2,14 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 from .views import (
     LoginView,
-    verify_email,
+    
     RegisterView,
     OlvideMiContrasenia,
-    change_password,
+    #change_password,
     ProfileView,
     TeacherListView,
     TeacherDetailView,
-    ExcelToteacher,
+    #ExcelToteacher,
     DniComprobation,
     SubjectListCreate, 
     SubjectRetrieveUpdateDestroy,
@@ -29,6 +29,9 @@ from .views import (
     DocumentTypeViewSet,
     ContactarPersonal
 )
+from .utils import (
+    verify_email
+)
 
 
 router = DefaultRouter()
@@ -41,7 +44,7 @@ urlpatterns = [
     path('verify-email/<uuid:token>/', verify_email, name='verify-email'),
     path('Register/', RegisterView.as_view(), name='register'),
     path('ForgotPassword/', OlvideMiContrasenia.as_view(), name='OlvideMiContrasenia'),
-    path('forgot-password/<uuid:token>/', change_password, name='forgot-password'),
+   #path('forgot-password/<uuid:token>/', change_password, name='forgot-password'),
     path('profile/', ProfileView.as_view(), name='profile'),
     # Schools
     path('user_schools/', SchoolsView.as_view(), name='user_schools'),
@@ -59,7 +62,7 @@ urlpatterns = [
     path('teachers/', TeacherListView.as_view(), name='get_teachers'),
     path('teacher/<int:pk>', TeacherDetailView.as_view(), name='detail_teacher'),
     path('create_teacher/', DniComprobation.as_view(), name='Comprobation_DNI'),
-    path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
+    #path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
     # Event
     path('events/', EventListCreate.as_view(), name='event-list-create'),
     path('events/<int:pk>/', EventRetrieveUpdateDestroy.as_view(), name='event-detail'),
