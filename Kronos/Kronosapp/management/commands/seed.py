@@ -348,26 +348,29 @@ class Command(BaseCommand):
             startDate=timezone.now() + timedelta(days=5),
             endDate=timezone.now() + timedelta(days=5, hours=2),
             school=school1,
-            roles=[teacher_role],
             eventType=event_type1
         )
+        event1.roles.add(directive_role)    
+
         event2 = Event.objects.create(
             name='Viaje a museo',
             startDate=timezone.now() + timedelta(days=15),
             endDate=timezone.now() + timedelta(days=15, hours=8),
             school=school1,
-            roles=[teacher_role, preceptor_role],
             eventType=event_type2
         )
+        event2.roles.add(teacher_role, preceptor_role)
+        
+        
         event3 = Event.objects.create(
             name='Visita a la universidad',
             startDate=timezone.now() + timedelta(days=30),
             endDate=timezone.now() + timedelta(days=30, hours=6),
             school=school1,
-            roles=[teacher_role, preceptor_role],
             eventType=event_type2
         )
-
+        event3.roles.add(directive_role)
+        
         # Asignar profesores a los eventos
         event1.affiliated_teachers.add(teacher1)
         event2.affiliated_teachers.add(teacher2)
