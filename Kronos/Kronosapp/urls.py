@@ -8,8 +8,7 @@ from .views import (
     ChangePasswordView,
     ProfileView,
     TeacherListView,
-    TeacherDetailView,
-    #ExcelToteacher,
+    ExcelToteacher,
     DniComprobation,
     SubjectListCreate, 
     SubjectRetrieveUpdateDestroy,
@@ -46,7 +45,7 @@ urlpatterns = [
     path('forgotPassword/', OlvideMiContrasenia.as_view(), name='OlvideMiContrasenia'),
     path('forgot-password/<uuid:token>/', reset_password, name='forgot-password'),
     path('changePassword/', ChangePasswordView.as_view(), name='ChangePassword'),
-    path('profile/', ProfileView.as_view(), name='profile'),
+    
     # Schools
     path('user_schools/', SchoolsView.as_view(), name='user_schools'),
     path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
@@ -61,9 +60,9 @@ urlpatterns = [
     path('years/<int:pk>/', YearRetrieveUpdateDestroy.as_view(), name='year-detail'),
     # Teachers
     path('teachers/', TeacherListView.as_view(), name='get_teachers'),
-    path('teacher/<int:pk>', TeacherDetailView.as_view(), name='detail_teacher'),
+    path('profile/', ProfileView.as_view(), name='profile'),
     path('create_teacher/', DniComprobation.as_view(), name='Comprobation_DNI'),
-    #path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
+    path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
     # Event
     path('events/', EventListCreate.as_view(), name='event-list-create'),
     path('events/<int:pk>/', EventRetrieveUpdateDestroy.as_view(), name='event-detail'),

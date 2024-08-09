@@ -24,6 +24,7 @@ from email.message import EmailMessage
 from validate_email_address import validate_email
 import smtplib
 import pandas as pd
+from pandas.errors import EmptyDataError
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from .schedule_creation import schedule_creation
 from .utils import register_user, send_email
@@ -60,21 +61,18 @@ class LoginView(generics.GenericAPIView):
     INICIAR SESION
     '''
     def post(self, request):
-        username = request.data.get('username')
+        document = request.data.get('document')
         password = request.data.get('password')
         try:
-            print(username, password)
-            user = authenticate(request, document=username, password=password)
-            print(user)
+            user = authenticate(request, document=document, password=password)
             if user is not None:
                 login(request, user)
                 token, created = Token.objects.get_or_create(user=user)
-                
-                return Response({'Token': token.key,'message': 'Login exitoso'}, status=status.HTTP_200_OK) # Porque Response y no httpResponse
+                return Response({'Token': token.key,'message': 'Login exitoso'}, status=status.HTTP_200_OK)
             else:
                 return Response({'message': 'El usuario o contraseña son incorrectos'}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
-            return Response({'message': 'An error occurred during login: ' + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'message': 'Ocurrio un error: ' + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class RegisterView(generics.GenericAPIView):
@@ -84,58 +82,71 @@ class RegisterView(generics.GenericAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     def post(self, request):
-        created, results = register_user(data=request.data, request=request)
-        status_code = status.HTTP_201_CREATED if created else status.HTTP_400_BAD_REQUEST
-        return Response(results, status=status_code)
+            created, results = register_user(data=request.data, request=request)
+            status_code = status.HTTP_201_CREATED if created else status.HTTP_400_BAD_REQUEST
+            return Response(results, status=status_code)
 
-'''
+
 class ExcelToteacher(generics.GenericAPIView):
-  
-    #DESCARGAR EXCEL CON EL FORMATO ADECUADO
-  
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    '''
+    DESCARGAR EXCEL CON EL FORMATO ADECUADO
+    '''
     def get(self, request):
         file_path = settings.BASE_DIR / 'Static' / 'Profesores.xls'
         if file_path.exists():
             return FileResponse(open(file_path, 'rb'), as_attachment=True, filename='Profesores.xls')
         else:
             return JsonResponse({'error': 'Archivo no encontrado'}, status=404)
-
-  
-    #REGISTRAR USUARIOS EN CANTIDAD DESDE UN EXCEL
-  
+    '''
+    REGISTRAR USUARIOS EN CANTIDAD DESDE UN EXCEL
+    '''
     def post(self, request):
-        archivo = 'Static/Profesores.xls'
-        df = pd.read_excel(archivo, sheet_name=0, header=0)
+        archivo = request.FILES.get('archivo') 
+        if not archivo:
+            return JsonResponse({'error': 'No se proporcionó un archivo'}, status=400)
+        
+        try:
+            df = pd.read_excel(archivo, sheet_name=0, header=0)
+        except EmptyDataError:
+            return JsonResponse({'error': 'El archivo está vacío o tiene un formato incorrecto'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': f'Error al procesar el archivo: {str(e)}'}, status=500)
+
+
         results = []
-   
-        #IMPLEMENTAR
-        #archivo = request.FILES.get('archvio') 
-        #if not archivo:
-        #    return JsonResponse({'error': 'No se proporcionó un archivo'}, status=400)
-    
+        try:
+            documentType = DocumentType.objects.get(name='DNI')
+        except DocumentType.DoesNotExist:
+            documentType = DocumentType.objects.create(name='DNI')
 
         for index, row in df.iterrows():
             if pd.notnull(row['DNI']):
-                print(row)
                 document = row['DNI']
-                username = row['NOMBRE'] + '_' + row['APELLIDO']
                 first_name = row['NOMBRE']
                 last_name = row['APELLIDO']
                 email = row['MAIL']
-                password = str(row['DNI'])
 
                 if validate_email(email):
-                    result = send_email(request, username, email, password, document, first_name, last_name)
+                    data = {
+                        'email' : email,
+                        'password': "contraseña",
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'documentType': documentType.pk,
+                        'document': document,
+                    }
+                    result = register_user(data=data, request=request)
                     results.append({'DNI': document, 'Response': result})
                 else:
                     results.append({'DNI': document, 'Response': 'Email no valido'})
-
         if results:
             return JsonResponse({'results': results})
         else:
             return JsonResponse({'error': 'No se procesaron datos válidos'}, status=400)
 
-'''
+
 
 
 class OlvideMiContrasenia(generics.GenericAPIView):
@@ -213,19 +224,19 @@ class ChangePasswordView(APIView):
 
 
 class ProfileView(generics.GenericAPIView):
-    """
-    Vista para obtener el perfil de un usuario autenticado
-    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
-
-
+    """
+    Vista para obtener el perfil de un usuario
+    """
     def get(self, request):
         user = request.user
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
+    """
+    Vista para acualizar los datos de un usuario
+    """
     def put(self, request):
         usuario = request.user
         serializer = UserSerializer(usuario, data=request.data)
@@ -238,7 +249,7 @@ class ProfileView(generics.GenericAPIView):
 
 class SchoolsView(generics.ListAPIView):
     '''
-    VISTA PARA LAS ESCUELAS DE UN USUARIO
+    VISTA PARA OBTENER LAS ESCUELAS DE UN USUARIO
     '''
     queryset = School.objects.all()
     serializer_class = ReadSchoolSerializer
@@ -254,13 +265,15 @@ class SchoolsView(generics.ListAPIView):
                 if i.school not in schools:
                     schools.append(i.school)
             serializer = self.get_serializer(schools, many=True)
-            print(serializer.data)
             return Response(serializer.data) 
         return Response({"error": "Usuario no encontrado"}, status=404)
 
 
 
 class TeacherListView(generics.ListAPIView):
+    '''
+    VISTA PARA OBTENER LOS PROFESORES DE UNA ESCUELA, CON FILTRO DE MATERIAS Y NOMBRE O APELLIDO
+    '''
     serializer_class = TeacherSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
@@ -292,35 +305,11 @@ class TeacherListView(generics.ListAPIView):
         return Response(serializer.data)
 
 
-
-class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = CustomUser.objects.all()
-    serializer_class = TeacherSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        serializer = self.get_serializer(instance)
-        return Response({'object_deleted': serializer.data})
-
-    def get_serializer_class(self):
-        print(self.request.method)
-        if self.request.method == "GET":
-            return ReadSchoolSerializer
-        return CreateSchoolSerializer
-        if self.request.method == 'PATCH': #REVISAR
-            return CreateTeacherSerializer
-        return super().get_serializer_class()
-
-
-
 class DniComprobation(generics.GenericAPIView):
     '''
     COMPROBACION SI EL PROFESOR EXISTE ANTES DE CREAR UN NUEVO PROFESOR
     '''
-    def post(self, request):
+    def get(self, request):
             document = request.data.get('document')
             user = CustomUser.objects.filter(document=document)
 
