@@ -14,7 +14,7 @@ from .views import (
     SubjectRetrieveUpdateDestroy,
     ModuleViewSet,
     verifyToken,
-    SchoolsView,
+    TeacherSchoolsView,
     CourseListCreate, 
     CourseRetrieveUpdateDestroy,
     YearListCreate,
@@ -26,7 +26,8 @@ from .views import (
     EventRetrieveUpdateDestroy,
     EventTypeViewSet,
     DocumentTypeViewSet,
-    ContactarPersonal
+    ContactarPersonal,
+    DirectiveSchoolsView
 )
 from .utils import (
     verify_email
@@ -47,8 +48,9 @@ urlpatterns = [
     path('changePassword/', ChangePasswordView.as_view(), name='ChangePassword'),
     
     # Schools
-    path('user_schools/', SchoolsView.as_view(), name='user_schools'),
+    path('user_schools/', TeacherSchoolsView.as_view(), name='user_schools'),
     path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
+    path('directive_schools/', DirectiveSchoolsView.as_view(), name='directive_schools'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
     path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail'),

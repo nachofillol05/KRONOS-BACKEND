@@ -247,9 +247,9 @@ class ProfileView(generics.GenericAPIView):
 
 
 
-class SchoolsView(generics.ListAPIView):
+class TeacherSchoolsView(generics.ListAPIView):
     '''
-    VISTA PARA OBTENER LAS ESCUELAS DE UN USUARIO
+    VISTA PARA OBTENER LAS ESCUELAS DE UN PROFESOR
     '''
     queryset = School.objects.all()
     serializer_class = ReadSchoolSerializer
@@ -268,6 +268,37 @@ class SchoolsView(generics.ListAPIView):
             return Response(serializer.data) 
         return Response({"error": "Usuario no encontrado"}, status=404)
 
+
+class DirectiveSchoolsView(generics.ListAPIView):
+    '''
+    VISTA PARA OBTENER LAS ESCUELAS DEL DIRECTIVO
+    '''
+    queryset = School.objects.all()
+    serializer_class = ReadSchoolSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        print(user)
+        if user:
+            schools = set()
+
+            # Obtener escuelas donde el usuario es profesor
+            tss = TeacherSubjectSchool.objects.filter(teacher=user).distinct()
+            for ts in tss:
+                schools.add(ts.school)
+
+            # Obtener escuelas donde el usuario es directivo
+            dir_schools = School.objects.filter(directives=user).distinct()
+            for school in dir_schools:
+                schools.add(school)
+
+            # Serializar la lista de escuelas
+            serializer = self.get_serializer(schools, many=True)
+            return Response(serializer.data)
+
+        return Response({"error": "Usuario no encontrado"}, status=404)
 
 
 class TeacherListView(generics.ListAPIView):
@@ -303,6 +334,9 @@ class TeacherListView(generics.ListAPIView):
         serializer = self.get_serializer(teachers, many=True)
 
         return Response(serializer.data)
+
+
+#
 
 
 class DniComprobation(generics.GenericAPIView):
