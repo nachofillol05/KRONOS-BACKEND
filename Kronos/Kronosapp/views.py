@@ -372,7 +372,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
         name = request.query_params.get('name')
         school = self.request.school
         
-        queryset = Subject.objects.filter(school=school)
+        queryset = Subject.objects.filter(course__year__school=school)
         
         if start_time and end_time:
             queryset = queryset.filter(
