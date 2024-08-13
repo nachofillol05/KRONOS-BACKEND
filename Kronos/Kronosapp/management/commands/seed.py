@@ -3,7 +3,7 @@ from Kronosapp.models import (
     DocumentType, Nationality, ContactInformation, School,
     CustomUser, Module, AvailabilityState, TeacherAvailability,
     Year, Course, Subject, TeacherSubjectSchool, Action,
-    EventType, Event
+    EventType, Event, CourseSubjects
 )
 import uuid
 from django.utils import timezone
@@ -81,7 +81,6 @@ class Command(BaseCommand):
 
         # Crear usuarios personalizados
         directive_user = CustomUser.objects.create_user(
-            username='directive',
             email='directive@jesusmaria.edu',
             password='password',
             first_name='Carlos',
@@ -96,7 +95,6 @@ class Command(BaseCommand):
             dark_mode=True
         )
         teacher1 = CustomUser.objects.create_user(
-            username='teacher1',
             email='teacher1@jesusmaria.edu',
             password='password',
             first_name='María',
@@ -110,7 +108,6 @@ class Command(BaseCommand):
             email_verified=True
         )
         teacher2 = CustomUser.objects.create_user(
-            username='teacher2',
             email='teacher2@jesusmaria.edu',
             password='password',
             first_name='José',
@@ -123,7 +120,6 @@ class Command(BaseCommand):
             contactInfo=contact_info3
         )
         teacher3 = CustomUser.objects.create_user(
-            username='teacher3',
             email='teacher3@jesusmaria.edu',
             password='password',
             first_name='Laura',
@@ -136,7 +132,6 @@ class Command(BaseCommand):
             contactInfo=contact_info4
         )
         teacher4 = CustomUser.objects.create_user(
-            username='teacher4',
             email='teacher4@jesusmaria.edu',
             password='password',
             first_name='Ricardo',
@@ -149,7 +144,6 @@ class Command(BaseCommand):
             contactInfo=contact_info5
         )
         teacher5 = CustomUser.objects.create_user(
-            username='teacher5',
             email='teacher5@jesusmaria.edu',
             password='password',
             first_name='Ana',
@@ -162,7 +156,6 @@ class Command(BaseCommand):
             contactInfo=contact_info6
         )
         preceptor1 = CustomUser.objects.create_user(
-            username='preceptor1',
             email='preceptor1@jesusmaria.edu',
             password='password',
             first_name='David',
@@ -175,7 +168,6 @@ class Command(BaseCommand):
             contactInfo=contact_info7
         )
         preceptor2 = CustomUser.objects.create_user(
-            username='preceptor2',
             email='preceptor2@jesusmaria.edu',
             password='password',
             first_name='Elena',
@@ -239,94 +231,98 @@ class Command(BaseCommand):
 
         subject1 = Subject.objects.create(
             name='Matematica',
-            abbreviation='mat',
-            studyPlan='Plan de estudios de Matematica',
+            abbreviation='mat', 
             weeklyHours=4,
-            course=course1
+            school=school1
         )
         subject2 = Subject.objects.create(
             name='Matematica',
             abbreviation='mat',
-            studyPlan='Plan de estudios de Matematica',
             weeklyHours=4,
-            course=course2
+            school=school1
         )
         subject3 = Subject.objects.create(
             name='Matematica',
             abbreviation='mat',
-            studyPlan='Plan de estudios de Matematica',
             weeklyHours=4,
-            course=course3
+            school=school1
         )
         subject4 = Subject.objects.create(
             name='Lengua',
             abbreviation='len',
-            studyPlan='Plan de estudios de Lengua',
             weeklyHours=3,
-            course=course1
+            school=school1
         )
         subject5 = Subject.objects.create(
             name='Lengua',
             abbreviation='len',
-            studyPlan='Plan de estudios de Lengua',
             weeklyHours=3,
-            course=course2
+            school=school1
         )
         subject6 = Subject.objects.create(
             name='Lengua',
             abbreviation='len',
-            studyPlan='Plan de estudios de Lengua',
             weeklyHours=3,
-            course=course3
+            school=school1
         )
         subject7 = Subject.objects.create(
             name='Historia Mundial',
             abbreviation='his',
-            studyPlan='Plan de estudios de historia mundial',
             weeklyHours=2,
-            course=course1
+            school=school1
         )
         subject8 = Subject.objects.create(
             name='Historia Mundial',
             abbreviation='his',
-            studyPlan='Plan de estudios de historia mundial',
             weeklyHours=2,
-            course=course2
+            school=school1
         )
         subject9 = Subject.objects.create(
             name='Historia Mundial',
             abbreviation='his',
-            studyPlan='Plan de estudios de historia mundial',
             weeklyHours=2,
-            course=course3
+            school=school1
         )
         subject10 = Subject.objects.create(
             name='Geografía',
             abbreviation='geo',
-            studyPlan='Plan de estudios de geografía',
             weeklyHours=2,
-            course=course1
+            school=school1
         )
         subject11 = Subject.objects.create(
             name='Geografía',
             abbreviation='geo',
-            studyPlan='Plan de estudios de geografía',
             weeklyHours=2,
-            course=course2
+            school=school1
         )
         subject12 = Subject.objects.create(
             name='Geografía',
             abbreviation='geo',
-            studyPlan='Plan de estudios de geografía',
             weeklyHours=2,
-            course=course3
+            school=school1
         )
 
+        cs1 = CourseSubjects.objects.create(subject=subject12, course=course3, studyPlan='Plan de estudios de geografía')
+        cs2 = CourseSubjects.objects.create(subject=subject11, course=course2, studyPlan='Plan de estudios de geografía')
+        cs3 = CourseSubjects.objects.create(subject=subject10, course=course1, studyPlan='Plan de estudios de historia mundial')
+        cs4 = CourseSubjects.objects.create(subject=subject9, course=course3, studyPlan='Plan de estudios de historia mundial')
+        cs5 = CourseSubjects.objects.create(subject=subject8, course=course2, studyPlan='Plan de estudios de historia mundial')
+        cs6 = CourseSubjects.objects.create(subject=subject7, course=course1, studyPlan='Plan de estudios de Lengua')
+        cs7 = CourseSubjects.objects.create(subject=subject6, course=course3, studyPlan='Plan de estudios de Lengua')
+        cs8 = CourseSubjects.objects.create(subject=subject5, course=course2, studyPlan='Plan de estudios de Lengua')
+        cs9 = CourseSubjects.objects.create(subject=subject4, course=course1, studyPlan='Plan de estudios de Matematica')
+        cs10 = CourseSubjects.objects.create(subject=subject3, course=course3, studyPlan='Plan de estudios de Matematica')
+        cs11= CourseSubjects.objects.create(subject=subject2, course=course2, studyPlan='Plan de estudios de Matematica')
+        cs12 = CourseSubjects.objects.create(subject=subject1, course=course1, studyPlan='Plan de estudios de Matematica')
+
+        
+
+
         # Teacher Subject School
-        TeacherSubjectSchool.objects.create(school=school1, subject=subject1, teacher=teacher1)
-        TeacherSubjectSchool.objects.create(school=school1, subject=subject2, teacher=teacher2)
-        TeacherSubjectSchool.objects.create(school=school1, subject=subject3, teacher=teacher3)
-        TeacherSubjectSchool.objects.create(school=school1, subject=subject4, teacher=teacher4)
+        TeacherSubjectSchool.objects.create(school=school1, subject=cs1, teacher=teacher1)
+        TeacherSubjectSchool.objects.create(school=school1, subject=cs2, teacher=teacher2)
+        TeacherSubjectSchool.objects.create(school=school1, subject=cs3, teacher=teacher3)
+        TeacherSubjectSchool.objects.create(school=school1, subject=cs4, teacher=teacher4)
 
         # Crear acciones
         action1 = Action.objects.create(name='Agregar materia', isEnabled=True)
