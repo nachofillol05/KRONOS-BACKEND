@@ -233,7 +233,8 @@ class Command(BaseCommand):
             name='Matematica',
             abbreviation='mat', 
             weeklyHours=4,
-            school=course1
+            school=course1,
+            studyPlan='Plan de estudios de geografía'
         )
         subject2 = Subject.objects.create(
             name='Matematica',
