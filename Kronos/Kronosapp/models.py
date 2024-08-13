@@ -171,11 +171,16 @@ class Course(models.Model):
 
 class Subject(models.Model):
     name = models.CharField(max_length=255)
+    studyPlan = models.TextField()
     description = models.CharField(max_length=255, blank=True)
     weeklyHours = models.IntegerField()
-    color = models.CharField(max_length=7, blank=True)
+    color = models.CharField(max_length=7, blank=True)  # Including # for hex color
     abbreviation = models.CharField(max_length=10, blank=True)
-    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
+    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True)
+    def __str__(self) -> str:
+        return self.name
+    def __str__(self) -> str:
+        return f"{self.name} - {self.course}"
 
     def __str__(self) -> str:
         return self.name
