@@ -14,7 +14,7 @@ from .views import (
     SubjectRetrieveUpdateDestroy,
     ModuleViewSet,
     verifyToken,
-    TeacherSchoolsView,
+    SchoolsView,
     CourseListCreate, 
     CourseRetrieveUpdateDestroy,
     YearListCreate,
@@ -31,8 +31,7 @@ from .views import (
     TeacherAvailabilityListCreateView,
     TeacherAvailabilityDetailView,
     RoleViewSet,
-    ContactarPersonal,
-    DirectiveSchoolsView
+    ContactarPersonal
 )
 
 from .utils import (
@@ -54,9 +53,8 @@ urlpatterns = [
     path('changePassword/', ChangePasswordView.as_view(), name='ChangePassword'),
     
     # Schools
-    path('user_schools/', TeacherSchoolsView.as_view(), name='user_schools'),
+    path('user_schools/', SchoolsView.as_view(), name='user_schools'),
     path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
-    path('directive_schools/', DirectiveSchoolsView.as_view(), name='directive_schools'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
     path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail'),
