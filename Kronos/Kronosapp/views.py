@@ -325,7 +325,7 @@ class DniComprobation(generics.GenericAPIView):
     '''
     COMPROBACION SI EL PROFESOR EXISTE ANTES DE CREAR UN NUEVO PROFESOR
     '''
-    def get(self, request):
+    def post(self, request):
             document = request.data.get('document')
             user = CustomUser.objects.filter(document=document)
 

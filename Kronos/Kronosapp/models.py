@@ -186,7 +186,7 @@ class Subject(models.Model):
         return self.name
 
     def __str__(self) -> str:
-        return f"{self.name} - {self.school}"
+        return f"{self.name}"
 
 
 class CourseSubjects(models.Model):
