@@ -320,10 +320,10 @@ class Command(BaseCommand):
 
 
         # Teacher Subject School
-        TeacherSubjectSchool.objects.create(school=school1, subject=cs1, teacher=teacher1)
-        TeacherSubjectSchool.objects.create(school=school1, subject=cs2, teacher=teacher2)
-        TeacherSubjectSchool.objects.create(school=school1, subject=cs3, teacher=teacher3)
-        TeacherSubjectSchool.objects.create(school=school1, subject=cs4, teacher=teacher4)
+        TeacherSubjectSchool.objects.create(school=school1, subject=subject1, teacher=teacher1)
+        TeacherSubjectSchool.objects.create(school=school1, subject=subject2, teacher=teacher2)
+        TeacherSubjectSchool.objects.create(school=school1, subject=subject3, teacher=teacher3)
+        TeacherSubjectSchool.objects.create(school=school1, subject=subject4, teacher=teacher4)
 
         # Crear acciones
         action1 = Action.objects.create(name='Agregar materia', isEnabled=True)

@@ -1,9 +1,13 @@
 from rest_framework import serializers
-from ..models import Subject
-from .course_serializer import CourseSerializer
+from ..models import Subject, Course
+
+class courseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ['id', 'name', 'description', 'year']
 
 class SubjectSerializer(serializers.ModelSerializer):
-    course = CourseSerializer()
+    course = courseSerializer()
     class Meta:
         model = Subject
-        fields = ['id', 'name', 'description', 'weeklyHours', 'color', 'abbreviation', 'school']
+        fields = ['id', 'name', 'description', 'weeklyHours', 'color', 'abbreviation','course']
