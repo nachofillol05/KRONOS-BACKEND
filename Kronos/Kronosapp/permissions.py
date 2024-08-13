@@ -36,6 +36,8 @@ class IsDirectiveOrOnlyRead(permissions.BasePermission):
                 return True
         
         return user.is_directive(school)
+    
+
 
     def has_object_permission(self, request, view, obj):
         """
@@ -59,3 +61,41 @@ class IsDirectiveOrOnlyRead(permissions.BasePermission):
             return obj.course.year.school == school
         return False
                  
+class IsTeacherOrOnlyRead(permissions.BasePermission):
+    MESSAGE_NOT_TEACHER = "User is not a teacher."
+
+    def has_permission(self, request, view):
+        user: CustomUser = request.user
+        school = request.school
+
+        is_safe_method = request.method in permissions.SAFE_METHODS
+        
+        if is_safe_method:
+            if user.is_directive(school):
+                return True
+        
+        return user.is_teacher(school)
+    
+
+
+    def has_object_permission(self, request, view, obj):
+        """
+        This method only checks if certain objects 
+        (school, module, year, course, subject and event) 
+        belong to the header school.
+        """
+        if isinstance(obj, CustomUser):
+            return True
+        
+        school = request.school
+
+        if school == obj:
+            return True
+        if hasattr(obj, 'school'):
+            return obj.school == school
+        if hasattr(obj, 'year'):
+            return obj.year.school == school
+        if hasattr(obj, 'course'):
+            print(obj.course.year.school == school)
+            return obj.course.year.school == school
+        return False

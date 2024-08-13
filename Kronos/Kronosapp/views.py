@@ -972,14 +972,15 @@ class NewScheduleCreation(generics.GenericAPIView):
 
 
 class EventListCreate(generics.ListCreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = Event.objects.all()
     serializer_class = EventSerializer
 
     def get_queryset(self):
-        queryset = Event.objects.all()
+        queryset = Event.objects.filter(school=self.request.school)
         name = self.request.query_params.get('name', None)
         event_type = self.request.query_params.get('eventType', None)
-        role = self.request.user.role
         max_date = self.request.query_params.get('maxDate', None)
 
         if name:

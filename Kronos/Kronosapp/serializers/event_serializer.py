@@ -1,11 +1,18 @@
 from rest_framework import serializers
-from ..models import Event, EventType
+from ..models import Event, EventType, CustomUser
+from .user_serializer import UserSerializer
 from django.utils import timezone
 
+class EventTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EventType
+        fields = '__all__'
 
 class EventSerializer(serializers.ModelSerializer):
     startDate = serializers.DateTimeField(input_formats=['%d/%m/%Y'])
     endDate = serializers.DateTimeField(input_formats=['%d/%m/%Y'])
+    affiliated_teachers = UserSerializer(many=True, read_only=True)
+    eventType = EventTypeSerializer(read_only=True)
 
     class Meta:
         model = Event
@@ -26,7 +33,3 @@ class EventSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("La fecha de inicio no puede ser posterior a la fecha de fin.")
         return data
 
-class EventTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EventType
-        fields = '__all__'
