@@ -11,18 +11,18 @@ class ContactInforSerializer(serializers.ModelSerializer):
 class DocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentType
-        fields = '__all__'
+        fields = ['name']
 
 class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeacherSubjectSchool
-        fields = 'Teacher', 'School'
+        fields = ['Teacher', 'School']
 
 
 class NationalitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Nationality
-        fields = '__all__'
+        fields = ['name']
 class RegisterTeacherSubjectSchoolSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeacherSubjectSchool
