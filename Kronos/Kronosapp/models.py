@@ -197,7 +197,7 @@ class CourseSubjects(models.Model):
 
 class TeacherSubjectSchool(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE)
-    subject = models.ForeignKey(CourseSubjects, on_delete=models.SET_NULL, null=True, blank=True)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, blank=True, null=True)
     teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
 
     def __str__(self) -> str:

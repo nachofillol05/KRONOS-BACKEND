@@ -26,9 +26,15 @@ from .views import (
     EventRetrieveUpdateDestroy,
     EventTypeViewSet,
     DocumentTypeViewSet,
+    TeacherSubjectSchoolListCreateView,
+    TeacherSubjectSchoolDetailView,
+    TeacherAvailabilityListCreateView,
+    TeacherAvailabilityDetailView,
+    RoleViewSet,
     ContactarPersonal,
     DirectiveSchoolsView
 )
+
 from .utils import (
     verify_email
 )
@@ -72,6 +78,15 @@ urlpatterns = [
     path('typeevent/', EventTypeViewSet.as_view(), name='eventType-list-create'),
     #DocumentType
     path('documentTypes/', DocumentTypeViewSet.as_view(), name='document-type-list-create'),
+    #roles
+    path('roles/', RoleViewSet.as_view(), name='role-list-create'),
+    
+    #teacher_subject_school
+    path('teachersubjectschool/', TeacherSubjectSchoolListCreateView.as_view(), name='teachersubjectschool-list-create'),
+    path('teachersubjectschool/<int:pk>/', TeacherSubjectSchoolDetailView.as_view(), name='teachersubjectschool-detail'),
+    #teacherAvailability
+    path('teacheravailability/', TeacherAvailabilityListCreateView.as_view(), name='teacher-availability-list-create'),
+    path('teacheravailability/<int:pk>/', TeacherAvailabilityDetailView.as_view(), name='teacher-availability-detail'),
     # Verify Token
 
     path('contacting-staff/', ContactarPersonal.as_view(), name='contacting-staff'),

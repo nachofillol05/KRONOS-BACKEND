@@ -28,7 +28,6 @@ from pandas.errors import EmptyDataError
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from .schedule_creation import schedule_creation
 from .utils import register_user, send_email
-
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from .serializers.preceptor_serializer import PreceptorSerializer
@@ -39,6 +38,10 @@ from .serializers.year_serializer import YearSerializer
 from .serializers.module_serializer import ModuleSerializer
 from .serializers.event_serializer import EventSerializer, EventTypeSerializer
 from .serializers.documenttype_serializer import DocumentTypeSerializer
+from .serializers.teacherSubSchool_serializer import TeacherSubjectSchoolSerializer
+from .serializers.teacherAvailability_serializer import TeacherAvailabilitySerializer
+from .serializers.roles_serializer import RoleSerializer
+
 from .models import(
     CustomUser,
     School,
@@ -52,7 +55,9 @@ from .models import(
     EventType,
     Event,
     CourseSubjects,
-    DocumentType
+    DocumentType,
+    TeacherAvailability,
+    Role
 )
 
 
@@ -674,11 +679,13 @@ class NewScheduleCreation(generics.GenericAPIView):
 
 
 class EventListCreate(generics.ListCreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = Event.objects.all()
     serializer_class = EventSerializer
 
     def get_queryset(self):
-        queryset = Event.objects.all()
+        queryset = Event.objects.filter(school=self.request.school)
         name = self.request.query_params.get('name', None)
         event_type = self.request.query_params.get('eventType', None)
         max_date = self.request.query_params.get('maxDate', None)
@@ -736,3 +743,36 @@ class EventTypeViewSet(generics.ListAPIView):
 class DocumentTypeViewSet(generics.ListAPIView):
     queryset = DocumentType.objects.all()
     serializer_class = DocumentTypeSerializer
+
+
+class TeacherSubjectSchoolListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    queryset = TeacherSubjectSchool.objects.all()
+    serializer_class = TeacherSubjectSchoolSerializer
+
+    def get_queryset(self):
+        queryset = TeacherSubjectSchool.objects.filter(school=self.request.school)
+        return queryset
+
+
+class TeacherSubjectSchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    queryset = TeacherSubjectSchool.objects.all()
+    serializer_class = TeacherSubjectSchoolSerializer
+
+
+class RoleViewSet(generics.ListAPIView):
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+
+
+
+class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    queryset = TeacherAvailability.objects.all()
+    serializer_class = TeacherAvailabilitySerializer
+
+class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    queryset = TeacherAvailability.objects.all()
+    serializer_class = TeacherAvailabilitySerializer

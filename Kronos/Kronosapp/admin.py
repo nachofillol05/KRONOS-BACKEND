@@ -17,7 +17,7 @@ from .models import (
     EventType,
     Event,
     Nationality,
-    CourseSubjects,
+    Role
 )
 
 
@@ -38,5 +38,4 @@ admin.site.register(Action)
 admin.site.register(Schedules)
 admin.site.register(EventType)
 admin.site.register(Event)
-admin.site.register(CourseSubjects)
-
+admin.site.register(Role)

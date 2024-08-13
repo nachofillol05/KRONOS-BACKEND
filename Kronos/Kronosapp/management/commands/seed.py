@@ -3,7 +3,7 @@ from Kronosapp.models import (
     DocumentType, Nationality, ContactInformation, School,
     CustomUser, Module, AvailabilityState, TeacherAvailability,
     Year, Course, Subject, TeacherSubjectSchool, Action,
-    EventType, Event, CourseSubjects
+    EventType, Event, Role, CourseSubjects
 )
 import uuid
 from django.utils import timezone
@@ -334,6 +334,10 @@ class Command(BaseCommand):
         event_type1 = EventType.objects.create(name='Paro de transporte', description='Interrupción de servicios de transporte')
         event_type2 = EventType.objects.create(name='Viaje escolar', description='Excursión organizada por la escuela')
 
+        # Crear roles
+        directive_role = Role.objects.create(name='Directive')
+        teacher_role = Role.objects.create(name='Teacher')
+        preceptor_role = Role.objects.create(name='Preceptor')
 
         # Crear evento
         event1 = Event.objects.create(
@@ -343,6 +347,8 @@ class Command(BaseCommand):
             school=school1,
             eventType=event_type1
         )
+        event1.roles.add(directive_role)    
+
         event2 = Event.objects.create(
             name='Viaje a museo',
             startDate=timezone.now() + timedelta(days=15),
@@ -350,6 +356,9 @@ class Command(BaseCommand):
             school=school1,
             eventType=event_type2
         )
+        event2.roles.add(teacher_role, preceptor_role)
+        
+        
         event3 = Event.objects.create(
             name='Visita a la universidad',
             startDate=timezone.now() + timedelta(days=30),
@@ -357,7 +366,8 @@ class Command(BaseCommand):
             school=school1,
             eventType=event_type2
         )
-
+        event3.roles.add(directive_role)
+        
         # Asignar profesores a los eventos
         event1.affiliated_teachers.add(teacher1)
         event2.affiliated_teachers.add(teacher2)

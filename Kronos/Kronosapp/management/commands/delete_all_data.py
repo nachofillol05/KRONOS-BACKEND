@@ -3,7 +3,7 @@ from Kronosapp.models import (
     DocumentType, Nationality, ContactInformation, School,
     CustomUser, Module, AvailabilityState, TeacherAvailability,
     Year, Course, Subject, TeacherSubjectSchool, Action,
-    EventType, Event
+    EventType, Event, Role
 )
 
 class Command(BaseCommand):
@@ -26,6 +26,8 @@ class Command(BaseCommand):
         Nationality.objects.all().delete()
         DocumentType.objects.all().delete()
         Action.objects.all().delete()
+        Role.objects.all().delete()
+
         CustomUser.objects.filter(is_staff=False, is_superuser=False).delete()
 
         self.stdout.write(self.style.SUCCESS('All data has been deleted from the database.'))
