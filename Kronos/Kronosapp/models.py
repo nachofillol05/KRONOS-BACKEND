@@ -152,7 +152,7 @@ class TeacherAvailability(models.Model):
 class Year(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255, blank=True)
-    number = models.CharField(max_length=10)
+    number = models.CharField(max_length=1)
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="years")
     preceptors = models.ManyToManyField(CustomUser)
 

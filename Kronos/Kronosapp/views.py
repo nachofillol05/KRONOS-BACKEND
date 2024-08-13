@@ -31,7 +31,7 @@ from .utils import register_user, send_email
 
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
-from .serializers.preceptor_serializer import PreceptorSerializer, YearSerializer
+from .serializers.preceptor_serializer import PreceptorSerializer
 from .serializers.user_serializer import UserSerializer
 from .serializers.Subject_serializer import SubjectSerializer
 from .serializers.course_serializer import CourseSerializer
@@ -480,21 +480,13 @@ class YearListCreate(generics.ListCreateAPIView):
     queryset = Year.objects.all()
     serializer_class = YearSerializer
 
-    def get(self, request):
-        queryset = Year.objects.all()
-        print(queryset)
-        serializer = YearSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-    def post(self, request):
-        serializer = YearSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        serializer.save()
-        return Response(
-            {'Saved': 'El año ha sido creado', 'data': serializer.data},status=status.HTTP_201_CREATED)
-    
-    
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+
+    def get_queryset(self):
+        queyset = Year.objects.filter(school=self.request.school).oreder_by('number')
+        if not queyset.exists():
+            return Response({'detail': 'not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class YearRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Year.objects.all()
