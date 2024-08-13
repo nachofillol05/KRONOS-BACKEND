@@ -28,5 +28,6 @@ class Command(BaseCommand):
         Action.objects.all().delete()
         Role.objects.all().delete()
 
+        CustomUser.objects.filter(is_staff=False, is_superuser=False).delete()
 
         self.stdout.write(self.style.SUCCESS('All data has been deleted from the database.'))

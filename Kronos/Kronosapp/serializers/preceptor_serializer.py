@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from ..models import Year
-from .user_serializer import UserSerializer, CustomUser, ContactInforSerializer
+from .user_serializer import UserSerializer, CustomUser, ContactInforSerializer, NationalitySerializer, DocumentTypeSerializer
 
 
 class YearSerializer(serializers.ModelSerializer):
@@ -10,6 +10,7 @@ class YearSerializer(serializers.ModelSerializer):
 
 
 class PreceptorSerializer(UserSerializer):
+    years = serializers.PrimaryKeyRelatedField(many=True, read_only=True, source="year_set")
 
     class Meta:
         model = CustomUser

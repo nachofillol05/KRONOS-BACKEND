@@ -25,13 +25,13 @@ class ModuleSerializer(serializers.ModelSerializer):
 
 
 class ReadSchoolSerializer(serializers.ModelSerializer):
-    #contactInfo = ContactInformationSerializer()
-    #directives = DirectiveSerializer(many=True)
+    contactInfo = ContactInformationSerializer()
+    directives = DirectiveSerializer(many=True)
 
     class Meta:
         model = School
-        fields = ['pk', 'name', 'logo']
-        # , 'abbreviation', 'logo', 'email', 'directives', 'contactInfo'
+        fields = ['pk', 'name', 'logo' , 'abbreviation', 'logo', 'email', 'directives', 'contactInfo']
+        
     
     def create(self, validated_data):
         directives_data = validated_data.pop('directives', [])
