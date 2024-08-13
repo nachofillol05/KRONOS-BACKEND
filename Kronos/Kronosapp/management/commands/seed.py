@@ -233,74 +233,74 @@ class Command(BaseCommand):
             name='Matematica',
             abbreviation='mat', 
             weeklyHours=4,
-            school=course1,
+            course=course1,
             studyPlan='Plan de estudios de geografía'
         )
         subject2 = Subject.objects.create(
             name='Matematica',
             abbreviation='mat',
             weeklyHours=4,
-            school=course2
+            course=course2
         )
         subject3 = Subject.objects.create(
             name='Matematica',
             abbreviation='mat',
             weeklyHours=4,
-            school=course3
+            course=course3
         )
         subject4 = Subject.objects.create(
             name='Lengua',
             abbreviation='len',
             weeklyHours=3,
-            school=course4
+            course=course4
         )
         subject5 = Subject.objects.create(
             name='Lengua',
             abbreviation='len',
             weeklyHours=3,
-            school=course5
+            course=course5
         )
         subject6 = Subject.objects.create(
             name='Lengua',
             abbreviation='len',
             weeklyHours=3,
-            school=course6
+            course=course6
         )
         subject7 = Subject.objects.create(
             name='Historia Mundial',
             abbreviation='his',
             weeklyHours=2,
-            school=course1
+            course=course1
         )
         subject8 = Subject.objects.create(
             name='Historia Mundial',
             abbreviation='his',
             weeklyHours=2,
-            school=course2
+            course=course2
         )
         subject9 = Subject.objects.create(
             name='Historia Mundial',
             abbreviation='his',
             weeklyHours=2,
-            school=course3
+            course=course3
         )
         subject10 = Subject.objects.create(
             name='Geografía',
             abbreviation='geo',
             weeklyHours=2,
-            school=course4
+            course=course4
         )
         subject11 = Subject.objects.create(
             name='Geografía',
             abbreviation='geo',
             weeklyHours=2,
-            school=course5
+            course=course5
         )
         subject12 = Subject.objects.create(
             name='Geografía',
             abbreviation='geo',
             weeklyHours=2,
-            school=course6
+            course=course6
         )
 
         cs1 = CourseSubjects.objects.create(subject=subject12, course=course3)
