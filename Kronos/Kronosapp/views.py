@@ -459,18 +459,24 @@ class CourseRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
 
 
 class YearListCreate(generics.ListCreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = Year.objects.all()
     serializer_class = YearSerializer
 
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
-
     def get_queryset(self):
-        queyset = Year.objects.filter(school=self.request.school).oreder_by('number')
-        if not queyset.exists():
+        queryset = Year.objects.filter(school=self.request.school).order_by('number')
+        if not queryset.exists():
             return Response({'detail': 'not found'}, status=status.HTTP_404_NOT_FOUND)
+        return queryset
+    
+    def perform_create(self, serializer):
+        school = self.request.school
+        serializer.save(school=school)
 
 class YearRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = Year.objects.all()
     serializer_class = YearSerializer
 
@@ -554,7 +560,6 @@ class PreceptorsView(APIView):
         if not year_id or not user_id:
             return Response({'detail': 'year_id and user_id are requireds'}, status=status.HTTP_400_BAD_REQUEST)
         
-
         try:
             year = Year.objects.get(pk=year_id)
             user = CustomUser.objects.get(pk=user_id)
@@ -579,6 +584,7 @@ class PreceptorsView(APIView):
         serializer = YearSerializer(year)
         return Response(serializer.data, status=status_code)
     
+
 class verifyToken(APIView):
     def post(self, request):
         token = request.data.get('token')
