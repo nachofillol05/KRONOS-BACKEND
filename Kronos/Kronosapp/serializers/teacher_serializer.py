@@ -30,6 +30,7 @@ class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
         model = TeacherSubjectSchool
         fields = ['subject_name', 'school_name']
 
+
 class TeacherSerializer(serializers.ModelSerializer):
     contactInfo = ContactInformationSerializer()
     documentType = DocumentTypeSerializer()
