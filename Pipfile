@@ -1,0 +1,24 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "*"
+djangorestframework = "*"
+pillow = "*"
+python-dotenv = "*"
+mysqlclient = "*"
+pandas = "*"
+xlrd = "*"
+validate-email-address = "*"
+l = "*"
+django-cors-headers = "*"
+drf-spectacular = "*"
+djangorestframework-simplejwt = "*"
+pulp = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"
