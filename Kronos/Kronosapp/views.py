@@ -467,9 +467,10 @@ class YearListCreate(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     def get_queryset(self):
-        queyset = Year.objects.filter(school=self.request.school).oreder_by('number')
-        if not queyset.exists():
+        queryset = Year.objects.filter(school=self.request.school).order_by('number')
+        if not queryset.exists():
             return Response({'detail': 'not found'}, status=status.HTTP_404_NOT_FOUND)
+        return queryset
 
 class YearRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Year.objects.all()

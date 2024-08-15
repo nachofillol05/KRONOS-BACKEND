@@ -6,7 +6,7 @@ class YearSerializer(serializers.ModelSerializer):
     preceptors=PreceptorSerializer(many=True, read_only=True)
     class Meta:
         model = Year
-        fields = ['id','name', 'description', 'number']
+        fields = ['id','name', 'description', 'number', 'preceptors']
 
     def validate_number(self, value):
         request = self.context.get('request')
