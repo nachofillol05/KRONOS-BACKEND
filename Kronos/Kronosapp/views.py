@@ -32,7 +32,7 @@ from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from .serializers.preceptor_serializer import PreceptorSerializer
 from .serializers.user_serializer import UserSerializer
-from .serializers.Subject_serializer import SubjectSerializer
+from .serializers.Subject_serializer import SubjectSerializer, CourseSubjectsSerializer
 from .serializers.course_serializer import CourseSerializer
 from .serializers.year_serializer import YearSerializer
 from .serializers.module_serializer import ModuleSerializer
@@ -343,7 +343,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
     LISTAR Y CREAR MATERIAS
     '''
     queryset = CourseSubjects.objects.all()
-    serializer_class = SubjectSerializer
+    serializer_class = CourseSubjectsSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
@@ -354,7 +354,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
         name = request.query_params.get('name')
         school = self.request.school
         
-        queryset = Subject.objects.filter(course__year__school=school)
+        queryset = CourseSubjects.objects.filter(course__year__school=school)
         
         if start_time and end_time:
             queryset = queryset.filter(
@@ -368,10 +368,10 @@ class SubjectListCreate(generics.ListCreateAPIView):
             ).distinct()
         
         if name:
-            queryset = queryset.filter(name__icontains=name)
+            queryset = queryset.filter(subject__name__icontains=name)
 
 
-        serializer = SubjectSerializer(queryset, many=True)
+        serializer = CourseSubjectsSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def perform_create(self, serializer):
