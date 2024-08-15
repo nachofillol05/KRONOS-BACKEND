@@ -11,7 +11,6 @@ from .views import (
     ExcelToteacher,
     DniComprobation,
     SubjectListCreate, 
-    SubjectRetrieveUpdateDestroy,
     ModuleViewSet,
     verifyToken,
     SchoolsView,
@@ -57,7 +56,6 @@ urlpatterns = [
     path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
-    path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail'),
     # courses
     path('courses/', CourseListCreate.as_view(), name='course-list-create'),
     path('courses/<int:pk>/', CourseRetrieveUpdateDestroy.as_view(), name='course-detail'),

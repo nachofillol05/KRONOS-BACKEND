@@ -377,7 +377,6 @@ class SubjectListCreate(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         validated_data = serializer.validated_data
         course = validated_data.get('course')
-        print(course)
         if course.year.school != self.request.school:
             raise ValidationError({'course': ['You can only modify the school you belong to']})
         serializer.save()
@@ -389,22 +388,6 @@ class SubjectListCreate(generics.ListCreateAPIView):
     #     serializer.save()
     #     return Response(
     #         {'Saved': 'La materia ha sido creada', 'data': serializer.data},status=status.HTTP_201_CREATED)
-
-
-
-class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Subject.objects.all()
-    serializer_class = SubjectSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
-
-    def delete(self, request, *args, **kwargs):
-        response = super().delete(request, *args, **kwargs)
-        return Response({'Deleted': 'La materia ha sido eliminada'}, status=status.HTTP_204_NO_CONTENT)
-    
-    def put(self, request, *args, **kwargs):
-        response = super().put(request, *args, **kwargs)
-        return Response({'Updated': 'La materia ha sido actualizada', 'data': response.data}, status=status.HTTP_200_OK)
 
 
 
