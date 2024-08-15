@@ -298,7 +298,7 @@ class TeacherListView(generics.ListAPIView):
         queryset = TeacherSubjectSchool.objects.all()
         
         if subject_id:
-            queryset = queryset.filter(subject__subject__id=subject_id).distinct()
+            queryset = queryset.filter(coursesubjects__subject__id=subject_id).distinct()
 
         if search_name:
             queryset = queryset.filter(

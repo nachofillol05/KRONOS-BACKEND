@@ -189,11 +189,11 @@ class CourseSubjects(models.Model):
 
 class TeacherSubjectSchool(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE)
-    subject = models.ForeignKey(CourseSubjects, on_delete=models.SET_NULL, blank=True, null=True)
+    coursesubjects = models.ForeignKey(CourseSubjects, on_delete=models.SET_NULL, blank=True, null=True)
     teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return f"{self.teacher} - {self.subject} - {self.school}"
+        return f"{self.teacher} - {self.coursesubjects} - {self.school}"
 
 
 class Action(models.Model):
