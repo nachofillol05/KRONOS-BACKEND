@@ -30,7 +30,7 @@ from .views import (
     TeacherSubjectSchoolDetailView,
     TeacherAvailabilityListCreateView,
     TeacherAvailabilityDetailView,
-    RoleViewSet,
+    RoleView,
     ContactarPersonal
 )
 
@@ -77,7 +77,7 @@ urlpatterns = [
     #DocumentType
     path('documentTypes/', DocumentTypeViewSet.as_view(), name='document-type-list-create'),
     #roles
-    path('roles/', RoleViewSet.as_view(), name='role-list-create'),
+    path('roles/', RoleView.as_view(), name='role-list-create'),
     
     #teacher_subject_school
     path('teachersubjectschool/', TeacherSubjectSchoolListCreateView.as_view(), name='teachersubjectschool-list-create'),

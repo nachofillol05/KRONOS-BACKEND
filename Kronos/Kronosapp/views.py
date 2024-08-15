@@ -36,7 +36,7 @@ from .serializers.Subject_serializer import SubjectSerializer
 from .serializers.course_serializer import CourseSerializer
 from .serializers.year_serializer import YearSerializer
 from .serializers.module_serializer import ModuleSerializer
-from .serializers.event_serializer import EventSerializer, EventTypeSerializer
+from .serializers.event_serializer import EventSerializer, EventTypeSerializer, CreateEventSerializer
 from .serializers.documenttype_serializer import DocumentTypeSerializer
 from .serializers.teacherSubSchool_serializer import TeacherSubjectSchoolSerializer
 from .serializers.teacherAvailability_serializer import TeacherAvailabilitySerializer
@@ -678,24 +678,24 @@ class EventListCreate(generics.ListCreateAPIView):
                 queryset = queryset.filter(startDate__lte=max_date_parsed)
             except ValueError:
                 pass
-
-
+        if not queryset.exists():
+            return Response({'detail': 'Not found event.'}, status=status.HTTP_404_NOT_FOUND)
         return queryset
-    
-    def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        serializer.save()
-        return Response(
-            {'Saved': 'El evento ha sido creado', 'data': serializer.data},
-            status=status.HTTP_201_CREATED
-        )
+    def get_serializer(self, *args, **kwargs):
+        if self.request.method == 'POST':
+            data = self.request.data
+            data['school'] = self.request.school.pk
+            kwargs['data'] = data
+        return super().get_serializer(*args, **kwargs)
+    
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return EventSerializer
+        return CreateEventSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(school=self.request.school)
       
 
 class EventRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
@@ -715,6 +715,10 @@ class EventTypeViewSet(generics.ListAPIView):
     queryset = EventType.objects.all()
     serializer_class = EventTypeSerializer
 
+
+class RoleView(generics.ListAPIView):
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
 
 
 class DocumentTypeViewSet(generics.ListAPIView):
@@ -738,9 +742,6 @@ class TeacherSubjectSchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TeacherSubjectSchoolSerializer
 
 
-class RoleViewSet(generics.ListAPIView):
-    queryset = Role.objects.all()
-    serializer_class = RoleSerializer
 
 
 
