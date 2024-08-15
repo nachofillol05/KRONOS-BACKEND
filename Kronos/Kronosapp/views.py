@@ -395,10 +395,13 @@ class SubjectListCreate(generics.ListCreateAPIView):
 class CourseListCreate(generics.ListCreateAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    
 
     def get(self, request):
-        queryset = Course.objects.all()
-        print(queryset)
+        school = self.request.school
+        queryset = Course.objects.filter(year__school = school)
         serializer = CourseSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
