@@ -6,6 +6,7 @@ from django.contrib.auth.hashers import make_password
 from django.db.models import Q
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as ValidationErrorDjango
+from django.shortcuts import get_object_or_404
 from datetime import datetime
 
 from rest_framework.views import APIView
@@ -753,3 +754,23 @@ class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = TeacherAvailability.objects.all()
     serializer_class = TeacherAvailabilitySerializer
+
+
+class UserRolesViewSet(APIView):
+    permission_classes = [IsAuthenticated, SchoolHeader]
+
+    def get(self, request):
+        user = request.user
+        school = request.school
+
+        roles = []
+        if user.is_directive(school):
+            roles.append('Directivo')
+        if user.is_teacher(school):
+            roles.append('Profesor')
+        if user.is_preceptor(school):
+            roles.append('Preceptor')
+
+        return Response({
+            'roles': roles
+        })
