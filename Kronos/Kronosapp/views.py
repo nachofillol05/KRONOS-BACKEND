@@ -756,7 +756,7 @@ class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TeacherAvailabilitySerializer
 
 
-class UserRolesViewSet(generics.ListAPIView):
+class UserRolesViewSet(APIView):
     permission_classes = [IsAuthenticated, SchoolHeader]
 
     def get(self, request):
