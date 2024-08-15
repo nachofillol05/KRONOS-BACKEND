@@ -699,16 +699,26 @@ class EventListCreate(generics.ListCreateAPIView):
       
 
 class EventRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = Event.objects.all()
     serializer_class = EventSerializer
 
-    def delete(self, request, *args, **kwargs):
-        response = super().delete(request, *args, **kwargs)
-        return Response({'Deleted': 'El evento ha sido eliminado'}, status=status.HTTP_204_NO_CONTENT)
-
-    def put(self, request, *args, **kwargs):
-        response = super().put(request, *args, **kwargs)
-        return Response({'Updated': 'El evento ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return EventSerializer
+        return CreateEventSerializer
+        
+    def get_serializer(self, *args, **kwargs):
+        if self.request.method == 'PUT':
+            data = self.request.data
+            data['school'] = self.request.school.pk
+            kwargs['data'] = data
+            print(data)
+        return super().get_serializer(*args, **kwargs)
+    
+    def perform_create(self, serializer):
+        serializer.save(school=self.request.school)
 
 
 class EventTypeViewSet(generics.ListAPIView):
