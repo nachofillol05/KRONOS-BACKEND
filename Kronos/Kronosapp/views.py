@@ -429,19 +429,6 @@ class CourseListCreate(generics.ListCreateAPIView):
             status=status.HTTP_201_CREATED
         )
 
-class CourseRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Course.objects.all()
-    serializer_class = CourseSerializer
-
-    def delete(self, request, *args, **kwargs):
-        response = super().delete(request, *args, **kwargs)
-        return Response({'Deleted': 'El curso ha sido eliminado'}, status=status.HTTP_204_NO_CONTENT)
-    
-    def put(self, request, *args, **kwargs):
-        response = super().put(request, *args, **kwargs)
-        return Response({'Updated': 'El curso ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
-
-
 
 
 class YearListCreate(generics.ListCreateAPIView):
