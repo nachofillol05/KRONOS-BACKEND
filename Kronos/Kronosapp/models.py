@@ -171,9 +171,7 @@ class Course(models.Model):
 
 class Subject(models.Model):
     name = models.CharField(max_length=255)
-    studyPlan = models.TextField()
     description = models.CharField(max_length=255, blank=True)
-    weeklyHours = models.IntegerField()
     color = models.CharField(max_length=7, blank=True)  # Including # for hex color
     abbreviation = models.CharField(max_length=10, blank=True)
     def __str__(self) -> str:
@@ -184,6 +182,7 @@ class CourseSubjects(models.Model):
     studyPlan = models.TextField()
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    weeklyHours = models.IntegerField()
     def __str__(self) -> str:
        return f"{self.course} - {self.subject}"
 
