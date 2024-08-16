@@ -83,7 +83,7 @@ class CustomUser(AbstractUser):
     document = models.CharField(max_length=255, unique=True, blank=True, null=True, validators=[validate_numeric])
     first_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255, blank=True, null=True)
-    profile_picure = models.ImageField(upload_to='logos/', null=True, blank=True)
+    profile_picture = models.ImageField(upload_to='logos/', null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True)
     email = models.EmailField(max_length=255, unique=True)
     hoursToWork = models.IntegerField(blank=True, null=True)
