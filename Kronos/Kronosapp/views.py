@@ -6,6 +6,7 @@ from django.contrib.auth.hashers import make_password
 from django.db.models import Q
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as ValidationErrorDjango
+from django.shortcuts import get_object_or_404
 from datetime import datetime
 
 from rest_framework.views import APIView
@@ -36,7 +37,7 @@ from .serializers.Subject_serializer import SubjectSerializer
 from .serializers.course_serializer import CourseSerializer
 from .serializers.year_serializer import YearSerializer
 from .serializers.module_serializer import ModuleSerializer
-from .serializers.event_serializer import EventSerializer, EventTypeSerializer
+from .serializers.event_serializer import EventSerializer, EventTypeSerializer, CreateEventSerializer
 from .serializers.documenttype_serializer import DocumentTypeSerializer
 from .serializers.teacherSubSchool_serializer import TeacherSubjectSchoolSerializer
 from .serializers.teacherAvailability_serializer import TeacherAvailabilitySerializer
@@ -469,10 +470,7 @@ class YearListCreate(generics.ListCreateAPIView):
         if not queryset.exists():
             return Response({'detail': 'not found'}, status=status.HTTP_404_NOT_FOUND)
         return queryset
-    
-    def perform_create(self, serializer):
-        school = self.request.school
-        serializer.save(school=school)
+
 
 class YearRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     authentication_classes = [TokenAuthentication]
@@ -669,9 +667,11 @@ class EventListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         queryset = Event.objects.filter(school=self.request.school)
+
         name = self.request.query_params.get('name', None)
         event_type = self.request.query_params.get('eventType', None)
         max_date = self.request.query_params.get('maxDate', None)
+        roles = self.request.query_params.getlist('rolesIds', None)
 
         if name:
             queryset = queryset.filter(name__icontains=name)
@@ -683,44 +683,185 @@ class EventListCreate(generics.ListCreateAPIView):
                 max_date_parsed = datetime.strptime(max_date, '%d/%m/%Y')
                 queryset = queryset.filter(startDate__lte=max_date_parsed)
             except ValueError:
-                pass
-
-
+                raise ValidationError("La fecha proporcionada no tiene el formato correcto. Use 'dd/mm/yyyy'.")
+        if roles:
+            try:
+                for role in roles:
+                    role_id = int(role)
+                    if not Role.objects.filter(pk=role_id).exists():
+                        raise ValidationError({'error': '"roles_ids": no valido.'})
+            except ValueError:
+                    raise ValidationError("Los roles proporcionados no existen.")
+                
         return queryset
     
-    def get(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        serializer.save()
-        return Response(
-            {'Saved': 'El evento ha sido creado', 'data': serializer.data},
-            status=status.HTTP_201_CREATED
-        )
+        if not queryset.exists():
+            return Response({'detail': 'Not found event.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def get_serializer(self, *args, **kwargs):
+        if self.request.method == 'POST':
+            data = self.request.data
+            data['school'] = self.request.school.pk
+            kwargs['data'] = data
+        return super().get_serializer(*args, **kwargs)
+    
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return EventSerializer
+        return CreateEventSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(school=self.request.school)
       
 
 class EventRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = Event.objects.all()
     serializer_class = EventSerializer
 
-    def delete(self, request, *args, **kwargs):
-        response = super().delete(request, *args, **kwargs)
-        return Response({'Deleted': 'El evento ha sido eliminado'}, status=status.HTTP_204_NO_CONTENT)
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return EventSerializer
+        return CreateEventSerializer
+        
+    def get_serializer(self, *args, **kwargs):
+        if self.request.method == 'PUT':
+            data = self.request.data
+            data['school'] = self.request.school.pk
+            kwargs['data'] = data
+        return super().get_serializer(*args, **kwargs)
+    
+    def perform_create(self, serializer):
+        serializer.save(school=self.request.school)
 
-    def put(self, request, *args, **kwargs):
-        response = super().put(request, *args, **kwargs)
-        return Response({'Updated': 'El evento ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
+class AffiliatedView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+
+    def post(self, request, *args, **kwargs):
+        """
+        Se le indica el año y el usuario que sera añadido como preceptor.
+        Devuelve el año actualizado
+        """
+        return self.manage_user(request, is_add=True)
+    
+    def delete(self, request, *args, **kwargs):
+        """
+        Se le indica el año y el usuario que sera removido como preceptor.
+        Devuelve el año actualizado
+        """
+        return self.manage_user(request, is_add=False)
+
+    def manage_user(self, request, is_add):
+        event_id = request.data.get('event_id')
+        user = request.user
+
+        if not event_id:
+            return Response({'detail': '"event_id" is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            event: Event = Event.objects.get(pk=event_id)
+        except (Year.DoesNotExist):
+            return Response({'detail': 'Year or User do not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        if event.school != request.school:
+            return Response({'detail': 'Year not recognized at school'})
+
+        if is_add:
+            if user in event.affiliated_teachers.all():
+                return Response({'detail': 'User is already a affiliated.'})
+            event.affiliated_teachers.add(user)
+            status_code = status.HTTP_201_CREATED
+        else:
+            if user not in event.affiliated_teachers.all():
+                return Response({'error': 'The user is not associated with event.'}, status=status.HTTP_400_BAD_REQUEST)
+            event.affiliated_teachers.remove(user)
+            status_code = status.HTTP_200_OK
+        
+        event.save()
+        return Response(status=status_code)
+
+
+class PreceptorsView(APIView):
+    """
+    Endpoints que realiza acciones sobre los preceptores del colegio indicado en la ruta
+    """
+    queryset = CustomUser.objects.all()
+    serializer_class = PreceptorSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+
+   
+    def get(self, request, *args, **kwargs):
+        school = self.request.school    
+        preceptors  = CustomUser.objects.filter(year__school=school).distinct()
+        serializer = PreceptorSerializer(preceptors, many=True)
+        return Response(serializer.data)    
+    
+
+    
+    def post(self, request, *args, **kwargs):
+        """
+        Se le indica el año y el usuario que sera añadido como preceptor.
+        Devuelve el año actualizado
+        """
+        return self.manage_user(request, is_add=True)
+    
+    def delete(self, request, *args, **kwargs):
+        """
+        Se le indica el año y el usuario que sera removido como preceptor.
+        Devuelve el año actualizado
+        """
+        return self.manage_user(request, is_add=False)
+
+    def manage_user(self, request, is_add):
+        year_id = request.data.get('year_id')
+        user_id = request.data.get('user_id')
+
+        if not year_id or not user_id:
+            return Response({'detail': 'year_id and user_id are requireds'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+        try:
+            year = Year.objects.get(pk=year_id)
+            user = CustomUser.objects.get(pk=user_id)
+        except (Year.DoesNotExist, CustomUser.DoesNotExist):
+            return Response({'detail': 'Year or User do not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        if year.school != request.school:
+            return Response({'detail': 'Year not recognized at school'})
+
+        if is_add:
+            if user in year.preceptors.all():
+                return Response({'detail': 'User is already a preceptor.'})
+            year.preceptors.add(user)
+            status_code = status.HTTP_201_CREATED
+        else:
+            if user not in year.preceptors.all():
+                return Response({'error': 'The user is not associated with the year.'}, status=status.HTTP_400_BAD_REQUEST)
+            year.preceptors.remove(user)
+            status_code = status.HTTP_200_OK
+        
+        year.save()
+        serializer = YearSerializer(year)
+        return Response(serializer.data, status=status_code)
 
 
 class EventTypeViewSet(generics.ListAPIView):
     queryset = EventType.objects.all()
     serializer_class = EventTypeSerializer
 
+
+class RoleView(generics.ListAPIView):
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
 
 
 class DocumentTypeViewSet(generics.ListAPIView):
@@ -744,9 +885,6 @@ class TeacherSubjectSchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TeacherSubjectSchoolSerializer
 
 
-class RoleViewSet(generics.ListAPIView):
-    queryset = Role.objects.all()
-    serializer_class = RoleSerializer
 
 
 
@@ -759,3 +897,52 @@ class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = TeacherAvailability.objects.all()
     serializer_class = TeacherAvailabilitySerializer
+
+
+class UserRolesViewSet(APIView):
+    permission_classes = [IsAuthenticated, SchoolHeader]
+
+    def get(self, request):
+        user = request.user
+        school = request.school
+
+        roles = []
+        if user.is_directive(school):
+            roles.append('Directivo')
+        if user.is_teacher(school):
+            roles.append('Profesor')
+        if user.is_preceptor(school):
+            roles.append('Preceptor')
+
+        return Response({
+            'roles': roles
+        })
+    
+
+class SchoolStaffAPIView(APIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+
+    def get(self, request):
+        school = request.school
+        users = CustomUser.objects.all()
+        roles_data = []
+
+        for user in users:
+            roles = []
+            if user.is_directive(school):
+                roles.append('Directivo')
+            if user.is_teacher(school):
+                roles.append('Profesor')
+            if user.is_preceptor(school):
+                roles.append('Preceptor')
+            
+            if roles:
+                roles_data.append({
+                    'user_id': user.id,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'roles': roles
+                })
+
+        return Response(roles_data)

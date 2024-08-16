@@ -24,13 +24,16 @@ from .views import (
     NewScheduleCreation,
     EventListCreate,
     EventRetrieveUpdateDestroy,
+    AffiliatedView,
     EventTypeViewSet,
     DocumentTypeViewSet,
     TeacherSubjectSchoolListCreateView,
     TeacherSubjectSchoolDetailView,
     TeacherAvailabilityListCreateView,
     TeacherAvailabilityDetailView,
-    RoleViewSet,
+    RoleView,
+    UserRolesViewSet,
+    SchoolStaffAPIView,
     ContactarPersonal
 )
 
@@ -72,12 +75,13 @@ urlpatterns = [
     # Event
     path('events/', EventListCreate.as_view(), name='event-list-create'),
     path('events/<int:pk>/', EventRetrieveUpdateDestroy.as_view(), name='event-detail'),
+    path('events/affiliated/', AffiliatedView.as_view(), name='event-affiliated'),
     # EventType
     path('typeevent/', EventTypeViewSet.as_view(), name='eventType-list-create'),
     #DocumentType
     path('documentTypes/', DocumentTypeViewSet.as_view(), name='document-type-list-create'),
     #roles
-    path('roles/', RoleViewSet.as_view(), name='role-list-create'),
+    path('roles/', RoleView.as_view(), name='role-list-create'),
     
     #teacher_subject_school
     path('teachersubjectschool/', TeacherSubjectSchoolListCreateView.as_view(), name='teachersubjectschool-list-create'),
@@ -85,6 +89,10 @@ urlpatterns = [
     #teacherAvailability
     path('teacheravailability/', TeacherAvailabilityListCreateView.as_view(), name='teacher-availability-list-create'),
     path('teacheravailability/<int:pk>/', TeacherAvailabilityDetailView.as_view(), name='teacher-availability-detail'),
+    #Myroles
+    path('school/myroles/', UserRolesViewSet.as_view(), name='user-roles'),
+    #SchoolStaff
+    path('staff/', SchoolStaffAPIView.as_view(), name='school-staff'),
     # Verify Token
 
     path('contacting-staff/', ContactarPersonal.as_view(), name='contacting-staff'),
