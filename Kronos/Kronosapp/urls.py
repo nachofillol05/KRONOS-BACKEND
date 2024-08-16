@@ -15,6 +15,7 @@ from .views import (
     verifyToken,
     SchoolsView,
     CourseListCreate, 
+    CourseRetrieveUpdateDestroy,
     YearListCreate,
     YearRetrieveUpdateDestroy,
     PreceptorsView,
@@ -57,6 +58,7 @@ urlpatterns = [
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
     # courses
     path('courses/', CourseListCreate.as_view(), name='course-list-create'),
+    path('courses/<int:pk>/', CourseRetrieveUpdateDestroy.as_view(), name='course-detail'),
     # Year
     path('years/', YearListCreate.as_view(), name='year-list-create'),
     path('years/<int:pk>/', YearRetrieveUpdateDestroy.as_view(), name='year-detail'),
