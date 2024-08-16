@@ -33,6 +33,7 @@ from .views import (
     RoleViewSet,
     UserRolesViewSet,
     SchoolStaffAPIView,
+    DirectivesView,
     ContactarPersonal
 )
 
@@ -57,6 +58,7 @@ urlpatterns = [
     # Schools
     path('user_schools/', SchoolsView.as_view(), name='user_schools'),
     path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
+    path('directives/', DirectivesView.as_view(), name='directives'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
     path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail'),
