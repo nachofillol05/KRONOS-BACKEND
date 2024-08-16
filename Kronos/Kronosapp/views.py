@@ -751,9 +751,31 @@ class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TeacherAvailabilitySerializer
 
 
-class SubjectPerModule(generics.ListAPIView):
+class SubjectPerModuleView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
-    serializer_class = SubjectSerializer
+    serializer_class = SubjectWithCoursesSerializer
+
     def get_queryset(self):
+        module_id = self.request.query_params.get('module_id', None)
         course_id = self.request.query_params.get('course_id', None)
-        return Subject.objects.filter(coursesubjects__course_id=course_id)
+
+        if not module_id or not course_id:
+            return Subject.objects.none()
+
+        module = Module.objects.get(id=module_id)
+        course_subjects = CourseSubjects.objects.filter(course_id=course_id)
+
+
+        available_subjects = []
+        for course_subject in course_subjects:
+            teacher_subject_school = TeacherSubjectSchool.objects.filter(coursesubjects=course_subject).first()
+            if teacher_subject_school:
+                teacher = teacher_subject_school.teacher
+
+
+                if TeacherAvailability.objects.filter(teacher=teacher, module=module).exists():
+                    available_subjects.append(course_subject.subject)
+
+        return Subject.objects.filter(id__in=[subject.id for subject in available_subjects])
+    
+
