@@ -23,13 +23,13 @@ class TeacherAvailabilitySerializer(serializers.ModelSerializer):
         fields = ['module', 'loadDate', 'state']
 
 class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
-    subject_name = serializers.CharField(source='subject.name')
+    # Ajustando el acceso al nombre de la asignatura a través de `coursesubjects`
+    subject_name = serializers.CharField(source='coursesubjects.subject.name')
     school_name = serializers.CharField(source='school.name')
 
     class Meta:
         model = TeacherSubjectSchool
         fields = ['subject_name', 'school_name']
-
 
 class TeacherSerializer(serializers.ModelSerializer):
     contactInfo = ContactInformationSerializer()
@@ -50,7 +50,6 @@ class TeacherSerializer(serializers.ModelSerializer):
         subjects = obj.teachersubjectschool_set.all()
         return TeacherSubjectSchoolSerializer(subjects, many=True).data
 
-    
 class CreateTeacherSerializer(serializers.ModelSerializer):
 
     class Meta:
