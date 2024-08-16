@@ -489,11 +489,6 @@ class ModuleViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(name='day', description='Day of the week', required=False, type=str),
-        ]
-    )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
     
@@ -753,3 +748,11 @@ class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = TeacherAvailability.objects.all()
     serializer_class = TeacherAvailabilitySerializer
+
+
+class SubjectPerModule(generics.ListAPIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    serializer_class = SubjectSerializer
+    def get_queryset(self):
+        course_id = self.request.query_params.get('course_id', None)
+        return Subject.objects.filter(coursesubjects__course_id=course_id)
