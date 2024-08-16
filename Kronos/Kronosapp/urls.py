@@ -32,6 +32,8 @@ from .views import (
     TeacherAvailabilityListCreateView,
     TeacherAvailabilityDetailView,
     RoleView,
+    UserRolesViewSet,
+    SchoolStaffAPIView,
     ContactarPersonal
 )
 
@@ -87,6 +89,10 @@ urlpatterns = [
     #teacherAvailability
     path('teacheravailability/', TeacherAvailabilityListCreateView.as_view(), name='teacher-availability-list-create'),
     path('teacheravailability/<int:pk>/', TeacherAvailabilityDetailView.as_view(), name='teacher-availability-detail'),
+    #Myroles
+    path('school/myroles/', UserRolesViewSet.as_view(), name='user-roles'),
+    #SchoolStaff
+    path('staff/', SchoolStaffAPIView.as_view(), name='school-staff'),
     # Verify Token
 
     path('contacting-staff/', ContactarPersonal.as_view(), name='contacting-staff'),

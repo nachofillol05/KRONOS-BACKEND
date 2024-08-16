@@ -6,6 +6,7 @@ from django.contrib.auth.hashers import make_password
 from django.db.models import Q
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as ValidationErrorDjango
+from django.shortcuts import get_object_or_404
 from datetime import datetime
 
 from rest_framework.views import APIView
@@ -466,9 +467,10 @@ class YearListCreate(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     def get_queryset(self):
-        queyset = Year.objects.filter(school=self.request.school).oreder_by('number')
-        if not queyset.exists():
+        queryset = Year.objects.filter(school=self.request.school).order_by('number')
+        if not queryset.exists():
             return Response({'detail': 'not found'}, status=status.HTTP_404_NOT_FOUND)
+        return queryset
 
 class YearRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Year.objects.all()
@@ -893,3 +895,52 @@ class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = TeacherAvailability.objects.all()
     serializer_class = TeacherAvailabilitySerializer
+
+
+class UserRolesViewSet(APIView):
+    permission_classes = [IsAuthenticated, SchoolHeader]
+
+    def get(self, request):
+        user = request.user
+        school = request.school
+
+        roles = []
+        if user.is_directive(school):
+            roles.append('Directivo')
+        if user.is_teacher(school):
+            roles.append('Profesor')
+        if user.is_preceptor(school):
+            roles.append('Preceptor')
+
+        return Response({
+            'roles': roles
+        })
+    
+
+class SchoolStaffAPIView(APIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+
+    def get(self, request):
+        school = request.school
+        users = CustomUser.objects.all()
+        roles_data = []
+
+        for user in users:
+            roles = []
+            if user.is_directive(school):
+                roles.append('Directivo')
+            if user.is_teacher(school):
+                roles.append('Profesor')
+            if user.is_preceptor(school):
+                roles.append('Preceptor')
+            
+            if roles:
+                roles_data.append({
+                    'user_id': user.id,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'roles': roles
+                })
+
+        return Response(roles_data)
