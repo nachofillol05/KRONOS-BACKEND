@@ -17,11 +17,13 @@ from .models import (
     EventType,
     Event,
     Nationality,
-    Role
+    Role,
+    CourseSubjects
 )
 
 
 # Register your models here.
+
 admin.site.register(Module)
 admin.site.register(ContactInformation)
 admin.site.register(School)
@@ -33,6 +35,7 @@ admin.site.register(TeacherAvailability)
 admin.site.register(Year)
 admin.site.register(Course)
 admin.site.register(Subject)
+admin.site.register(CourseSubjects)
 admin.site.register(TeacherSubjectSchool)
 admin.site.register(Action)
 admin.site.register(Schedules)
