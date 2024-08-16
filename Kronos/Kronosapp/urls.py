@@ -24,6 +24,7 @@ from .views import (
     NewScheduleCreation,
     EventListCreate,
     EventRetrieveUpdateDestroy,
+    AffiliatedView,
     EventTypeViewSet,
     DocumentTypeViewSet,
     TeacherSubjectSchoolListCreateView,
@@ -72,6 +73,7 @@ urlpatterns = [
     # Event
     path('events/', EventListCreate.as_view(), name='event-list-create'),
     path('events/<int:pk>/', EventRetrieveUpdateDestroy.as_view(), name='event-detail'),
+    path('events/affiliated/', AffiliatedView.as_view(), name='event-affiliated'),
     # EventType
     path('typeevent/', EventTypeViewSet.as_view(), name='eventType-list-create'),
     #DocumentType
