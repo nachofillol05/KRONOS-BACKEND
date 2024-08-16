@@ -901,3 +901,59 @@ class SchoolStaffAPIView(APIView):
                 })
 
         return Response(roles_data)
+    
+
+class DirectivesView(APIView):
+    """
+    Endpoints que realizan acciones sobre los directivos del colegio indicado en la ruta
+    """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+
+    def get(self, request, *args, **kwargs):
+        school = self.request.school    
+        directives = school.directives.all()  # Obtiene los directivos de la escuela
+        serializer = UserSerializer(directives, many=True)
+        return Response(serializer.data)    
+
+    def post(self, request, *args, **kwargs):
+        """
+        Se indica el usuario que será añadido como directivo.
+        Devuelve la escuela actualizada.
+        """
+        return self.manage_directive(request, is_add=True)
+    
+    def delete(self, request, *args, **kwargs):
+        """
+        Se indica el usuario que será removido como directivo.
+        Devuelve la escuela actualizada.
+        """
+        return self.manage_directive(request, is_add=False)
+
+    def manage_directive(self, request, is_add):
+        user_id = request.data.get('user_id')
+
+        if not user_id:
+            return Response({'detail': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = CustomUser.objects.get(pk=user_id)
+        except CustomUser.DoesNotExist:
+            return Response({'detail': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        school = self.request.school
+
+        if is_add:
+            if user in school.directives.all():
+                return Response({'detail': 'User is already a directive.'})
+            school.directives.add(user)
+            status_code = status.HTTP_201_CREATED
+        else:
+            if user not in school.directives.all():
+                return Response({'error': 'The user is not associated as a directive.'}, status=status.HTTP_400_BAD_REQUEST)
+            school.directives.remove(user)
+            status_code = status.HTTP_200_OK
+        
+        school.save()
+        serializer = CreateSchoolSerializer(school)
+        return Response(serializer.data, status=status_code)

@@ -99,7 +99,7 @@ class UserSerializer(serializers.ModelSerializer):
             'dark_mode',
             'color',
             'phone',
-            'profile_picure'
+            'profile_picture'
         ]
     
     def update(self, instance, validated_data):
