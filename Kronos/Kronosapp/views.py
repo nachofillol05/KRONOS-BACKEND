@@ -775,3 +775,32 @@ class UserRolesViewSet(APIView):
         return Response({
             'roles': roles
         })
+    
+
+class SchoolStaffAPIView(APIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+
+    def get(self, request):
+        school = request.school
+        users = CustomUser.objects.all()
+        roles_data = []
+
+        for user in users:
+            roles = []
+            if user.is_directive(school):
+                roles.append('Directivo')
+            if user.is_teacher(school):
+                roles.append('Profesor')
+            if user.is_preceptor(school):
+                roles.append('Preceptor')
+            
+            if roles:
+                roles_data.append({
+                    'user_id': user.id,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'roles': roles
+                })
+
+        return Response(roles_data)
