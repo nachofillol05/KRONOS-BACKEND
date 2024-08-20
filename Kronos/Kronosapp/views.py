@@ -461,19 +461,24 @@ class CourseRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
 
 
 class YearListCreate(generics.ListCreateAPIView):
-    queryset = Year.objects.all()
-    serializer_class = YearSerializer
-
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    queryset = Year.objects.all()
+    serializer_class = YearSerializer
 
     def get_queryset(self):
         queryset = Year.objects.filter(school=self.request.school).order_by('number')
         if not queryset.exists():
             return Response({'detail': 'not found'}, status=status.HTTP_404_NOT_FOUND)
         return queryset
+    
+    def perform_create(self, serializer):
+        school = self.request.school
+        serializer.save(school=school)
 
 class YearRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = Year.objects.all()
     serializer_class = YearSerializer
 
@@ -529,9 +534,26 @@ class PreceptorsView(APIView):
 
    
     def get(self, request, *args, **kwargs):
-        school = self.request.school    
-        preceptors  = CustomUser.objects.filter(year__school=school).distinct()
-        serializer = PreceptorSerializer(preceptors, many=True)
+        school = self.request.school
+        queryset  = CustomUser.objects.filter(year__school=school).distinct()
+
+        search = request.query_params.get('search', None)
+        year_id = request.query_params.get('year_id', None)
+        if  year_id:
+            if not Year.objects.filter(pk=year_id).exists():
+                raise ValidationError('"year_id" no existe')
+            queryset = queryset.filter(year__pk=year_id)
+        if search:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(document__startswith=search)
+            )
+            
+        if not queryset.exists():
+            return Response({"error": "No encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = PreceptorSerializer(queryset, many=True)
         return Response(serializer.data)    
     
 
@@ -557,7 +579,6 @@ class PreceptorsView(APIView):
         if not year_id or not user_id:
             return Response({'detail': 'year_id and user_id are requireds'}, status=status.HTTP_400_BAD_REQUEST)
         
-
         try:
             year = Year.objects.get(pk=year_id)
             user = CustomUser.objects.get(pk=user_id)
@@ -582,6 +603,7 @@ class PreceptorsView(APIView):
         serializer = YearSerializer(year)
         return Response(serializer.data, status=status_code)
     
+
 class verifyToken(APIView):
     def post(self, request):
         token = request.data.get('token')
@@ -786,71 +808,6 @@ class AffiliatedView(APIView):
         
         event.save()
         return Response(status=status_code)
-
-
-class PreceptorsView(APIView):
-    """
-    Endpoints que realiza acciones sobre los preceptores del colegio indicado en la ruta
-    """
-    queryset = CustomUser.objects.all()
-    serializer_class = PreceptorSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
-
-   
-    def get(self, request, *args, **kwargs):
-        school = self.request.school    
-        preceptors  = CustomUser.objects.filter(year__school=school).distinct()
-        serializer = PreceptorSerializer(preceptors, many=True)
-        return Response(serializer.data)    
-    
-
-    
-    def post(self, request, *args, **kwargs):
-        """
-        Se le indica el año y el usuario que sera añadido como preceptor.
-        Devuelve el año actualizado
-        """
-        return self.manage_user(request, is_add=True)
-    
-    def delete(self, request, *args, **kwargs):
-        """
-        Se le indica el año y el usuario que sera removido como preceptor.
-        Devuelve el año actualizado
-        """
-        return self.manage_user(request, is_add=False)
-
-    def manage_user(self, request, is_add):
-        year_id = request.data.get('year_id')
-        user_id = request.data.get('user_id')
-
-        if not year_id or not user_id:
-            return Response({'detail': 'year_id and user_id are requireds'}, status=status.HTTP_400_BAD_REQUEST)
-        
-
-        try:
-            year = Year.objects.get(pk=year_id)
-            user = CustomUser.objects.get(pk=user_id)
-        except (Year.DoesNotExist, CustomUser.DoesNotExist):
-            return Response({'detail': 'Year or User do not exist'}, status=status.HTTP_404_NOT_FOUND)
-
-        if year.school != request.school:
-            return Response({'detail': 'Year not recognized at school'})
-
-        if is_add:
-            if user in year.preceptors.all():
-                return Response({'detail': 'User is already a preceptor.'})
-            year.preceptors.add(user)
-            status_code = status.HTTP_201_CREATED
-        else:
-            if user not in year.preceptors.all():
-                return Response({'error': 'The user is not associated with the year.'}, status=status.HTTP_400_BAD_REQUEST)
-            year.preceptors.remove(user)
-            status_code = status.HTTP_200_OK
-        
-        year.save()
-        serializer = YearSerializer(year)
-        return Response(serializer.data, status=status_code)
 
 
 class EventTypeViewSet(generics.ListAPIView):

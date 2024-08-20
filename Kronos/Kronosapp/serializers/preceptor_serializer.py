@@ -10,7 +10,7 @@ class YearSerializer(serializers.ModelSerializer):
 
 
 class PreceptorSerializer(UserSerializer):
-    years = serializers.PrimaryKeyRelatedField(many=True, read_only=True, source="year_set")
+    years = YearSerializer(many=True, read_only=True, source="year_set")
 
     class Meta:
         model = CustomUser

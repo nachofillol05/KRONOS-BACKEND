@@ -1,9 +1,9 @@
 from rest_framework import serializers
 from ..models import Year
-from .preceptor_serializer import PreceptorSerializer
+from .user_serializer import UserSerializer
 
 class YearSerializer(serializers.ModelSerializer):
-    preceptors=PreceptorSerializer(many=True, read_only=True)
+    preceptors=UserSerializer(many=True, read_only=True)
     class Meta:
         model = Year
         fields = ['id','name', 'description', 'number', 'preceptors']
