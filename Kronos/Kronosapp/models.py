@@ -83,7 +83,7 @@ class CustomUser(AbstractUser):
     document = models.CharField(max_length=255, unique=True, blank=True, null=True, validators=[validate_numeric])
     first_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255, blank=True, null=True)
-    profile_picure = models.ImageField(upload_to='logos/', null=True, blank=True)
+    profile_picture = models.ImageField(upload_to='logos/', null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True)
     email = models.EmailField(max_length=255, unique=True)
     hoursToWork = models.IntegerField(blank=True, null=True)
@@ -219,13 +219,15 @@ class EventType(models.Model):
     description = models.CharField(max_length=255, blank=True)
 
     def __str__(self) -> str:
-        return self.name
+        return f"{self.pk} - {self.name}"
 
 
 class Role(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255, blank=True)
 
+    def __str__(self) -> str:
+        return f"{self.pk} - {self.name}"
 
 class Event(models.Model):
     name = models.CharField(max_length=255)
@@ -238,4 +240,4 @@ class Event(models.Model):
     affiliated_teachers = models.ManyToManyField(CustomUser, blank=True)
 
     def __str__(self) -> str:
-        return f"{self.name} - {self.school} - {self.eventType}"
+        return f"{self.pk} {self.name} - {self.school} - {self.eventType}"
