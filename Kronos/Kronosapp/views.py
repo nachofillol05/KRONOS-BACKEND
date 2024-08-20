@@ -760,16 +760,25 @@ class SubjectPerModuleView(generics.ListAPIView):
         course_id = self.request.data.get('course_id', None)
 
         if not module_id or not course_id:
-            return Subject.objects.none()
-
-        module = Module.objects.get(id=module_id)
-        course_subjects = CourseSubjects.objects.filter(course_id=course_id)
+            return Response(
+                {'error': 'Se necesita pasar el ID del módulo y el ID del curso.'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        try:
+            module = Module.objects.get(id=module_id)
+            course_subjects = CourseSubjects.objects.filter(course_id=course_id)
+        except (Module.DoesNotExist, CourseSubjects.DoesNotExist):
+            return Response(
+                {'error': 'El módulo o el curso no existen.'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 
         available_subjects = []
         for course_subject in course_subjects:
             teacher_subject_school = TeacherSubjectSchool.objects.filter(coursesubjects=course_subject).first()
-            if teacher_subject_school:
+            if not teacher_subject_school:
                 teacher = teacher_subject_school.teacher
 
 
@@ -777,5 +786,12 @@ class SubjectPerModuleView(generics.ListAPIView):
                     available_subjects.append(course_subject.subject)
 
         return Subject.objects.filter(id__in=[subject.id for subject in available_subjects])
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if isinstance(queryset, Response):
+            return queryset
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
     
 
