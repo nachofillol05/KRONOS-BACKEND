@@ -497,11 +497,6 @@ class ModuleViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(name='day', description='Day of the week', required=False, type=str),
-        ]
-    )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
     
@@ -841,19 +836,61 @@ class TeacherSubjectSchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TeacherSubjectSchoolSerializer
 
 
-
-
-
 class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = TeacherAvailability.objects.all()
     serializer_class = TeacherAvailabilitySerializer
 
+    
 class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = TeacherAvailability.objects.all()
     serializer_class = TeacherAvailabilitySerializer
 
+
+class SubjectPerModuleView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    serializer_class = SubjectWithCoursesSerializer
+
+    def get_queryset(self):
+        module_id = self.request.data.get('module_id', None)
+        course_id = self.request.data.get('course_id', None)
+
+        if not module_id or not course_id:
+            return Response(
+                {'error': 'Se necesita pasar el ID del módulo y el ID del curso.'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        try:
+            module = Module.objects.get(id=module_id)
+            course_subjects = CourseSubjects.objects.filter(course_id=course_id)
+        except (Module.DoesNotExist, CourseSubjects.DoesNotExist):
+            return Response(
+                {'error': 'El módulo o el curso no existen.'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+        available_subjects = []
+        for course_subject in course_subjects:
+            teacher_subject_school = TeacherSubjectSchool.objects.filter(coursesubjects=course_subject).first()
+            if not teacher_subject_school:
+                teacher = teacher_subject_school.teacher
+
+
+                if TeacherAvailability.objects.filter(teacher=teacher, module=module, availabilityState__isEnabled=True).exists():
+                    available_subjects.append(course_subject.subject)
+
+        return Subject.objects.filter(id__in=[subject.id for subject in available_subjects])
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if isinstance(queryset, Response):
+            return queryset
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
 
 class UserRolesViewSet(APIView):
     permission_classes = [IsAuthenticated, SchoolHeader]
