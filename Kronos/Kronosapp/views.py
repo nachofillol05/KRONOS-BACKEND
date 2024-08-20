@@ -756,8 +756,8 @@ class SubjectPerModuleView(generics.ListAPIView):
     serializer_class = SubjectWithCoursesSerializer
 
     def get_queryset(self):
-        module_id = self.request.query_params.get('module_id', None)
-        course_id = self.request.query_params.get('course_id', None)
+        module_id = self.request.data.get('module_id', None)
+        course_id = self.request.data.get('course_id', None)
 
         if not module_id or not course_id:
             return Subject.objects.none()
@@ -773,7 +773,7 @@ class SubjectPerModuleView(generics.ListAPIView):
                 teacher = teacher_subject_school.teacher
 
 
-                if TeacherAvailability.objects.filter(teacher=teacher, module=module).exists():
+                if TeacherAvailability.objects.filter(teacher=teacher, module=module, availabilityState__isEnabled=True).exists():
                     available_subjects.append(course_subject.subject)
 
         return Subject.objects.filter(id__in=[subject.id for subject in available_subjects])
