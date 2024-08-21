@@ -30,6 +30,12 @@ class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeacherSubjectSchool
         fields = ['subject_name', 'school_name']
+        
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.coursesubjects is None:
+            representation['subject_name'] = None
+        return representation
 
 class TeacherSerializer(serializers.ModelSerializer):
     contactInfo = ContactInformationSerializer()
