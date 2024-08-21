@@ -40,7 +40,7 @@ class TeacherSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'first_name', 'last_name', 'gender', 'profile_picure', 'phone', 'email', 'document', 'documentType', 'nationality', 'email_verified', 'contactInfo', 'availability', 'subjects']
+        fields = ['id', 'first_name', 'last_name', 'gender', 'profile_picture', 'phone', 'email', 'document', 'documentType', 'nationality', 'email_verified', 'contactInfo', 'availability', 'subjects']
 
     def get_availability(self, obj):
         availabilities = obj.teacheravailability_set.all()

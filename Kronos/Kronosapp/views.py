@@ -312,7 +312,8 @@ class TeacherListView(generics.ListAPIView):
         teachers = []
         for ts in queryset:
             teacher = ts.teacher
-            teachers.append(teacher)
+            if teacher not in teachers:
+                teachers.append(teacher)
 
         serializer = self.get_serializer(teachers, many=True)
 
