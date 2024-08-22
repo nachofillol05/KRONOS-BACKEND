@@ -8,20 +8,20 @@ from Kronosapp.models import (
 import uuid
 from django.utils import timezone
 from datetime import time, timedelta
-
 class Command(BaseCommand):
     help = 'Seed database with initial data'
     # python manage.py seed
     def handle(self, *args, **options):
         # Crear tipos de documentos
-        doc_type1 = DocumentType.objects.create(name='DNI', description='Documento Nacional de Identidad')
-        doc_type2 = DocumentType.objects.create(name='Pasaporte', description='Documento de viaje internacional')
+        dni = DocumentType.objects.create(name="DNI", description="Documento Nacional de Identidad")
+        passport = DocumentType.objects.create(name="Pasaporte", description="Documento de viaje internacional")
 
         # Crear nacionalidades
-        nationality1 = Nationality.objects.create(name='Argentina', description='Nacionalidad argentina')
-        nationality2 = Nationality.objects.create(name='Uruguay', description='Nacionalidad uruguaya')
+        argentina = Nationality.objects.create(name="Argentina", description="Nacionalidad argentina")
+        usa = Nationality.objects.create(name="Estados Unidos", description="Nacionalidad estadounidense")
 
         # Crear información de contacto
+
         contact_info1 = ContactInformation.objects.create(
             postalCode='5000',
             street='Calle Principal',
@@ -79,7 +79,16 @@ class Command(BaseCommand):
             province='Chubut'
         )
 
-        # Crear usuarios personalizados
+        # Crear escuela
+        school = School.objects.create(
+            name='Jesús María',
+            abbreviation='JM',
+            email='contacto@jesusmaria.edu',
+            contactInfo=contact_info1
+        )
+
+        # Crear usuarios personalizados (directivos, profesores, preceptores)
+        
         directive_user = CustomUser.objects.create_user(
             email='directive@jesusmaria.edu',
             password='password',
@@ -88,12 +97,13 @@ class Command(BaseCommand):
             gender='male',
             document='12345678',
             hoursToWork=40,
-            documentType=doc_type1,
-            nationality=nationality1,
+            documentType=dni,
+            nationality=argentina,
             contactInfo=contact_info1,
             email_verified=True,
             dark_mode=True
         )
+        
         teacher1 = CustomUser.objects.create_user(
             email='teacher1@jesusmaria.edu',
             password='password',
@@ -102,8 +112,8 @@ class Command(BaseCommand):
             gender='female',
             document='87654321',
             hoursToWork=30,
-            documentType=doc_type2,
-            nationality=nationality2,
+            documentType=dni,
+            nationality=argentina,
             contactInfo=contact_info2,
             email_verified=True
         )
@@ -115,8 +125,8 @@ class Command(BaseCommand):
             gender='male',
             document='11223344',
             hoursToWork=35,
-            documentType=doc_type1,
-            nationality=nationality1,
+            documentType=passport,
+            nationality=usa,
             contactInfo=contact_info3
         )
         teacher3 = CustomUser.objects.create_user(
@@ -127,8 +137,8 @@ class Command(BaseCommand):
             gender='female',
             document='22334455',
             hoursToWork=32,
-            documentType=doc_type2,
-            nationality=nationality2,
+            documentType=dni,
+            nationality=argentina,
             contactInfo=contact_info4
         )
         teacher4 = CustomUser.objects.create_user(
@@ -139,8 +149,8 @@ class Command(BaseCommand):
             gender='male',
             document='33445566',
             hoursToWork=40,
-            documentType=doc_type1,
-            nationality=nationality1,
+            documentType=dni,
+            nationality=argentina,
             contactInfo=contact_info5
         )
         teacher5 = CustomUser.objects.create_user(
@@ -151,8 +161,8 @@ class Command(BaseCommand):
             gender='female',
             document='44556677',
             hoursToWork=28,
-            documentType=doc_type2,
-            nationality=nationality2,
+            documentType=dni,
+            nationality=argentina,
             contactInfo=contact_info6
         )
         preceptor1 = CustomUser.objects.create_user(
@@ -163,8 +173,8 @@ class Command(BaseCommand):
             gender='male',
             document='55667788',
             hoursToWork=20,
-            documentType=doc_type1,
-            nationality=nationality1,
+            documentType=passport,
+            nationality=usa,
             contactInfo=contact_info7
         )
         preceptor2 = CustomUser.objects.create_user(
@@ -175,19 +185,13 @@ class Command(BaseCommand):
             gender='female',
             document='66778899',
             hoursToWork=25,
-            documentType=doc_type2,
-            nationality=nationality2,
+            documentType=dni,
+            nationality=argentina,
             contactInfo=contact_info8
         )
 
-        # Crear escuela
-        school1 = School.objects.create(
-            name='Jesús María',
-            abbreviation='JM',
-            email='contacto@jesusmaria.edu',
-            contactInfo=contact_info1
-        )
-        school1.directives.add(directive_user)
+        # Asignar directivos a la escuela
+        school.directives.add(directive_user)
 
         # Crear módulos
         days_of_week = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes']
@@ -199,7 +203,7 @@ class Command(BaseCommand):
                     day=day,
                     startTime=time(8 + j, 0),
                     endTime=time(9 + j, 0),
-                    school=school1
+                    school=school
                 )
                 modules.append(module)
 
@@ -207,7 +211,7 @@ class Command(BaseCommand):
         available = AvailabilityState.objects.create(name='Disponible', isEnabled=True)
         not_available = AvailabilityState.objects.create(name='No Disponible', isEnabled=False)
 
-        # Crear disponibilidad del profesor
+        # Crear disponibilidad de profesor
         for i, module in enumerate(modules):
             TeacherAvailability.objects.create(
                 module=module,
@@ -216,11 +220,13 @@ class Command(BaseCommand):
             )
 
         # Crear años, cursos y materias
-        year1 = Year.objects.create(name='1er Año', number='1', school=school1)
-        year2 = Year.objects.create(name='2do Año', number='2', school=school1)
+        year1 = Year.objects.create(name='1er Año', number='1', school=school)
+        year2 = Year.objects.create(name='2do Año', number='2', school=school)
 
         year1.preceptors.add(preceptor1)
         year2.preceptors.add(preceptor2)
+
+        # Crear cursos
 
         course1 = Course.objects.create(name='1°A', year=year1)
         course2 = Course.objects.create(name='1°B', year=year1)
@@ -229,108 +235,103 @@ class Command(BaseCommand):
         course5 = Course.objects.create(name='2°B', year=year2)
         course6 = Course.objects.create(name='2°C', year=year2)
 
+
+        # Crear materias
         subject1 = Subject.objects.create(
-            name='Matematica',
-            abbreviation='mat', 
-            weeklyHours=4,
-            course=course1,
-            studyPlan='Plan de estudios de geografía'
+            name="Matemáticas",
+            abbreviation="MAT"
         )
+
         subject2 = Subject.objects.create(
-            name='Matematica',
-            abbreviation='mat',
-            weeklyHours=4,
-            course=course2
+            name="Fisica",
+            abbreviation="FIS"
         )
+
         subject3 = Subject.objects.create(
-            name='Matematica',
-            abbreviation='mat',
-            weeklyHours=4,
-            course=course3
-        )
-        subject4 = Subject.objects.create(
-            name='Lengua',
-            abbreviation='len',
-            weeklyHours=3,
-            course=course4
-        )
-        subject5 = Subject.objects.create(
-            name='Lengua',
-            abbreviation='len',
-            weeklyHours=3,
-            course=course5
-        )
-        subject6 = Subject.objects.create(
-            name='Lengua',
-            abbreviation='len',
-            weeklyHours=3,
-            course=course6
-        )
-        subject7 = Subject.objects.create(
-            name='Historia Mundial',
-            abbreviation='his',
-            weeklyHours=2,
-            course=course1
-        )
-        subject8 = Subject.objects.create(
-            name='Historia Mundial',
-            abbreviation='his',
-            weeklyHours=2,
-            course=course2
-        )
-        subject9 = Subject.objects.create(
-            name='Historia Mundial',
-            abbreviation='his',
-            weeklyHours=2,
-            course=course3
-        )
-        subject10 = Subject.objects.create(
-            name='Geografía',
-            abbreviation='geo',
-            weeklyHours=2,
-            course=course4
-        )
-        subject11 = Subject.objects.create(
-            name='Geografía',
-            abbreviation='geo',
-            weeklyHours=2,
-            course=course5
-        )
-        subject12 = Subject.objects.create(
-            name='Geografía',
-            abbreviation='geo',
-            weeklyHours=2,
-            course=course6
+            name="Química",
+            abbreviation="QUI"
         )
 
-        cs1 = CourseSubjects.objects.create(subject=subject12, course=course3)
-        cs2 = CourseSubjects.objects.create(subject=subject11, course=course2, studyPlan='Plan de estudios de geografía')
-        cs3 = CourseSubjects.objects.create(subject=subject10, course=course1, studyPlan='Plan de estudios de historia mundial')
-        cs4 = CourseSubjects.objects.create(subject=subject9, course=course3, studyPlan='Plan de estudios de historia mundial')
-        cs5 = CourseSubjects.objects.create(subject=subject8, course=course2, studyPlan='Plan de estudios de historia mundial')
-        cs6 = CourseSubjects.objects.create(subject=subject7, course=course1, studyPlan='Plan de estudios de Lengua')
-        cs7 = CourseSubjects.objects.create(subject=subject6, course=course3, studyPlan='Plan de estudios de Lengua')
-        cs8 = CourseSubjects.objects.create(subject=subject5, course=course2, studyPlan='Plan de estudios de Lengua')
-        cs9 = CourseSubjects.objects.create(subject=subject4, course=course1, studyPlan='Plan de estudios de Matematica')
-        cs10 = CourseSubjects.objects.create(subject=subject3, course=course3, studyPlan='Plan de estudios de Matematica')
-        cs11= CourseSubjects.objects.create(subject=subject2, course=course2, studyPlan='Plan de estudios de Matematica')
-        cs12 = CourseSubjects.objects.create(subject=subject1, course=course1, studyPlan='Plan de estudios de Matematica')
+        # Asignar materias a cursos
+        course_subject = CourseSubjects.objects.create(
+            studyPlan="Plan de estudios de Matemáticas 1",
+            subject=subject1,
+            course=course1,
+            weeklyHours=4
+        )
 
-        
+        course_subject2 = CourseSubjects.objects.create(
+            studyPlan="Plan de estudios de Matemáticas 2",
+            subject=subject1,
+            course=course2,
+            weeklyHours=4
+        )
 
+        course_subject3 = CourseSubjects.objects.create(
+            studyPlan="Plan de estudios de Matemáticas 3",
+            subject=subject1,
+            course=course3,
+            weeklyHours=4
+        )
 
-        # Teacher Subject School
-        TeacherSubjectSchool.objects.create(school=school1, subject=subject1, teacher=teacher1)
-        TeacherSubjectSchool.objects.create(school=school1, subject=subject2, teacher=teacher2)
-        TeacherSubjectSchool.objects.create(school=school1, subject=subject3, teacher=teacher3)
-        TeacherSubjectSchool.objects.create(school=school1, subject=subject4, teacher=teacher4)
+        course_subject4 = CourseSubjects.objects.create(
+            studyPlan="Plan de estudios de Matemáticas 4",
+            subject=subject1,
+            course=course4,
+            weeklyHours=3
+        )
+
+        course_subject5 = CourseSubjects.objects.create(
+            studyPlan="Plan de estudios de Fisica",
+            subject=subject2,
+            course=course2,
+            weeklyHours=4
+        )
+
+        course_subject6 = CourseSubjects.objects.create(
+            studyPlan="Plan de estudios de Química",
+            subject=subject3,
+            course=course3,
+            weeklyHours=4
+        )
+
+        # Asignar profesor a materia en una escuela
+        TeacherSubjectSchool.objects.create(
+            school=school,
+            coursesubjects=course_subject,
+            teacher=teacher1
+        )
+
+        TeacherSubjectSchool.objects.create(
+            school=school,
+            coursesubjects=course_subject2,
+            teacher=teacher1
+        )
+
+        TeacherSubjectSchool.objects.create(
+            school=school,
+            coursesubjects=course_subject3,
+            teacher=teacher1
+        )
+
+        TeacherSubjectSchool.objects.create(
+            school=school,
+            coursesubjects=course_subject5,
+            teacher=teacher2
+        )
+
+        TeacherSubjectSchool.objects.create(
+            school=school,
+            coursesubjects=course_subject6,
+            teacher=teacher3
+        )
 
         # Crear acciones
         action1 = Action.objects.create(name='Agregar materia', isEnabled=True)
         action2 = Action.objects.create(name='Cambiar materia', isEnabled=False)
 
 
-        # Crear tipo de evento
+        # Crear tipos de eventos
         event_type1 = EventType.objects.create(name='Paro de transporte', description='Interrupción de servicios de transporte')
         event_type2 = EventType.objects.create(name='Viaje escolar', description='Excursión organizada por la escuela')
 
@@ -344,35 +345,11 @@ class Command(BaseCommand):
             name='Paro general de transporte',
             startDate=timezone.now() + timedelta(days=5),
             endDate=timezone.now() + timedelta(days=5, hours=2),
-            school=school1,
+            school=school,
             eventType=event_type1
         )
-        event1.roles.add(directive_role)    
-
-        event2 = Event.objects.create(
-            name='Viaje a museo',
-            startDate=timezone.now() + timedelta(days=15),
-            endDate=timezone.now() + timedelta(days=15, hours=8),
-            school=school1,
-            eventType=event_type2
-        )
-        event2.roles.add(teacher_role, preceptor_role)
-        
-        
-        event3 = Event.objects.create(
-            name='Visita a la universidad',
-            startDate=timezone.now() + timedelta(days=30),
-            endDate=timezone.now() + timedelta(days=30, hours=6),
-            school=school1,
-            eventType=event_type2
-        )
-        event3.roles.add(directive_role)
-        
-        # Asignar profesores a los eventos
-        event1.affiliated_teachers.add(teacher1)
-        event2.affiliated_teachers.add(teacher2)
-        event3.affiliated_teachers.add(teacher3, teacher4)
-
+        event1.roles.add(directive_role)
+        event1.affiliated_teachers.add(teacher3, teacher4)
 
 
         self.stdout.write(self.style.SUCCESS('Database successfully seeded!'))
