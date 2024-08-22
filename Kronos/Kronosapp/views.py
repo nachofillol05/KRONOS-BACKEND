@@ -42,6 +42,7 @@ from .serializers.documenttype_serializer import DocumentTypeSerializer
 from .serializers.teacherSubSchool_serializer import TeacherSubjectSchoolSerializer
 from .serializers.teacherAvailability_serializer import TeacherAvailabilitySerializer
 from .serializers.roles_serializer import RoleSerializer
+from .serializers.schedule_serializer import ScheduleSerializer
 
 from .models import(
     CustomUser,
@@ -847,6 +848,16 @@ class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     queryset = TeacherAvailability.objects.all()
     serializer_class = TeacherAvailabilitySerializer
+
+
+class ViewSchedule(generics.ListAPIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    serializer_class = ScheduleSerializer
+
+    def get_queryset(self):
+        queryset = Schedules.objects.filter(module__school=self.request.school)
+        return queryset
+        
 
 
 class SubjectPerModuleView(generics.ListAPIView):
