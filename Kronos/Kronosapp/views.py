@@ -32,7 +32,7 @@ from .utils import register_user, send_email
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from .serializers.preceptor_serializer import PreceptorSerializer
-from .serializers.user_serializer import UserSerializer
+from .serializers.user_serializer import UserSerializer, UpdateUserSerializer
 from .serializers.Subject_serializer import SubjectWithCoursesSerializer
 from .serializers.course_serializer import CourseSerializer
 from .serializers.year_serializer import YearSerializer
@@ -228,7 +228,6 @@ class ChangePasswordView(APIView):
         return Response({"message": "Contraseña actualizada con éxito."}, status=status.HTTP_200_OK)
 
 
-
 class ProfileView(generics.GenericAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -245,7 +244,7 @@ class ProfileView(generics.GenericAPIView):
     """
     def put(self, request):
         usuario = request.user
-        serializer = UserSerializer(usuario, data=request.data)
+        serializer = UpdateUserSerializer(usuario, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

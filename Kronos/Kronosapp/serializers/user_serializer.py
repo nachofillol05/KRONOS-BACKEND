@@ -11,7 +11,7 @@ class ContactInforSerializer(serializers.ModelSerializer):
 class DocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentType
-        fields = ['name']
+        fields = '__all__'
 
 class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,7 +22,7 @@ class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
 class NationalitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Nationality
-        fields = ['name']
+        fields = '__all__'
 class RegisterTeacherSubjectSchoolSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeacherSubjectSchool
@@ -103,6 +103,31 @@ class UserSerializer(serializers.ModelSerializer):
             'phone',
             'profile_picture'
         ]
+        
+    
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    contactInfo = ContactInforSerializer()
+
+    class Meta:
+        model = CustomUser
+        read_only_fields = ['email']
+        fields = [
+            'id',
+            'first_name',
+            'last_name',
+            'email',
+            'gender',
+            'document',
+            'documentType',
+            'nationality',
+            'contactInfo',
+            'dark_mode',
+            'color',
+            'phone',
+            'profile_picture'
+        ]
+
     
     def update(self, instance, validated_data):
         contact_info_data = validated_data.pop('contactInfo', None)
@@ -113,4 +138,4 @@ class UserSerializer(serializers.ModelSerializer):
                 setattr(contact_info_instance, key, value)
             contact_info_instance.save()
 
-        return super().update(instance, validated_data)     
+        return super().update(instance, validated_data)   
