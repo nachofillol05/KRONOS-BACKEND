@@ -101,7 +101,6 @@ class UserSerializer(serializers.ModelSerializer):
             return f"data:image/jpeg;base64,{imagen_base64}"
         return None
 
-
     class Meta:
         model = CustomUser
         fields = [
@@ -149,7 +148,6 @@ class UpdateUserSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         contact_info_data = validated_data.pop('contactInfo', None)
         if contact_info_data:
-
             contact_info_instance = instance.contactInfo
             for key, value in contact_info_data.items():
                 setattr(contact_info_instance, key, value)
@@ -158,25 +156,19 @@ class UpdateUserSerializer(serializers.ModelSerializer):
         imagen = validated_data.pop('profile_picture', None)
         if imagen:
             image = Image.open(imagen)
-            
-            # Redimensionar la imagen a 250x250 píxeles
             image = image.resize((250, 250), Image.LANCZOS)
             
-            # Convertir la imagen a un archivo binario en formato PNG
             buffered = BytesIO()
             image.save(buffered, format="PNG")
             imagen_binaria = buffered.getvalue()
             
-            # Asignar la imagen binaria al campo del modelo
             instance.profile_picture = imagen_binaria
 
         return super().update(instance, validated_data)
     
     def to_representation(self, instance):
-        # Obtener la representación original del objeto
         representation = super().to_representation(instance)
         
-        # Procesar y agregar la imagen procesada a la representación
         if instance.profile_picture:
             image = Image.open(BytesIO(instance.profile_picture))
             buffered = BytesIO()
