@@ -1,4 +1,7 @@
 from rest_framework import serializers
+from PIL import Image
+from io import BytesIO
+import base64
 from ..models import CustomUser, ContactInformation, DocumentType, Nationality, TeacherSubjectSchool
 
 
@@ -85,6 +88,19 @@ class UserSerializer(serializers.ModelSerializer):
     contactInfo = ContactInforSerializer()
     documentType = DocumentTypeSerializer()
     nationality = NationalitySerializer()
+    profile_picture = serializers.SerializerMethodField()
+
+    def get_profile_picture(self, obj):
+        imagen_binaria = obj.profile_picture
+
+        if imagen_binaria:
+            imagen = Image.open(BytesIO(imagen_binaria))
+            buffered = BytesIO()
+            imagen.save(buffered, format="PNG")
+            imagen_base64 = base64.b64encode(buffered.getvalue()).decode()
+            return f"data:image/jpeg;base64,{imagen_base64}"
+        return None
+
 
     class Meta:
         model = CustomUser
@@ -108,6 +124,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UpdateUserSerializer(serializers.ModelSerializer):
     contactInfo = ContactInforSerializer()
+    profile_picture = serializers.ImageField()
 
     class Meta:
         model = CustomUser
@@ -132,10 +149,40 @@ class UpdateUserSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         contact_info_data = validated_data.pop('contactInfo', None)
         if contact_info_data:
-            # Actualizar la información de contacto manualmente
+
             contact_info_instance = instance.contactInfo
             for key, value in contact_info_data.items():
                 setattr(contact_info_instance, key, value)
             contact_info_instance.save()
 
-        return super().update(instance, validated_data)   
+        imagen = validated_data.pop('profile_picture', None)
+        if imagen:
+            image = Image.open(imagen)
+            
+            # Redimensionar la imagen a 250x250 píxeles
+            image = image.resize((250, 250), Image.LANCZOS)
+            
+            # Convertir la imagen a un archivo binario en formato PNG
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")
+            imagen_binaria = buffered.getvalue()
+            
+            # Asignar la imagen binaria al campo del modelo
+            instance.profile_picture = imagen_binaria
+
+        return super().update(instance, validated_data)
+    
+    def to_representation(self, instance):
+        # Obtener la representación original del objeto
+        representation = super().to_representation(instance)
+        
+        # Procesar y agregar la imagen procesada a la representación
+        if instance.profile_picture:
+            image = Image.open(BytesIO(instance.profile_picture))
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")
+            imagen_base64 = base64.b64encode(buffered.getvalue()).decode()
+            representation['profile_picture'] = f"data:image/png;base64,{imagen_base64}"
+        else:
+            representation['profile_picture'] = None
+        return representation
