@@ -8,6 +8,8 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError as ValidationErrorDjango
 from django.shortcuts import get_object_or_404
 from datetime import datetime
+from django.db.models import Max, F
+from django.db import connection
 
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -853,10 +855,97 @@ class ViewSchedule(generics.ListAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     serializer_class = ScheduleSerializer
 
-    def get_queryset(self):
-        queryset = Schedules.objects.filter(module__school=self.request.school)
-        return queryset
-        
+    def get(self, request):
+        date = self.request.query_params.get('date', None)
+        teachers = self.request.query_params.getlist('teachers', None)
+        courses = self.request.query_params.getlist('courses', None)
+
+        if teachers:
+            try:
+                teacher_ids = [int(teacher) for teacher in teachers]
+                for teacher_id in teacher_ids:
+                    if not CustomUser.objects.filter(pk=teacher_id).exists():
+                        raise ValidationError({'error': '"teachers_ids": no valido.'})
+            except ValueError:
+                raise ValidationError("Los teachers proporcionados no existen.")
+        else:
+            teacher_ids = None
+
+        if courses:
+            try:
+                course_ids = [int(course) for course in courses]
+                for course_id in course_ids:
+                    if not Course.objects.filter(pk=course_id).exists():
+                        raise ValidationError({'error': '"courses_ids": no valido.'})
+            except ValueError:
+                raise ValidationError("Los courses proporcionados no existen.")
+        else:
+            course_ids = None
+
+        if not date:
+            date = datetime.now().strftime('%Y-%m-%d')
+        try:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
+
+        with connection.cursor() as cursor:
+            sql_query = """
+                SELECT *
+                FROM (
+                    SELECT sh.id as id,
+                           sh.date,
+                           sh.module_id,
+                           cs.course_id as course_id,
+                           tss.teacher_id as teacher_id,
+                           CONCAT(t.first_name, ' ', t.last_name) AS nombre,
+                           t.profile_picture,
+                           s.name,
+                           s.color,
+                           cs.subject_id,
+                           RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
+                    FROM Kronosapp_schedules sh
+                    INNER JOIN Kronosapp_teachersubjectschool tss
+                           ON sh.tssId_id = tss.id
+                    INNER JOIN Kronosapp_coursesubjects cs
+                           ON tss.coursesubjects_id = cs.id
+                    INNER JOIN Kronosapp_customuser t
+                           ON tss.teacher_id = t.id
+                    INNER JOIN Kronosapp_subject s
+                           ON cs.subject_id = s.id
+                    WHERE DATE(sh.`date`) <= %s
+                ) as t
+                WHERE t.RN = 1
+                ORDER BY course_id, module_id
+            """
+            cursor.execute(sql_query, [date])
+            results = cursor.fetchall()
+
+            data = [
+                {
+                    "id": row[0],
+                    "date": row[1],
+                    "module_id": row[2],
+                    "course_id": row[3],
+                    "teacher_id": row[4],
+                    "nombre": row[5],
+                    "profile_picture": row[6],
+                    "subject_name": row[7],
+                    "subject_color": row[8],
+                    "subject_id": row[9]
+                }
+                for row in results
+            ]
+
+
+            if teacher_ids is not None:
+                data = [row for row in data if row["teacher_id"] in teacher_ids]
+
+            if course_ids is not None:
+                data = [row for row in data if row["course_id"] in course_ids]
+            
+
+        return Response(data)
 
 
 class SubjectPerModuleView(generics.ListAPIView):
