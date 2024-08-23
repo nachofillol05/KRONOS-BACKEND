@@ -23,8 +23,7 @@ class TeacherAvailabilitySerializer(serializers.ModelSerializer):
         fields = ['module', 'loadDate', 'state']
 
 class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
-    # Ajustando el acceso al nombre de la asignatura a través de `coursesubjects`
-    subject_name = serializers.CharField(source='coursesubjects.subject.name')
+    subject_name = serializers.CharField(source='coursesubjects.subject.name', allow_blank=True, default='')
     school_name = serializers.CharField(source='school.name')
 
     class Meta:
@@ -34,9 +33,11 @@ class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         if instance.coursesubjects is None:
-            representation['subject_name'] = None
+            representation['subject_name'] = ''
+        elif instance.coursesubjects.subject.name is None:
+            representation['subject_name'] = ''
         return representation
-
+        
 class TeacherSerializer(serializers.ModelSerializer):
     contactInfo = ContactInformationSerializer()
     documentType = DocumentTypeSerializer()

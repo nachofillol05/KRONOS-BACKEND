@@ -36,7 +36,8 @@ from .views import (
     UserRolesViewSet,
     SchoolStaffAPIView,
     DirectivesView,
-    ContactarPersonal
+    ContactarPersonal,
+    ViewSchedule
 
 )
 
@@ -106,8 +107,8 @@ urlpatterns = [
     # Schedule
     path('new_schedule/', Newscheduleview.as_view(), name='create_schedule'),
     path('create_schedule/', NewScheduleCreation.as_view(), name='create_schedule'),
-    path('subjectpermodule/', SubjectPerModuleView.as_view(), name='subjectpermodule')
-
+    path('subjectpermodule/', SubjectPerModuleView.as_view(), name='subjectpermodule'),
+    path('viewschedule/', ViewSchedule.as_view(), name='viewschedule')
     
 
 
