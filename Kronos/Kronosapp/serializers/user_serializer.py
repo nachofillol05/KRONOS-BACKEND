@@ -1,4 +1,7 @@
 from rest_framework import serializers
+from PIL import Image
+from io import BytesIO
+import base64
 from ..models import CustomUser, ContactInformation, DocumentType, Nationality, TeacherSubjectSchool
 
 
@@ -11,7 +14,7 @@ class ContactInforSerializer(serializers.ModelSerializer):
 class DocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentType
-        fields = ['name']
+        fields = '__all__'
 
 class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,7 +25,7 @@ class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
 class NationalitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Nationality
-        fields = ['name']
+        fields = '__all__'
 class RegisterTeacherSubjectSchoolSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeacherSubjectSchool
@@ -85,6 +88,18 @@ class UserSerializer(serializers.ModelSerializer):
     contactInfo = ContactInforSerializer()
     documentType = DocumentTypeSerializer()
     nationality = NationalitySerializer()
+    profile_picture = serializers.SerializerMethodField()
+
+    def get_profile_picture(self, obj):
+        imagen_binaria = obj.profile_picture
+
+        if imagen_binaria:
+            imagen = Image.open(BytesIO(imagen_binaria))
+            buffered = BytesIO()
+            imagen.save(buffered, format="PNG")
+            imagen_base64 = base64.b64encode(buffered.getvalue()).decode()
+            return f"data:image/jpeg;base64,{imagen_base64}"
+        return None
 
     class Meta:
         model = CustomUser
@@ -103,14 +118,63 @@ class UserSerializer(serializers.ModelSerializer):
             'phone',
             'profile_picture'
         ]
+        
+    
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    contactInfo = ContactInforSerializer()
+    profile_picture = serializers.ImageField()
+
+    class Meta:
+        model = CustomUser
+        read_only_fields = ['email']
+        fields = [
+            'id',
+            'first_name',
+            'last_name',
+            'email',
+            'gender',
+            'document',
+            'documentType',
+            'nationality',
+            'contactInfo',
+            'dark_mode',
+            'color',
+            'phone',
+            'profile_picture'
+        ]
+
     
     def update(self, instance, validated_data):
         contact_info_data = validated_data.pop('contactInfo', None)
         if contact_info_data:
-            # Actualizar la información de contacto manualmente
             contact_info_instance = instance.contactInfo
             for key, value in contact_info_data.items():
                 setattr(contact_info_instance, key, value)
             contact_info_instance.save()
 
-        return super().update(instance, validated_data)     
+        imagen = validated_data.pop('profile_picture', None)
+        if imagen:
+            image = Image.open(imagen)
+            image = image.resize((250, 250), Image.LANCZOS)
+            
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")
+            imagen_binaria = buffered.getvalue()
+            
+            instance.profile_picture = imagen_binaria
+
+        return super().update(instance, validated_data)
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        
+        if instance.profile_picture:
+            image = Image.open(BytesIO(instance.profile_picture))
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")
+            imagen_base64 = base64.b64encode(buffered.getvalue()).decode()
+            representation['profile_picture'] = f"data:image/png;base64,{imagen_base64}"
+        else:
+            representation['profile_picture'] = None
+        return representation
