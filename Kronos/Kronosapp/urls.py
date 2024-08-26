@@ -95,6 +95,7 @@ urlpatterns = [
     path('school/myroles/', UserRolesViewSet.as_view(), name='user-roles'),
     #SchoolStaff
     path('staff/', SchoolStaffAPIView.as_view(), name='school-staff'),
+    path('staff/?export=excel', SchoolStaffAPIView.as_view(), name='school-staff-excel'),
     # Verify Token
 
     path('contacting-staff/', ContactarPersonal.as_view(), name='contacting-staff'),

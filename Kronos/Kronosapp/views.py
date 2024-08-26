@@ -940,10 +940,28 @@ class SchoolStaffAPIView(APIView):
                     'first_name': user.first_name,
                     'last_name': user.last_name,
                     'email': user.email,
+                    'phone': user.phone,
                     'roles': roles
                 })
 
+            if 'export' in request.GET and request.GET['export'] == 'excel':
+                return self.export_to_excel(roles_data)
+
         return Response(roles_data)
+    
+
+    def export_to_excel(self, data):
+        # Crear un DataFrame de pandas con los datos
+        df = pd.DataFrame(data)
+        
+        # Crear un archivo Excel en la memoria utilizando un buffer
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=SchoolStaff.xlsx'
+        
+        # Escribir el DataFrame en un archivo Excel usando openpyxl (por defecto)
+        df.to_excel(response, index=False, sheet_name='Staff')
+        
+        return response
     
 
 class DirectivesView(APIView):
