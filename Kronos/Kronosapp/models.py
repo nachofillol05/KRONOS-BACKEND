@@ -83,7 +83,7 @@ class CustomUser(AbstractUser):
     document = models.CharField(max_length=255, unique=True, blank=True, null=True, validators=[validate_numeric])
     first_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255, blank=True, null=True)
-    profile_picture = models.ImageField(upload_to='logos/', null=True, blank=True)
+    profile_picture = models.BinaryField(null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True)
     email = models.EmailField(max_length=255, unique=True)
     hoursToWork = models.IntegerField(blank=True, null=True)
@@ -171,20 +171,9 @@ class Course(models.Model):
 
 class Subject(models.Model):
     name = models.CharField(max_length=255)
-    studyPlan = models.TextField()
     description = models.CharField(max_length=255, blank=True)
-    weeklyHours = models.IntegerField()
     color = models.CharField(max_length=7, blank=True)  # Including # for hex color
     abbreviation = models.CharField(max_length=10, blank=True)
-    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True)
-    def __str__(self) -> str:
-        return self.name
-    def __str__(self) -> str:
-        return f"{self.name} - {self.course}"
-
-    def __str__(self) -> str:
-        return self.name
-
     def __str__(self) -> str:
         return f"{self.name}"
 
@@ -193,15 +182,18 @@ class CourseSubjects(models.Model):
     studyPlan = models.TextField()
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    weeklyHours = models.IntegerField()
+    def __str__(self) -> str:
+       return f"{self.course} - {self.subject}"
 
 
 class TeacherSubjectSchool(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, blank=True, null=True)
+    coursesubjects = models.ForeignKey(CourseSubjects, on_delete=models.SET_NULL, blank=True, null=True)
     teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return f"{self.teacher} - {self.subject} - {self.school}"
+        return f"{self.teacher} - {self.coursesubjects} - {self.school}"
 
 
 class Action(models.Model):

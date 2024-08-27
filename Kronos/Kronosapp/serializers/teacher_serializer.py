@@ -23,14 +23,21 @@ class TeacherAvailabilitySerializer(serializers.ModelSerializer):
         fields = ['module', 'loadDate', 'state']
 
 class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
-    subject_name = serializers.CharField(source='subject.name')
+    subject_name = serializers.CharField(source='coursesubjects.subject.name', allow_blank=True, default='')
     school_name = serializers.CharField(source='school.name')
 
     class Meta:
         model = TeacherSubjectSchool
         fields = ['subject_name', 'school_name']
-
-
+        
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.coursesubjects is None:
+            representation['subject_name'] = ''
+        elif instance.coursesubjects.subject.name is None:
+            representation['subject_name'] = ''
+        return representation
+        
 class TeacherSerializer(serializers.ModelSerializer):
     contactInfo = ContactInformationSerializer()
     documentType = DocumentTypeSerializer()
@@ -40,7 +47,7 @@ class TeacherSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'first_name', 'last_name', 'gender', 'email', 'document', 'documentType', 'nationality', 'email_verified', 'contactInfo', 'availability', 'subjects']
+        fields = ['id', 'first_name', 'last_name', 'gender', 'profile_picture', 'phone', 'email', 'document', 'documentType', 'nationality', 'email_verified', 'contactInfo', 'availability', 'subjects']
 
     def get_availability(self, obj):
         availabilities = obj.teacheravailability_set.all()
@@ -50,7 +57,6 @@ class TeacherSerializer(serializers.ModelSerializer):
         subjects = obj.teachersubjectschool_set.all()
         return TeacherSubjectSchoolSerializer(subjects, many=True).data
 
-    
 class CreateTeacherSerializer(serializers.ModelSerializer):
 
     class Meta:

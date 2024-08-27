@@ -31,11 +31,14 @@ from .views import (
     TeacherSubjectSchoolDetailView,
     TeacherAvailabilityListCreateView,
     TeacherAvailabilityDetailView,
+    SubjectPerModuleView,
     RoleView,
     UserRolesViewSet,
     SchoolStaffAPIView,
     DirectivesView,
-    ContactarPersonal
+    ContactarPersonal,
+    ViewSchedule
+
 )
 
 from .utils import (
@@ -104,8 +107,13 @@ urlpatterns = [
     
     path('verifyToken/', verifyToken.as_view(), name='verifyToken'),
 
+    # Schedule
     path('new_schedule/', Newscheduleview.as_view(), name='create_schedule'),
-    path('create_schedule/', NewScheduleCreation.as_view(), name='create_schedule')
+    path('create_schedule/', NewScheduleCreation.as_view(), name='create_schedule'),
+    path('subjectpermodule/', SubjectPerModuleView.as_view(), name='subjectpermodule'),
+    path('viewschedule/', ViewSchedule.as_view(), name='viewschedule')
+    
+
 
 ]
 

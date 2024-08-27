@@ -9,14 +9,15 @@ def get_subjects_dynamically():
 
     for tss in tss_records:
         tss_id = tss.id
-        subject = tss.subject
+        subject = tss.coursesubjects.subject
+        weeklyHours = tss.coursesubjects.weeklyHours
         teacher = tss.teacher
         school = tss.school.id
-        course = subject.course
+        course = tss.coursesubjects.course
 
         if course and course.name not in subjects:
             subjects[subject.name, course.name] = {
-                "hours": subject.weeklyHours,
+                "hours": weeklyHours,
                 "availability": [],
                 "teacher": f"{teacher.first_name} {teacher.last_name}",
                 "tss_id": tss_id,
