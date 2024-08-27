@@ -923,6 +923,7 @@ class SchoolStaffAPIView(APIView):
     def get(self, request):
         school = request.school
         users = CustomUser.objects.all()
+        print(users)
         roles_data = []
 
         for user in users:
@@ -951,7 +952,7 @@ class SchoolStaffAPIView(APIView):
     
 
     def export_to_excel(self, data):
-        # Crear un DataFrame de pandas con los datos
+        print(data)
         df = pd.DataFrame(data)
         
         # Crear un archivo Excel en la memoria utilizando un buffer
