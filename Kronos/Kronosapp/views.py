@@ -371,6 +371,8 @@ class SubjectListCreate(generics.ListCreateAPIView):
         if name:
             queryset = queryset.filter(name__icontains=name)
 
+        if 'export' in request.GET and request.GET['export'] == 'excel':
+            return self.export_to_excel(queryset)
 
         serializer = SubjectSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -382,6 +384,21 @@ class SubjectListCreate(generics.ListCreateAPIView):
         if course.year.school != self.request.school:
             raise ValidationError({'course': ['You can only modify the school you belong to']})
         serializer.save()
+
+    def export_to_excel(self, queryset):
+        # Convertir el queryset a un DataFrame de pandas
+        data = list(queryset.values('id', 'name', 'abbreviation', 'course', 'color', 'weeklyHours', 'studyPlan'))
+        print(data)
+        df = pd.DataFrame(data)
+
+        # Crear un archivo Excel en la memoria utilizando un buffer
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=Subjects.xlsx'
+        
+        # Escribir el DataFrame en un archivo Excel usando pandas
+        df.to_excel(response, index=False, sheet_name='Subjects')
+        
+        return response
     
     # def post(self, request):
     #     serializer = SubjectSerializer(data=request.data)

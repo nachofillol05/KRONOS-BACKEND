@@ -62,7 +62,9 @@ urlpatterns = [
     path('directives/', DirectivesView.as_view(), name='directives'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
+    path('subjects/?export=excel', SubjectListCreate.as_view(), name='subject-list-create-excel'),
     path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail'),
+
     # courses
     path('courses/', CourseListCreate.as_view(), name='course-list-create'),
     path('courses/<int:pk>/', CourseRetrieveUpdateDestroy.as_view(), name='course-detail'),
