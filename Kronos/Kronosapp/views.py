@@ -923,7 +923,6 @@ class SchoolStaffAPIView(APIView):
     def get(self, request):
         school = request.school
         users = CustomUser.objects.all()
-        print(users)
         roles_data = []
 
         for user in users:
@@ -942,18 +941,18 @@ class SchoolStaffAPIView(APIView):
                     'last_name': user.last_name,
                     'email': user.email,
                     'phone': user.phone,
-                    'roles': roles
+                    'roles': ", ".join(roles)
                 })
 
-            if 'export' in request.GET and request.GET['export'] == 'excel':
-                return self.export_to_excel(roles_data)
+        if 'export' in request.GET and request.GET['export'] == 'excel':
+            return self.export_to_excel(roles_data)
 
         return Response(roles_data)
     
 
-    def export_to_excel(self, data):
-        print(data)
-        df = pd.DataFrame(data)
+    def export_to_excel(self, roles_data):
+        print(roles_data)
+        df = pd.DataFrame(roles_data)
         
         # Crear un archivo Excel en la memoria utilizando un buffer
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
