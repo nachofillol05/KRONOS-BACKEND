@@ -975,9 +975,8 @@ class SubjectPerModuleView(generics.ListAPIView):
         available_subjects = []
         for course_subject in course_subjects:
             teacher_subject_school = TeacherSubjectSchool.objects.filter(coursesubjects=course_subject).first()
-            if not teacher_subject_school:
+            if teacher_subject_school:
                 teacher = teacher_subject_school.teacher
-
 
                 if TeacherAvailability.objects.filter(teacher=teacher, module=module, availabilityState__isEnabled=True).exists():
                     available_subjects.append(course_subject.subject)
@@ -990,6 +989,47 @@ class SubjectPerModuleView(generics.ListAPIView):
             return queryset
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+    
+    def post(self, request, *args, **kwargs):
+        schedules_data = request.data.get('schedules', [])
+        
+        if not schedules_data:
+            return Response({"error": "No se proporcionaron datos de horarios."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        created_schedules = []
+        for schedule_data in schedules_data:
+            
+            course_id = schedule_data.get('course_id')
+            module_id = schedule_data.get('module_id')
+            subject_id = schedule_data.get('subject_id')
+            
+            if not course_id or not module_id or not subject_id:
+                return Response({"error": "Se necesita pasar el ID del curso, el ID del módulo y el ID de materia."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                course_subject = CourseSubjects.objects.get(course=course_id, subject=subject_id)
+                
+                teacher_subject_school = TeacherSubjectSchool.objects.get(coursesubjects=course_subject, school=request.school)
+                module = Module.objects.get(id=module_id)
+            except CourseSubjects.DoesNotExist:
+                return Response({"error": "CourseSubject no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
+            except TeacherSubjectSchool.DoesNotExist:
+                return Response({"error": "TeacherSubjectSchool no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
+            except Module.DoesNotExist:
+                return Response({"error": "Módulo no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
+
+            
+
+            schedule = Schedules.objects.create(
+                date=datetime.now(),
+                action_id=None,
+                module=module,
+                tssId=teacher_subject_school
+            )
+            created_schedules.append(schedule)
+
+        return Response({"message": "Schedule creado exitosamente"}, status=status.HTTP_201_CREATED)
+
     
 
 class UserRolesViewSet(APIView):
