@@ -389,7 +389,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
 
     def export_to_excel(self, queryset):
         # Convertir el queryset a un DataFrame de pandas
-        data = list(queryset.values('id', 'name', 'abbreviation', 'color', 'coursesubjects__course__year__number', 'coursesubjects__course__name'))
+        data = list(queryset.values('id', 'name', 'abbreviation', 'color', 'coursesubjects__course__name'))
         print(data)
         df = pd.DataFrame(data)
 
