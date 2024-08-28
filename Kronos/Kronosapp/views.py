@@ -374,6 +374,8 @@ class SubjectListCreate(generics.ListCreateAPIView):
         if name:
             queryset = queryset.filter(name__icontains=name)
 
+        if 'export' in request.GET and request.GET['export'] == 'excel':
+            return self.export_to_excel(queryset)
 
         serializer = SubjectWithCoursesSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -384,6 +386,21 @@ class SubjectListCreate(generics.ListCreateAPIView):
         if course.year.school != self.request.school:
             raise ValidationError({'course': ['You can only modify the school you belong to']})
         serializer.save()
+
+    def export_to_excel(self, queryset):
+        # Convertir el queryset a un DataFrame de pandas
+        data = list(queryset.values('id', 'name', 'abbreviation', 'color', 'coursesubjects__course__name'))
+        print(data)
+        df = pd.DataFrame(data)
+
+        # Crear un archivo Excel en la memoria utilizando un buffer
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=Subjects.xlsx'
+        
+        # Escribir el DataFrame en un archivo Excel usando pandas
+        df.to_excel(response, index=False, sheet_name='Subjects')
+        
+        return response
     
     # def post(self, request):
     #     serializer = SubjectSerializer(data=request.data)
@@ -1075,10 +1092,28 @@ class SchoolStaffAPIView(APIView):
                     'first_name': user.first_name,
                     'last_name': user.last_name,
                     'email': user.email,
-                    'roles': roles
+                    'phone': user.phone,
+                    'roles': ", ".join(roles)
                 })
 
+        if 'export' in request.GET and request.GET['export'] == 'excel':
+            return self.export_to_excel(roles_data)
+
         return Response(roles_data)
+    
+
+    def export_to_excel(self, roles_data):
+        print(roles_data)
+        df = pd.DataFrame(roles_data)
+        
+        # Crear un archivo Excel en la memoria utilizando un buffer
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=SchoolStaff.xlsx'
+        
+        # Escribir el DataFrame en un archivo Excel usando openpyxl (por defecto)
+        df.to_excel(response, index=False, sheet_name='Staff')
+        
+        return response
     
 
 class DirectivesView(APIView):
