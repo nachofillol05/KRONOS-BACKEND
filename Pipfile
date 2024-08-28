@@ -17,6 +17,7 @@ django-cors-headers = "*"
 drf-spectacular = "*"
 djangorestframework-simplejwt = "*"
 pulp = "*"
+openpyxl = "*"
 
 [dev-packages]
 
