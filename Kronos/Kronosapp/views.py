@@ -117,25 +117,38 @@ class ExcelToteacher(generics.GenericAPIView):
             return JsonResponse({'error': 'No se proporcionó un archivo'}, status=400)
         
         try:
-            df = pd.read_excel(archivo, sheet_name=0, header=0)
+            df = pd.read_excel(archivo, sheet_name=0, header=0, skiprows=[1])
         except EmptyDataError:
             return JsonResponse({'error': 'El archivo está vacío o tiene un formato incorrecto'}, status=400)
         except Exception as e:
             return JsonResponse({'error': f'Error al procesar el archivo: {str(e)}'}, status=500)
 
-
-        results = []
         try:
-            documentType = DocumentType.objects.get(name='DNI')
+            dni = DocumentType.objects.get(name='DNI').id
+            pasaporte = DocumentType.objects.get(name='Pasaporte').id
+            cuit = DocumentType.objects.get(name='CUIT').id
         except DocumentType.DoesNotExist:
-            documentType = DocumentType.objects.create(name='DNI')
+            raise ValidationError("El tipo de documento no se encuentra.")
+        results = []
 
         for index, row in df.iterrows():
-            if pd.notnull(row['DNI']):
-                document = row['DNI']
+            if pd.notnull(row['Documento']):
+                document = row['Documento']
                 first_name = row['NOMBRE']
                 last_name = row['APELLIDO']
                 email = row['MAIL']
+                phone = row['Telefono']
+                tipo_documento = row['Tipo de Documento']
+
+                if tipo_documento == 'DNI':
+                    documentType = dni
+                elif tipo_documento == 'Pasaporte':
+                    documentType = pasaporte
+                elif tipo_documento == 'CUIT':
+                    documentType = cuit 
+                else:
+                    results.append({'Documento': document, 'Response': 'Tipo de documento no válido'})
+                    continue
 
                 if validate_email(email):
                     data = {
@@ -143,13 +156,15 @@ class ExcelToteacher(generics.GenericAPIView):
                         'password': "contraseña",
                         'first_name': first_name,
                         'last_name': last_name,
-                        'documentType': documentType.pk,
+                        'documentType': documentType,
                         'document': document,
+                        'phone': phone,
                     }
                     result = register_user(data=data, request=request)
-                    results.append({'DNI': document, 'Response': result})
+                    results.append({'Documento': document, 'Response': result})
                 else:
-                    results.append({'DNI': document, 'Response': 'Email no valido'})
+                    results.append({'Documento': document, 'Response': 'Email no valido'})
+                    
         if results:
             return JsonResponse({'results': results})
         else:
