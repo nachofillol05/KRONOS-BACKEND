@@ -80,7 +80,7 @@ class CustomUser(AbstractUser):
         ('masculino', 'Masculino'),
         ('femenino', 'Femenino')
     ]
-    document = models.CharField(max_length=255, unique=True, blank=True, null=True, validators=[validate_numeric])
+    document = models.CharField(max_length=255, unique=True, blank=True, null=True)
     first_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255, blank=True, null=True)
     profile_picture = models.BinaryField(null=True, blank=True)
