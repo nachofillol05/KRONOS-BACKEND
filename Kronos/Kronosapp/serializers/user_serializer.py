@@ -106,3 +106,26 @@ class UpdateUserSerializer(serializers.ModelSerializer):
         else:
             representation['profile_picture'] = None
         return representation
+
+
+class UserWithRoleSerializer(UserSerializer):
+    roles = serializers.CharField()
+
+    class Meta:
+        model = CustomUser
+        fields = [
+            'id',
+            'first_name',
+            'last_name',
+            'email',
+            'gender',
+            'document',
+            'documentType',
+            'nationality',
+            'contactInfo',
+            'dark_mode',
+            'color',
+            'phone',
+            'profile_picture',
+            'roles'
+        ]

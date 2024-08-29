@@ -37,8 +37,8 @@ from .views import (
     SchoolStaffAPIView,
     DirectivesView,
     ContactarPersonal,
-    ViewSchedule
-
+    ViewSchedule,
+    StaffToExel
 )
 
 from .utils import (
@@ -100,7 +100,7 @@ urlpatterns = [
     path('school/myroles/', UserRolesViewSet.as_view(), name='user-roles'),
     #SchoolStaff
     path('staff/', SchoolStaffAPIView.as_view(), name='school-staff'),
-    path('staff/?export=excel', SchoolStaffAPIView.as_view(), name='school-staff-excel'),
+    path('staff/export', StaffToExel.as_view(), name='school-staff-excel'),
     # Verify Token
 
     path('contacting-staff/', ContactarPersonal.as_view(), name='contacting-staff'),

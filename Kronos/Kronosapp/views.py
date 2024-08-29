@@ -34,7 +34,7 @@ from .utils import register_user, send_email
 from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from .serializers.preceptor_serializer import PreceptorSerializer
-from .serializers.user_serializer import UserSerializer, UpdateUserSerializer
+from .serializers.user_serializer import UserSerializer, UpdateUserSerializer, UserWithRoleSerializer
 from .serializers.Subject_serializer import SubjectWithCoursesSerializer
 from .serializers.course_serializer import CourseSerializer
 from .serializers.year_serializer import YearSerializer
@@ -1089,6 +1089,35 @@ class SchoolStaffAPIView(APIView):
 
     def get(self, request):
         school = request.school
+        user_data = self.get_staff_roles(school)
+        # serializer = UserWithRoleSerializer(user_data, many=True)
+        return Response(user_data, status=status.HTTP_200_OK)
+    
+    def get_staff_roles(self, school):
+        user_roles = []
+        users = CustomUser.objects.all()
+        for user in users:
+            roles = []
+            if user.is_directive(school):
+                roles.append('Directivo')
+            if user.is_teacher(school):
+                roles.append('Profesor')
+            if user.is_preceptor(school):
+                roles.append('Preceptor')
+
+            if roles:
+                user_dict = dict(UserSerializer(user).data)
+                user_dict["roles"] = roles
+                user_roles.append(user_dict)
+
+        return user_roles
+
+
+class StaffToExel(APIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+
+    def get(self, request):
+        school = request.school
         users = CustomUser.objects.all()
         roles_data = []
 
@@ -1111,25 +1140,16 @@ class SchoolStaffAPIView(APIView):
                     'roles': ", ".join(roles)
                 })
 
-        if 'export' in request.GET and request.GET['export'] == 'excel':
-            return self.export_to_excel(roles_data)
-
-        return Response(roles_data)
-    
+        return self.export_to_excel(roles_data)
 
     def export_to_excel(self, roles_data):
-        print(roles_data)
         df = pd.DataFrame(roles_data)
-        
         # Crear un archivo Excel en la memoria utilizando un buffer
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename=SchoolStaff.xlsx'
-        
         # Escribir el DataFrame en un archivo Excel usando openpyxl (por defecto)
         df.to_excel(response, index=False, sheet_name='Staff')
-        
         return response
-    
 
 class DirectivesView(APIView):
     """
