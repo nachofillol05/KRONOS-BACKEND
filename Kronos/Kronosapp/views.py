@@ -280,7 +280,7 @@ class SchoolsView(generics.ListAPIView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        print(user)
+
         if user:
             schools = set()
 
@@ -405,7 +405,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
     def export_to_excel(self, queryset):
         # Convertir el queryset a un DataFrame de pandas
         data = list(queryset.values('id', 'name', 'abbreviation', 'color', 'coursesubjects__course__name'))
-        print(data)
+
         df = pd.DataFrame(data)
 
         # Crear un archivo Excel en la memoria utilizando un buffer
@@ -639,7 +639,7 @@ class verifyToken(APIView):
         token = request.data.get('token')
         token = Token.objects.get(key=token)
         user = token.user
-        print(user)
+
         return JsonResponse({'user': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, 'document': user.document, 'email_verified': user.email_verified, 'is_active': user.is_active, 'is_staff': user.is_staff, 'is_superuser': user.is_superuser, 'date_joined': user.date_joined, 'last_login': user.last_login, 'verification_token': user.verification_token, 'id': user.id})
 
 class ContactarPersonal(generics.GenericAPIView):
@@ -1003,9 +1003,17 @@ class SubjectPerModuleView(generics.ListAPIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        validate_course_subjects = []
+        for course_subject in course_subjects:
+            weeklyHours = Schedules.objects.filter(tssId__coursesubjects=course_subject).count()
+            if weeklyHours < course_subject.weeklyHours:
+                validate_course_subjects.append(course_subject)
+                
+
+
 
         available_subjects = []
-        for course_subject in course_subjects:
+        for course_subject in validate_course_subjects:
             teacher_subject_school = TeacherSubjectSchool.objects.filter(coursesubjects=course_subject).first()
             if teacher_subject_school:
                 teacher = teacher_subject_school.teacher
@@ -1118,7 +1126,7 @@ class SchoolStaffAPIView(APIView):
     
 
     def export_to_excel(self, roles_data):
-        print(roles_data)
+
         df = pd.DataFrame(roles_data)
         
         # Crear un archivo Excel en la memoria utilizando un buffer
