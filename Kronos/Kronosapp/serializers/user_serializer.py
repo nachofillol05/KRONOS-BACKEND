@@ -60,7 +60,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UpdateUserSerializer(serializers.ModelSerializer):
     contactInfo = ContactInforSerializer()
-    profile_picture = serializers.ImageField()
+    profile_picture = serializers.ImageField(required=False)
 
     class Meta:
         model = CustomUser

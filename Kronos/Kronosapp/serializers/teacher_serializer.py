@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from ..serializers.user_serializer import UserSerializer
 from ..models import ContactInformation, CustomUser, DocumentType, Nationality, TeacherAvailability, TeacherSubjectSchool
 
 class ContactInformationSerializer(serializers.ModelSerializer):
@@ -38,16 +39,13 @@ class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
             representation['subject_name'] = ''
         return representation
         
-class TeacherSerializer(serializers.ModelSerializer):
-    contactInfo = ContactInformationSerializer()
-    documentType = DocumentTypeSerializer()
-    nationality = NationalitySerializer()
+class TeacherSerializer(UserSerializer):
     availability = serializers.SerializerMethodField()
     subjects = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'first_name', 'last_name', 'gender', 'profile_picture', 'phone', 'email', 'document', 'documentType', 'nationality', 'email_verified', 'contactInfo', 'availability', 'subjects']
+        fields = ['id', 'first_name', 'last_name', 'profile_picture', 'gender', 'profile_picture', 'phone', 'email', 'document', 'documentType', 'nationality', 'email_verified', 'contactInfo', 'availability', 'subjects']
 
     def get_availability(self, obj):
         availabilities = obj.teacheravailability_set.all()
