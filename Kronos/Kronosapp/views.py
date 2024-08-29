@@ -452,7 +452,7 @@ class CourseListCreate(generics.ListCreateAPIView):
 
     def get(self, request):
         school = self.request.school
-        queryset = Course.objects.filter(year__school = school)
+        queryset = Course.objects.filter(year__school = school).order_by('year__number', 'name')
         serializer = CourseSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
