@@ -8,6 +8,8 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError as ValidationErrorDjango
 from django.shortcuts import get_object_or_404
 from datetime import datetime
+from django.db.models import Max, F
+from django.db import connection
 
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -115,25 +117,38 @@ class ExcelToteacher(generics.GenericAPIView):
             return JsonResponse({'error': 'No se proporcionó un archivo'}, status=400)
         
         try:
-            df = pd.read_excel(archivo, sheet_name=0, header=0)
+            df = pd.read_excel(archivo, sheet_name=0, header=0, skiprows=[1])
         except EmptyDataError:
             return JsonResponse({'error': 'El archivo está vacío o tiene un formato incorrecto'}, status=400)
         except Exception as e:
             return JsonResponse({'error': f'Error al procesar el archivo: {str(e)}'}, status=500)
 
-
-        results = []
         try:
-            documentType = DocumentType.objects.get(name='DNI')
+            dni = DocumentType.objects.get(name='DNI').id
+            pasaporte = DocumentType.objects.get(name='Pasaporte').id
+            cuit = DocumentType.objects.get(name='CUIT').id
         except DocumentType.DoesNotExist:
-            documentType = DocumentType.objects.create(name='DNI')
+            raise ValidationError("El tipo de documento no se encuentra.")
+        results = []
 
         for index, row in df.iterrows():
-            if pd.notnull(row['DNI']):
-                document = row['DNI']
+            if pd.notnull(row['Documento']):
+                document = row['Documento']
                 first_name = row['NOMBRE']
                 last_name = row['APELLIDO']
                 email = row['MAIL']
+                phone = row['Telefono']
+                tipo_documento = row['Tipo de Documento']
+
+                if tipo_documento == 'DNI':
+                    documentType = dni
+                elif tipo_documento == 'Pasaporte':
+                    documentType = pasaporte
+                elif tipo_documento == 'CUIT':
+                    documentType = cuit 
+                else:
+                    results.append({'Documento': document, 'Response': 'Tipo de documento no válido'})
+                    continue
 
                 if validate_email(email):
                     data = {
@@ -141,13 +156,15 @@ class ExcelToteacher(generics.GenericAPIView):
                         'password': "contraseña",
                         'first_name': first_name,
                         'last_name': last_name,
-                        'documentType': documentType.pk,
+                        'documentType': documentType,
                         'document': document,
+                        'phone': phone,
                     }
                     result = register_user(data=data, request=request)
-                    results.append({'DNI': document, 'Response': result})
+                    results.append({'Documento': document, 'Response': result})
                 else:
-                    results.append({'DNI': document, 'Response': 'Email no valido'})
+                    results.append({'Documento': document, 'Response': 'Email no valido'})
+                    
         if results:
             return JsonResponse({'results': results})
         else:
@@ -372,6 +389,8 @@ class SubjectListCreate(generics.ListCreateAPIView):
         if name:
             queryset = queryset.filter(name__icontains=name)
 
+        if 'export' in request.GET and request.GET['export'] == 'excel':
+            return self.export_to_excel(queryset)
 
         serializer = SubjectWithCoursesSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -382,6 +401,21 @@ class SubjectListCreate(generics.ListCreateAPIView):
         if course.year.school != self.request.school:
             raise ValidationError({'course': ['You can only modify the school you belong to']})
         serializer.save()
+
+    def export_to_excel(self, queryset):
+        # Convertir el queryset a un DataFrame de pandas
+        data = list(queryset.values('id', 'name', 'abbreviation', 'color', 'coursesubjects__course__name'))
+        print(data)
+        df = pd.DataFrame(data)
+
+        # Crear un archivo Excel en la memoria utilizando un buffer
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=Subjects.xlsx'
+        
+        # Escribir el DataFrame en un archivo Excel usando pandas
+        df.to_excel(response, index=False, sheet_name='Subjects')
+        
+        return response
     
     # def post(self, request):
     #     serializer = SubjectSerializer(data=request.data)
@@ -853,10 +887,97 @@ class ViewSchedule(generics.ListAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     serializer_class = ScheduleSerializer
 
-    def get_queryset(self):
-        queryset = Schedules.objects.filter(module__school=self.request.school)
-        return queryset
-        
+    def get(self, request):
+        date = self.request.query_params.get('date', None)
+        teachers = self.request.query_params.getlist('teachers', None)
+        courses = self.request.query_params.getlist('courses', None)
+
+        if teachers:
+            try:
+                teacher_ids = [int(teacher) for teacher in teachers]
+                for teacher_id in teacher_ids:
+                    if not CustomUser.objects.filter(pk=teacher_id).exists():
+                        raise ValidationError({'error': '"teachers_ids": no valido.'})
+            except ValueError:
+                raise ValidationError("Los teachers proporcionados no existen.")
+        else:
+            teacher_ids = None
+
+        if courses:
+            try:
+                course_ids = [int(course) for course in courses]
+                for course_id in course_ids:
+                    if not Course.objects.filter(pk=course_id).exists():
+                        raise ValidationError({'error': '"courses_ids": no valido.'})
+            except ValueError:
+                raise ValidationError("Los courses proporcionados no existen.")
+        else:
+            course_ids = None
+
+        if not date:
+            date = datetime.now().strftime('%Y-%m-%d')
+        try:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
+
+        with connection.cursor() as cursor:
+            sql_query = """
+                SELECT *
+                FROM (
+                    SELECT sh.id as id,
+                           sh.date,
+                           sh.module_id,
+                           cs.course_id as course_id,
+                           tss.teacher_id as teacher_id,
+                           CONCAT(t.first_name, ' ', t.last_name) AS nombre,
+                           t.profile_picture,
+                           s.name,
+                           s.color,
+                           cs.subject_id,
+                           RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
+                    FROM Kronosapp_schedules sh
+                    INNER JOIN Kronosapp_teachersubjectschool tss
+                           ON sh.tssId_id = tss.id
+                    INNER JOIN Kronosapp_coursesubjects cs
+                           ON tss.coursesubjects_id = cs.id
+                    INNER JOIN Kronosapp_customuser t
+                           ON tss.teacher_id = t.id
+                    INNER JOIN Kronosapp_subject s
+                           ON cs.subject_id = s.id
+                    WHERE DATE(sh.`date`) <= %s
+                ) as t
+                WHERE t.RN = 1
+                ORDER BY course_id, module_id
+            """
+            cursor.execute(sql_query, [date])
+            results = cursor.fetchall()
+
+            data = [
+                {
+                    "id": row[0],
+                    "date": row[1],
+                    "module_id": row[2],
+                    "course_id": row[3],
+                    "teacher_id": row[4],
+                    "nombre": row[5],
+                    "profile_picture": row[6],
+                    "subject_name": row[7],
+                    "subject_color": row[8],
+                    "subject_id": row[9]
+                }
+                for row in results
+            ]
+
+
+            if teacher_ids is not None:
+                data = [row for row in data if row["teacher_id"] in teacher_ids]
+
+            if course_ids is not None:
+                data = [row for row in data if row["course_id"] in course_ids]
+            
+
+        return Response(data)
 
 
 class SubjectPerModuleView(generics.ListAPIView):
@@ -886,9 +1007,8 @@ class SubjectPerModuleView(generics.ListAPIView):
         available_subjects = []
         for course_subject in course_subjects:
             teacher_subject_school = TeacherSubjectSchool.objects.filter(coursesubjects=course_subject).first()
-            if not teacher_subject_school:
+            if teacher_subject_school:
                 teacher = teacher_subject_school.teacher
-
 
                 if TeacherAvailability.objects.filter(teacher=teacher, module=module, availabilityState__isEnabled=True).exists():
                     available_subjects.append(course_subject.subject)
@@ -901,6 +1021,47 @@ class SubjectPerModuleView(generics.ListAPIView):
             return queryset
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+    
+    def post(self, request, *args, **kwargs):
+        schedules_data = request.data.get('schedules', [])
+        
+        if not schedules_data:
+            return Response({"error": "No se proporcionaron datos de horarios."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        created_schedules = []
+        for schedule_data in schedules_data:
+            
+            course_id = schedule_data.get('course_id')
+            module_id = schedule_data.get('module_id')
+            subject_id = schedule_data.get('subject_id')
+            
+            if not course_id or not module_id or not subject_id:
+                return Response({"error": "Se necesita pasar el ID del curso, el ID del módulo y el ID de materia."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                course_subject = CourseSubjects.objects.get(course=course_id, subject=subject_id)
+                
+                teacher_subject_school = TeacherSubjectSchool.objects.get(coursesubjects=course_subject, school=request.school)
+                module = Module.objects.get(id=module_id)
+            except CourseSubjects.DoesNotExist:
+                return Response({"error": "CourseSubject no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
+            except TeacherSubjectSchool.DoesNotExist:
+                return Response({"error": "TeacherSubjectSchool no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
+            except Module.DoesNotExist:
+                return Response({"error": "Módulo no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
+
+            
+
+            schedule = Schedules.objects.create(
+                date=datetime.now(),
+                action_id=None,
+                module=module,
+                tssId=teacher_subject_school
+            )
+            created_schedules.append(schedule)
+
+        return Response({"message": "Schedule creado exitosamente"}, status=status.HTTP_201_CREATED)
+
     
 
 class UserRolesViewSet(APIView):
@@ -946,10 +1107,28 @@ class SchoolStaffAPIView(APIView):
                     'first_name': user.first_name,
                     'last_name': user.last_name,
                     'email': user.email,
-                    'roles': roles
+                    'phone': user.phone,
+                    'roles': ", ".join(roles)
                 })
 
+        if 'export' in request.GET and request.GET['export'] == 'excel':
+            return self.export_to_excel(roles_data)
+
         return Response(roles_data)
+    
+
+    def export_to_excel(self, roles_data):
+        print(roles_data)
+        df = pd.DataFrame(roles_data)
+        
+        # Crear un archivo Excel en la memoria utilizando un buffer
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=SchoolStaff.xlsx'
+        
+        # Escribir el DataFrame en un archivo Excel usando openpyxl (por defecto)
+        df.to_excel(response, index=False, sheet_name='Staff')
+        
+        return response
     
 
 class DirectivesView(APIView):

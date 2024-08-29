@@ -13,6 +13,7 @@ class DocumentTypeSerializer(serializers.ModelSerializer):
         model = DocumentType
         fields = '__all__'
 
+
 class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeacherSubjectSchool
