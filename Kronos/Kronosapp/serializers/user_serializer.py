@@ -2,6 +2,7 @@ from rest_framework import serializers
 from ..models import CustomUser, ContactInformation, DocumentType, Nationality, TeacherSubjectSchool
 from ..utils import convert_binary_to_image, convert_image_to_binary
 
+
 class ContactInforSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactInformation
