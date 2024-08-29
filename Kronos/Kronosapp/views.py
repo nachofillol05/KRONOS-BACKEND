@@ -3,12 +3,12 @@ from django.http import HttpResponse, JsonResponse, FileResponse
 from django.urls import reverse
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
-from django.db.models import Q
+from django.db.models import Q, Case, When, IntegerField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as ValidationErrorDjango
 from django.shortcuts import get_object_or_404
 from datetime import datetime
-from django.db.models import Max, F
+
 from django.db import connection
 
 from rest_framework.views import APIView
@@ -720,6 +720,16 @@ class EventListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         queryset = Event.objects.filter(school=self.request.school)
+
+        current_time = datetime.now()
+        queryset = queryset.annotate(
+            event_status=Case(
+                When(startDate__lte=current_time, endDate__gte=current_time, then=1),  # En Curso
+                When(startDate__gt=current_time, then=2),  # Pendiente
+                When(endDate__lt=current_time, then=3),  # Finalizado
+                output_field=IntegerField(),
+            )
+        ).order_by('event_status', 'startDate')
 
         name = self.request.query_params.get('name', None)
         event_type = self.request.query_params.get('eventType', None)
