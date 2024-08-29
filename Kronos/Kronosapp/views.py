@@ -45,6 +45,7 @@ from .serializers.teacherSubSchool_serializer import TeacherSubjectSchoolSeriali
 from .serializers.teacherAvailability_serializer import TeacherAvailabilitySerializer
 from .serializers.roles_serializer import RoleSerializer
 from .serializers.schedule_serializer import ScheduleSerializer
+from .serializers.nationality_serializer import NationalitySerializer
 
 from .models import(
     CustomUser,
@@ -61,6 +62,7 @@ from .models import(
     CourseSubjects,
     DocumentType,
     TeacherAvailability,
+    Nationality,
     Role
 )
 
@@ -1130,3 +1132,10 @@ class DirectivesView(APIView):
         school.save()
         serializer = CreateSchoolSerializer(school)
         return Response(serializer.data, status=status_code)
+
+
+class NationalityViewSet(generics.ListAPIView):
+    authentication_classes = [TokenAuthentication]
+    queryset = Nationality.objects.all()
+    serializer_class = NationalitySerializer
+    
