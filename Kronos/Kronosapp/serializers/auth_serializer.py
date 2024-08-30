@@ -63,7 +63,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("El tipo de documento no es válido.")
         
         if document_type == dni:
-            if len(value) != 8:
+            if len(value) < 8:
                 raise serializers.ValidationError("El DNI debe tener al menos 8 caracteres.")
             if not value.isdigit():
                 raise serializers.ValidationError("El DNI solo puede tener caracteres numericos.")
