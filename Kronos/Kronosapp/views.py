@@ -1180,7 +1180,18 @@ class DirectivesView(APIView):
 
     def get(self, request, *args, **kwargs):
         school = self.request.school    
-        directives = school.directives.all()  # Obtiene los directivos de la escuela
+        directives = school.directives.all()
+        # filtros
+        search = request.query_params.get('search', None)
+        if search:
+            directives = directives.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(document__startswith=search)
+            )
+            
+        if not directives.exists():
+            return Response({"error": "No encontrado"}, status=status.HTTP_404_NOT_FOUND)
         serializer = UserSerializer(directives, many=True)
         return Response(serializer.data)    
 
