@@ -474,7 +474,7 @@ class Command(BaseCommand):
         TeacherSubjectSchool.objects.create(
             school=school2,
             coursesubjects=course_subject2_2,
-            teacher=teacher2_2
+            teacher=directive_user2
         )
         # Crear acciones
         action1 = Action.objects.create(name='Agregar materia', isEnabled=True)
