@@ -997,8 +997,8 @@ class SubjectPerModuleView(generics.ListAPIView):
     serializer_class = SubjectWithCoursesSerializer
 
     def get_queryset(self):
-        module_id = self.request.data.get('module_id', None)
-        course_id = self.request.data.get('course_id', None)
+        module_id = self.request.query_params.get('module_id', None)
+        course_id = self.request.query_params.get('course_id', None)
 
         if not module_id or not course_id:
             return Response(
