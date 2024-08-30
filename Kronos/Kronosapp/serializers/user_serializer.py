@@ -1,8 +1,6 @@
 from rest_framework import serializers
-from PIL import Image
-from io import BytesIO
-import base64
 from ..models import CustomUser, ContactInformation, DocumentType, Nationality, TeacherSubjectSchool
+from ..utils import convert_binary_to_image, convert_image_to_binary
 
 
 class ContactInforSerializer(serializers.ModelSerializer):
@@ -16,6 +14,7 @@ class DocumentTypeSerializer(serializers.ModelSerializer):
         model = DocumentType
         fields = '__all__'
 
+
 class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeacherSubjectSchool
@@ -26,92 +25,6 @@ class NationalitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Nationality
         fields = '__all__'
-class RegisterTeacherSubjectSchoolSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TeacherSubjectSchool
-        fields = ['teacher', 'school']
-
-    def create(self, validated_data):
-        teacherschool = TeacherSubjectSchool.objects.create(**validated_data)
-        teacherschool.save()
-        return teacherschool
-
-
-class RegisterSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField()
-    
-    class Meta:
-        model = CustomUser
-        fields = [
-            'pk',
-            'email',
-            'password',
-            'first_name',
-            'last_name',
-            'documentType',
-            'document',
-            'phone'
-        ]
-        extra_kwargs = {
-            'email': {'required': True},
-            'password': {'required': True, 'write_only': True, 'min_length': 8},
-            'first_name': {'required': True},
-            'last_name': {'required': True},
-            'documentType': {'required': True},
-            'document': {'required': True},
-            'phone': {'required': True},
-        }
-
-    def validate_password(self, value):
-        # faltan validaciones
-        if len(value) < 8:
-            raise serializers.ValidationError("Password must be greater than 8 characters.")
-        return value
-    
-    def validate_email(self, value):
-        if CustomUser.objects.filter(email=value).exists():
-            raise serializers.ValidationError("This email is already registered.")
-        return value
-    def validate_document(self, value):
-
-        document_type = int(self.initial_data.get('documentType'))
-        
-        if CustomUser.objects.filter(document=value).exists():
-            raise serializers.ValidationError("This document is already registered.")
-
-        try:
-            dni = DocumentType.objects.get(name='DNI').id
-            pasaporte = DocumentType.objects.get(name='Pasaporte').id
-            cuit = DocumentType.objects.get(name='CUIT').id
-        except DocumentType.DoesNotExist:
-            raise serializers.ValidationError("El tipo de documento no es válido.")
-        
-        if document_type == dni:
-            if len(value) != 8:
-                raise serializers.ValidationError("El DNI debe tener al menos 8 caracteres.")
-            if not value.isdigit():
-                raise serializers.ValidationError("El DNI solo puede tener caracteres numericos.")
-        elif document_type == pasaporte:
-            if len(value) < 6 or len(value) > 9:
-                raise serializers.ValidationError("El pasaporte debe tener entre 6 y 9 caracteres.")
-            if not value.isalnum():
-                raise serializers.ValidationError("El pasaporte no debe tener caracteres especiales.")
-        elif document_type == cuit:
-            if len(value) != 11:
-                raise serializers.ValidationError("El CUIT debe tener 11 caracteres.")
-            if not value.isdigit():
-                raise serializers.ValidationError("El CUIT solo puede tener caracteres numericos.")
-        else:
-            raise serializers.ValidationError(f"Invalid document type {document_type}." )
-
-
-        return value
-    def create(self, validated_data):
-        password = validated_data.pop('password')
-        user = CustomUser.objects.create(**validated_data)
-        user.set_password(password)
-        user.save() 
-        return user
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -124,11 +37,7 @@ class UserSerializer(serializers.ModelSerializer):
         imagen_binaria = obj.profile_picture
 
         if imagen_binaria:
-            imagen = Image.open(BytesIO(imagen_binaria))
-            buffered = BytesIO()
-            imagen.save(buffered, format="PNG")
-            imagen_base64 = base64.b64encode(buffered.getvalue()).decode()
-            return f"data:image/jpeg;base64,{imagen_base64}"
+            return convert_binary_to_image(imagen_binaria)
         return None
 
     class Meta:
@@ -153,7 +62,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UpdateUserSerializer(serializers.ModelSerializer):
     contactInfo = ContactInforSerializer()
-    profile_picture = serializers.ImageField()
+    profile_picture = serializers.ImageField(required=False)
 
     class Meta:
         model = CustomUser
@@ -185,14 +94,7 @@ class UpdateUserSerializer(serializers.ModelSerializer):
 
         imagen = validated_data.pop('profile_picture', None)
         if imagen:
-            image = Image.open(imagen)
-            image = image.resize((250, 250), Image.LANCZOS)
-            
-            buffered = BytesIO()
-            image.save(buffered, format="PNG")
-            imagen_binaria = buffered.getvalue()
-            
-            instance.profile_picture = imagen_binaria
+            instance.profile_picture = convert_image_to_binary(imagen)
 
         return super().update(instance, validated_data)
     
@@ -200,11 +102,30 @@ class UpdateUserSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         
         if instance.profile_picture:
-            image = Image.open(BytesIO(instance.profile_picture))
-            buffered = BytesIO()
-            image.save(buffered, format="PNG")
-            imagen_base64 = base64.b64encode(buffered.getvalue()).decode()
-            representation['profile_picture'] = f"data:image/png;base64,{imagen_base64}"
+            representation['profile_picture'] = convert_binary_to_image(instance.profile_picture)
         else:
             representation['profile_picture'] = None
         return representation
+
+
+class UserWithRoleSerializer(UserSerializer):
+    roles = serializers.CharField()
+
+    class Meta:
+        model = CustomUser
+        fields = [
+            'id',
+            'first_name',
+            'last_name',
+            'email',
+            'gender',
+            'document',
+            'documentType',
+            'nationality',
+            'contactInfo',
+            'dark_mode',
+            'color',
+            'phone',
+            'profile_picture',
+            'roles'
+        ]

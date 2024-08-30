@@ -2,8 +2,10 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from email.message import EmailMessage
 import smtplib
-from .serializers.user_serializer import RegisterSerializer, RegisterTeacherSubjectSchoolSerializer
-
+from .serializers.auth_serializer import RegisterSerializer, RegisterTeacherSubjectSchoolSerializer
+from PIL import Image
+from io import BytesIO
+import base64
 from .models import CustomUser
 from django.http import HttpResponse
 
@@ -60,4 +62,21 @@ def verify_email(request,token):
             return HttpResponse('Correo electrónico verificado con éxito', status=200)
     except CustomUser.DoesNotExist:
         return HttpResponse('Token de verificación no válido', status=404)
-    
+
+
+def convert_image_to_binary(image_file):
+    SIZE = (250, 250)
+    image = Image.open(image_file)
+    image = image.resize(SIZE, Image.LANCZOS)
+    buffered = BytesIO()
+    image.save(buffered, format="PNG")
+    return buffered.getvalue()
+
+
+def convert_binary_to_image(binary_data):
+    image_stream = BytesIO(binary_data)
+    image = Image.open(image_stream)
+    buffered = BytesIO()
+    image.save(buffered, format="PNG")
+    image_base64 = base64.b64encode(buffered.getvalue()).decode()
+    return f"data:image/jpeg;base64,{image_base64}"
