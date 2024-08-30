@@ -315,7 +315,7 @@ class TeacherListView(generics.ListAPIView):
         subject_id = request.GET.get('subject_id')
         search_name = request.GET.get('search_name')
 
-        queryset = TeacherSubjectSchool.objects.all()
+        queryset = TeacherSubjectSchool.objects.filter(school=request.school)
         
         if subject_id:
             queryset = queryset.filter(coursesubjects__subject__id=subject_id).distinct()
