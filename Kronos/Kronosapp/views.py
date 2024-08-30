@@ -3,12 +3,12 @@ from django.http import HttpResponse, JsonResponse, FileResponse
 from django.urls import reverse
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
-from django.db.models import Q
+from django.db.models import Q, Case, When, IntegerField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as ValidationErrorDjango
 from django.shortcuts import get_object_or_404
 from datetime import datetime
-from django.db.models import Max, F
+
 from django.db import connection
 
 from rest_framework.views import APIView
@@ -45,6 +45,7 @@ from .serializers.teacherSubSchool_serializer import TeacherSubjectSchoolSeriali
 from .serializers.teacherAvailability_serializer import TeacherAvailabilitySerializer
 from .serializers.roles_serializer import RoleSerializer
 from .serializers.schedule_serializer import ScheduleSerializer
+from .serializers.nationality_serializer import NationalitySerializer
 
 from .models import(
     CustomUser,
@@ -61,6 +62,7 @@ from .models import(
     CourseSubjects,
     DocumentType,
     TeacherAvailability,
+    Nationality,
     Role
 )
 
@@ -280,7 +282,7 @@ class SchoolsView(generics.ListAPIView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        print(user)
+
         if user:
             schools = set()
 
@@ -405,7 +407,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
     def export_to_excel(self, queryset):
         # Convertir el queryset a un DataFrame de pandas
         data = list(queryset.values('id', 'name', 'abbreviation', 'color', 'coursesubjects__course__name'))
-        print(data)
+
         df = pd.DataFrame(data)
 
         # Crear un archivo Excel en la memoria utilizando un buffer
@@ -452,7 +454,7 @@ class CourseListCreate(generics.ListCreateAPIView):
 
     def get(self, request):
         school = self.request.school
-        queryset = Course.objects.filter(year__school = school)
+        queryset = Course.objects.filter(year__school = school).order_by('year__number', 'name')
         serializer = CourseSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -639,7 +641,7 @@ class verifyToken(APIView):
         token = request.data.get('token')
         token = Token.objects.get(key=token)
         user = token.user
-        print(user)
+
         return JsonResponse({'user': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name, 'document': user.document, 'email_verified': user.email_verified, 'is_active': user.is_active, 'is_staff': user.is_staff, 'is_superuser': user.is_superuser, 'date_joined': user.date_joined, 'last_login': user.last_login, 'verification_token': user.verification_token, 'id': user.id})
 
 class ContactarPersonal(generics.GenericAPIView):
@@ -718,6 +720,16 @@ class EventListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         queryset = Event.objects.filter(school=self.request.school)
+
+        current_time = datetime.now()
+        queryset = queryset.annotate(
+            event_status=Case(
+                When(startDate__lte=current_time, endDate__gte=current_time, then=1),  # En Curso
+                When(startDate__gt=current_time, then=2),  # Pendiente
+                When(endDate__lt=current_time, then=3),  # Finalizado
+                output_field=IntegerField(),
+            )
+        ).order_by('event_status', 'startDate')
 
         name = self.request.query_params.get('name', None)
         event_type = self.request.query_params.get('eventType', None)
@@ -1003,9 +1015,17 @@ class SubjectPerModuleView(generics.ListAPIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        validate_course_subjects = []
+        for course_subject in course_subjects:
+            weeklyHours = Schedules.objects.filter(tssId__coursesubjects=course_subject).count()
+            if weeklyHours < course_subject.weeklyHours:
+                validate_course_subjects.append(course_subject)
+                
+
+
 
         available_subjects = []
-        for course_subject in course_subjects:
+        for course_subject in validate_course_subjects:
             teacher_subject_school = TeacherSubjectSchool.objects.filter(coursesubjects=course_subject).first()
             if teacher_subject_school:
                 teacher = teacher_subject_school.teacher
@@ -1205,3 +1225,10 @@ class DirectivesView(APIView):
         school.save()
         serializer = CreateSchoolSerializer(school)
         return Response(serializer.data, status=status_code)
+
+
+class NationalityViewSet(generics.ListAPIView):
+    authentication_classes = [TokenAuthentication]
+    queryset = Nationality.objects.all()
+    serializer_class = NationalitySerializer
+    
