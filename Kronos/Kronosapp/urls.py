@@ -40,6 +40,7 @@ from .views import (
     ViewSchedule,
     StaffToExel,
     NationalityViewSet,
+    SchoolView
 )
 
 from .utils import (
@@ -61,6 +62,7 @@ urlpatterns = [
     path('changePassword/', ChangePasswordView.as_view(), name='ChangePassword'),
     
     # Schools
+    path('school/', SchoolView.as_view(), name='user_schools'),
     path('user_schools/', UserSchoolsView.as_view(), name='user_schools'),
     path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
     path('directives/', DirectivesView.as_view(), name='directives'),
