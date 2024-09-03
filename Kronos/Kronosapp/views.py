@@ -885,7 +885,25 @@ class TeacherSubjectSchoolListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = TeacherSubjectSchool.objects.filter(school=self.request.school)
         return queryset
+    
+    def post(self, serializer):
+        course_subject_id = self.request.data.get('coursesubjects')
+        teacher_id = self.request.data.get('teacher')
+        school = self.request.school
 
+        try:
+            course_subject = CourseSubjects.objects.get(id=course_subject_id)
+            teacher = CustomUser.objects.get(id=teacher_id)
+        except (CourseSubjects.DoesNotExist, CustomUser.DoesNotExist, School.DoesNotExist) as e:
+            raise ValidationError('La materia, Curso y Profesor deben existir')
+
+        
+        TeacherSubjectSchool.objects.create(
+                coursesubjects=course_subject,
+                teacher=teacher,
+                school=school
+            )
+        return Response({"message": "Profesor asignado correctamente"}, status=status.HTTP_201_CREATED)
 
 class TeacherSubjectSchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
