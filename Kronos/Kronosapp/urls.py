@@ -40,6 +40,7 @@ from .views import (
     ViewSchedule,
     StaffToExel,
     NationalityViewSet,
+    VerifiedView
 )
 
 from .utils import (
@@ -59,7 +60,7 @@ urlpatterns = [
     path('forgotPassword/', OlvideMiContrasenia.as_view(), name='OlvideMiContrasenia'),
     path('forgot-password/<uuid:token>/', reset_password, name='forgot-password'),
     path('changePassword/', ChangePasswordView.as_view(), name='ChangePassword'),
-    
+    path('isVerified/', VerifiedView.as_view(), name='verified'),
     # Schools
     path('user_schools/', SchoolsView.as_view(), name='user_schools'),
     path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
