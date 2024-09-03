@@ -97,6 +97,14 @@ class RegisterView(generics.GenericAPIView):
             status_code = status.HTTP_201_CREATED if created else status.HTTP_400_BAD_REQUEST
             return Response(results, status=status_code)
 
+class VerifiedView(generics.GenericAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = self.request.user
+        return Response({"user_is_verified": user.email_verified}, 200)
+
 
 class ExcelToteacher(generics.GenericAPIView):
     authentication_classes = [TokenAuthentication]
