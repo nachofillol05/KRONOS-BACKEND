@@ -271,7 +271,7 @@ class ProfileView(generics.GenericAPIView):
         return Response(serializer.errors, status=400)
 
 
-class SchoolsView(generics.ListAPIView):
+class UserSchoolsView(generics.ListAPIView):
     '''
     VISTA PARA OBTENER LAS ESCUELAS DEL DIRECTIVO
     '''
