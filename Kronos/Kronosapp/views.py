@@ -731,6 +731,8 @@ class EventListCreate(generics.ListCreateAPIView):
             )
         ).order_by('event_status', 'startDate')
 
+
+
         name = self.request.query_params.get('name', None)
         event_type = self.request.query_params.get('eventType', None)
         max_date = self.request.query_params.get('maxDate', None)
