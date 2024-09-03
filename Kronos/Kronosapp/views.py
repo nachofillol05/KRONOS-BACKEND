@@ -97,6 +97,14 @@ class RegisterView(generics.GenericAPIView):
             status_code = status.HTTP_201_CREATED if created else status.HTTP_400_BAD_REQUEST
             return Response(results, status=status_code)
 
+class VerifiedView(generics.GenericAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = self.request.user
+        return Response({"user_is_verified": user.email_verified}, 200)
+
 
 class ExcelToteacher(generics.GenericAPIView):
     authentication_classes = [TokenAuthentication]
@@ -744,6 +752,8 @@ class EventListCreate(generics.ListCreateAPIView):
             )
         ).order_by('event_status', 'startDate')
 
+
+
         name = self.request.query_params.get('name', None)
         event_type = self.request.query_params.get('eventType', None)
         max_date = self.request.query_params.get('maxDate', None)
@@ -888,7 +898,25 @@ class TeacherSubjectSchoolListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = TeacherSubjectSchool.objects.filter(school=self.request.school)
         return queryset
+    
+    def post(self, serializer):
+        course_subject_id = self.request.data.get('coursesubjects')
+        teacher_id = self.request.data.get('teacher')
+        school = self.request.school
 
+        try:
+            course_subject = CourseSubjects.objects.get(id=course_subject_id)
+            teacher = CustomUser.objects.get(id=teacher_id)
+        except (CourseSubjects.DoesNotExist, CustomUser.DoesNotExist, School.DoesNotExist) as e:
+            raise ValidationError('La materia, Curso y Profesor deben existir')
+
+        
+        TeacherSubjectSchool.objects.create(
+                coursesubjects=course_subject,
+                teacher=teacher,
+                school=school
+            )
+        return Response({"message": "Profesor asignado correctamente"}, status=status.HTTP_201_CREATED)
 
 class TeacherSubjectSchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]

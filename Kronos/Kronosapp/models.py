@@ -184,7 +184,7 @@ class CourseSubjects(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     weeklyHours = models.IntegerField()
     def __str__(self) -> str:
-       return f"{self.course} - {self.subject}"
+       return f"{self.pk} - {self.course} - {self.subject}"
 
 
 class TeacherSubjectSchool(models.Model):
