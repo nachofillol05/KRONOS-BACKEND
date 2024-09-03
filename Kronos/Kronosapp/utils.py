@@ -25,13 +25,11 @@ def send_email(receiver, subject, message, sender="proyecto.villada.solidario@gm
     smtp.quit()
 
 def register_user(request, data):
-    print(data)
     serializer = RegisterSerializer(data=data)
     if not serializer.is_valid():
         return False, serializer.errors
     user = serializer.save()
 
-    print(request.school.pk)
     data = {
         'teacher': user.pk,
         'school': request.school.pk
@@ -42,9 +40,7 @@ def register_user(request, data):
     serializerschool.save()
 
 
-    verification_url = request.build_absolute_uri(
-        reverse('verify-email', args=[str(user.verification_token)])
-    )
+    verification_url = f"http://localhost:3000/mailverificado/{user.verification_token}"
     SUBJECT = "Verifica tu correo electrónico"
     MESSAGE = 'Haz clic en el enlace para verificar tu correo electrónico: ' + verification_url
     send_email(receiver=user.email, subject=SUBJECT, message=MESSAGE)
@@ -53,7 +49,9 @@ def register_user(request, data):
 
 def verify_email(request,token):
     try:
+        print(token)
         user = CustomUser.objects.get(verification_token=token)
+        print(user)
         if user.email_verified:
             return HttpResponse('Correo electrónico ya verificado', status=400)
         else:
