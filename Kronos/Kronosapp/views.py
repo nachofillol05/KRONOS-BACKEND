@@ -37,6 +37,7 @@ from .serializers.preceptor_serializer import PreceptorSerializer
 from .serializers.user_serializer import UserSerializer, UpdateUserSerializer, UserWithRoleSerializer
 from .serializers.Subject_serializer import SubjectWithCoursesSerializer
 from .serializers.course_serializer import CourseSerializer
+from .serializers.cousesubject_serializer import CourseSubjectSerializer
 from .serializers.year_serializer import YearSerializer
 from .serializers.module_serializer import ModuleSerializer
 from .serializers.event_serializer import EventSerializer, EventTypeSerializer, CreateEventSerializer
@@ -494,7 +495,9 @@ class CourseListCreate(generics.ListCreateAPIView):
 class CourseRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    
     def delete(self, request, *args, **kwargs):
         response = super().delete(request, *args, **kwargs)
         return Response({'Deleted': 'El curso ha sido eliminado'}, status=status.HTTP_204_NO_CONTENT)
@@ -502,6 +505,29 @@ class CourseRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
         response = super().put(request, *args, **kwargs)
         return Response({'Updated': 'El curso ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
+
+class CourseSubjectListCreate(generics.ListCreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    queryset = CourseSubjects.objects.all()
+    serializer_class = CourseSubjectSerializer
+    
+    def get_queryset(self):
+        queryset = CourseSubjects.objects.filter(course__year__school = self.request.school)
+        if not queryset.exists():
+            return Response({'detail': 'not found'}, status=status.HTTP_404_NOT_FOUND)
+        return queryset
+    
+    def post (self, request, *args, **kwargs):
+        serializer = CourseSubjectSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(
+            {'Saved': 'La materia se ha asignado a un curso', 'data': serializer.data},
+            status=status.HTTP_201_CREATED
+        )
+
 
 
 
