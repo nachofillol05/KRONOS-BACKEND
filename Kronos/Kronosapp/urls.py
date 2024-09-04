@@ -42,7 +42,8 @@ from .views import (
     StaffToExel,
     NationalityViewSet,
     SchoolView,
-    VerifiedView
+    VerifiedView,
+    RolesUserView
 )
 
 from .utils import (
@@ -63,6 +64,7 @@ urlpatterns = [
     path('forgot-password/<uuid:token>/', reset_password, name='forgot-password'),
     path('changePassword/', ChangePasswordView.as_view(), name='ChangePassword'),
     path('isVerified/', VerifiedView.as_view(), name='verified'),
+    path('rolesUser/<int:pk>/', RolesUserView.as_view(), name='rolesUser'),
     # Schools
     path('school/', SchoolView.as_view(), name='user_schools'),
     path('user_schools/', UserSchoolsView.as_view(), name='user_schools'),

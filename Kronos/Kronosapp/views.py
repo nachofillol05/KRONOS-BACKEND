@@ -1198,6 +1198,40 @@ class SchoolStaffAPIView(APIView):
                 user_roles.append(user_dict)
 
         return user_roles
+    
+
+class RolesUserView(APIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+
+    def get(self, request, pk):
+        try:
+            user = CustomUser.objects.get(pk=pk)
+        except CustomUser.DoesNotExist:
+            return Response({'error': 'Usuario no existe'}, status=status.HTTP_404_NOT_FOUND)
+        
+        school = request.school
+        
+        roles = []
+        if user.is_directive(school):
+            roles.append('Directivo')
+        if user.is_teacher(school):
+            roles.append('Profesor')
+        if user.is_preceptor(school):
+            roles.append('Preceptor')
+        print(roles)
+
+        if not roles:
+            return Response({'error': 'Usuario sin relaciones'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {
+                "user_pk": user.pk,
+                "roles": roles
+            }, 
+            status=status.HTTP_200_OK
+        )
+    
+
 
 
 class StaffToExel(APIView):
