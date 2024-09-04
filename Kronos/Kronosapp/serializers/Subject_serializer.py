@@ -27,3 +27,7 @@ class SubjectWithCoursesSerializer(serializers.ModelSerializer):
         model = Subject
         fields = ['id', 'name', 'description', 'color', 'abbreviation', 'courses']
 
+class SubjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subject
+        fields = ['pk', 'name', 'abbreviation', 'color']
