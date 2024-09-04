@@ -349,32 +349,38 @@ class Command(BaseCommand):
         # Crear materias
         subject1 = Subject.objects.create(
             name="Matemáticas",
-            abbreviation="MAT"
+            abbreviation="MAT",
+            school = school
         )
 
         subject2 = Subject.objects.create(
             name="Fisica",
-            abbreviation="FIS"
+            abbreviation="FIS",
+            school = school
         )
 
         subject3 = Subject.objects.create(
             name="Química",
-            abbreviation="QUI"
+            abbreviation="QUI",
+            school = school
         )
 
         subject1_2 = Subject.objects.create(
             name="Lengua",
-            abbreviation="Len"
+            abbreviation="Len",
+            school = school
         )
 
         subject2_2 = Subject.objects.create(
             name="Filosofía",
-            abbreviation="FIL"
+            abbreviation="FIL",
+            school = school
         )
 
         subject3_2 = Subject.objects.create(
             name="Historia",
-            abbreviation="HIS"
+            abbreviation="HIS",
+            school = school
         )
 
         # Asignar materias a cursos

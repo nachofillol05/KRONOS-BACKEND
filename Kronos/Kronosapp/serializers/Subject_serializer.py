@@ -1,6 +1,11 @@
 # serializers.py
 from rest_framework import serializers
-from ..models import CourseSubjects, Subject, TeacherSubjectSchool
+from ..models import CourseSubjects, Subject, TeacherSubjectSchool, School
+
+class SchoolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = School
+        fields = ['id']
 
 
 class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
@@ -30,4 +35,4 @@ class SubjectWithCoursesSerializer(serializers.ModelSerializer):
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subject
-        fields = ['pk', 'name', 'abbreviation', 'color']
+        fields = ['pk', 'name', 'abbreviation', 'color', 'school']

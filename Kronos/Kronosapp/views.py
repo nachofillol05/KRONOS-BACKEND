@@ -35,7 +35,7 @@ from .serializers.school_serializer import ReadUserSchoolSerializer, ReadSchoolS
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from .serializers.preceptor_serializer import PreceptorSerializer
 from .serializers.user_serializer import UserSerializer, UpdateUserSerializer, UserWithRoleSerializer
-from .serializers.Subject_serializer import SubjectWithCoursesSerializer
+from .serializers.Subject_serializer import SubjectWithCoursesSerializer, SubjectSerializer
 from .serializers.course_serializer import CourseSerializer
 from .serializers.cousesubject_serializer import CourseSubjectSerializer
 from .serializers.year_serializer import YearSerializer
@@ -488,12 +488,17 @@ class SubjectListCreate(generics.ListCreateAPIView):
         serializer = SubjectWithCoursesSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-    def perform_create(self, serializer):
-        validated_data = serializer.validated_data
-        course = validated_data.get('course')
-        if course.year.school != self.request.school:
-            raise ValidationError({'course': ['You can only modify the school you belong to']})
-        serializer.save()
+    def post(self, request):
+        create_serializer = SubjectSerializer(data=self.request.data)
+        create_serializer.is_valid(raise_exception=True)
+        school = create_serializer.validated_data.get('school')
+        if school != self.request.school:
+            raise ValidationError({'school': ['You can only modify the school you belong to']})
+        create_serializer.save()
+        return Response(
+            {'Saved': 'La materia ha sido creada', 'data': create_serializer.data},
+            status=status.HTTP_201_CREATED
+        )
 
     def export_to_excel(self, queryset):
         # Convertir el queryset a un DataFrame de pandas
