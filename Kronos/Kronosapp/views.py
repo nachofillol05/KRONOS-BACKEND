@@ -31,7 +31,7 @@ from pandas.errors import EmptyDataError
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from .schedule_creation import schedule_creation
 from .utils import register_user, send_email
-from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
+from .serializers.school_serializer import ReadUserSchoolSerializer, ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from .serializers.preceptor_serializer import PreceptorSerializer
 from .serializers.user_serializer import UserSerializer, UpdateUserSerializer, UserWithRoleSerializer
@@ -259,7 +259,7 @@ class ChangePasswordView(APIView):
 
 class ProfileView(generics.GenericAPIView):
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, SchoolHeader]
     serializer_class = UserSerializer
     """
     Vista para obtener el perfil de un usuario
@@ -267,7 +267,76 @@ class ProfileView(generics.GenericAPIView):
     def get(self, request):
         user = request.user
         serializer = UserSerializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = serializer.data
+        date = datetime.now().strftime('%Y-%m-%d')
+        school = request.school
+        
+        with connection.cursor() as cursor:
+            sql_query = """
+                SELECT COUNT(*)
+                FROM (
+                    SELECT sh.id as id,
+                        sh.date,
+                        tss.teacher_id as teacher_id,
+                        sc.id school,
+                        RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
+                    FROM Kronosapp_schedules sh
+                    INNER JOIN Kronosapp_teachersubjectschool tss
+                        ON sh.tssId_id = tss.id
+                    INNER JOIN Kronosapp_coursesubjects cs
+                        ON tss.coursesubjects_id = cs.id
+                    INNER JOIN Kronosapp_customuser t
+                        ON tss.teacher_id = t.id
+                    INNER JOIN Kronosapp_school sc
+                        ON tss.school_id = sc.id
+                    INNER JOIN Kronosapp_subject s
+                        ON cs.subject_id = s.id
+                    WHERE DATE(sh.`date`) <= %s
+                    AND t.id = %s
+                    AND sc.id = %s
+                ) as t
+                WHERE t.RN = 1;
+            """
+            cursor.execute(sql_query, [date, user.id, school.id])
+            results = cursor.fetchall()
+            if results:
+                data['hoursToWorkBySchool'] = results[0][0]
+        countSchool = TeacherSubjectSchool.objects.filter(teacher=user).values('school').distinct().count()
+        print(countSchool)
+        if countSchool > 1:
+            with connection.cursor() as cursor:
+                sql_query = """
+                    SELECT COUNT(*)
+                    FROM (
+                        SELECT sh.id as id,
+                            sh.date,
+                            tss.teacher_id as teacher_id,
+                            sc.id school,
+                            RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
+                        FROM Kronosapp_schedules sh
+                        INNER JOIN Kronosapp_teachersubjectschool tss
+                            ON sh.tssId_id = tss.id
+                        INNER JOIN Kronosapp_coursesubjects cs
+                            ON tss.coursesubjects_id = cs.id
+                        INNER JOIN Kronosapp_customuser t
+                            ON tss.teacher_id = t.id
+                        INNER JOIN Kronosapp_school sc
+                            ON tss.school_id = sc.id
+                        INNER JOIN Kronosapp_subject s
+                            ON cs.subject_id = s.id
+                        WHERE DATE(sh.`date`) <= %s
+                        AND t.id = %s
+                    ) as t
+                    WHERE t.RN = 1;
+                """
+                cursor.execute(sql_query, [date, user.id])
+                results = cursor.fetchall()
+                if results:
+                    data['hoursToWork'] = results[0][0]
+        else:
+             data['hoursToWork'] = data['hoursToWorkBySchool']
+
+        return Response(data, status=status.HTTP_200_OK)
     """
     Vista para acualizar los datos de un usuario
     """
@@ -280,12 +349,25 @@ class ProfileView(generics.GenericAPIView):
         return Response(serializer.errors, status=400)
 
 
-class SchoolsView(generics.ListAPIView):
+
+class SchoolView(generics.RetrieveUpdateAPIView):
+    '''
+    VISTA PARA OBTENER LAS ESCUELAS DEL DIRECTIVO
+    '''
+    serializer_class = ReadSchoolSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+
+    def get_object(self):
+        return self.request.school
+
+
+class UserSchoolsView(generics.ListAPIView):
     '''
     VISTA PARA OBTENER LAS ESCUELAS DEL DIRECTIVO
     '''
     queryset = School.objects.all()
-    serializer_class = ReadSchoolSerializer
+    serializer_class = ReadUserSchoolSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -1297,7 +1379,7 @@ class DirectivesView(APIView):
             status_code = status.HTTP_200_OK
         
         school.save()
-        serializer = CreateSchoolSerializer(school)
+        serializer = ReadUserSchoolSerializer(school)
         return Response(serializer.data, status=status_code)
 
 
