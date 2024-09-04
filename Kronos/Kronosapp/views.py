@@ -579,8 +579,17 @@ class ModuleViewSet(viewsets.ModelViewSet):
         serializer.save()
 
     def get_queryset(self):
-        queryset = Module.objects.filter(school=self.request.school).order_by('moduleNumber')
-
+        current_time = datetime.now()
+        queryset = Module.objects.filter(school=self.request.school)
+        queryset = queryset.annotate(
+            event_status=Case(
+            When(day='lunes', then=1), 
+            When(day='martes', then=2),
+            When(day='miércoles', then=3),
+            When(day='jueves', then=4),
+            When(day='viernes', then=5),
+            )
+        ).order_by('event_status','startTime','moduleNumber')
         day = self.request.query_params.get('day')
         if day:
             queryset = queryset.filter(day=day)
