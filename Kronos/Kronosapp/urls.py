@@ -15,7 +15,7 @@ from .views import (
     CourseSubjectListCreate,
     ModuleViewSet,
     verifyToken,
-    SchoolsView,
+    UserSchoolsView,
     CourseListCreate, 
     CourseRetrieveUpdateDestroy,
     YearListCreate,
@@ -41,6 +41,7 @@ from .views import (
     ViewSchedule,
     StaffToExel,
     NationalityViewSet,
+    SchoolView,
     VerifiedView
 )
 
@@ -63,7 +64,8 @@ urlpatterns = [
     path('changePassword/', ChangePasswordView.as_view(), name='ChangePassword'),
     path('isVerified/', VerifiedView.as_view(), name='verified'),
     # Schools
-    path('user_schools/', SchoolsView.as_view(), name='user_schools'),
+    path('school/', SchoolView.as_view(), name='user_schools'),
+    path('user_schools/', UserSchoolsView.as_view(), name='user_schools'),
     path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
     path('directives/', DirectivesView.as_view(), name='directives'),
     # Subject

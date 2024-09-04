@@ -66,7 +66,7 @@ class ContactInformation(models.Model):
 class School(models.Model):
     name = models.CharField(max_length=255)
     abbreviation = models.CharField(max_length=10)
-    logo = models.ImageField(upload_to='logos/', null=True, blank=True)
+    logo = models.BinaryField(null=True, blank=True)
     email = models.EmailField(max_length=255, unique=True)
     contactInfo = models.OneToOneField(ContactInformation, null=True, blank=True, on_delete=models.SET_NULL)
     directives = models.ManyToManyField('CustomUser', related_name='directed_schools', blank=True)

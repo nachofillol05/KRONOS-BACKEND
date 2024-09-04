@@ -1,5 +1,7 @@
 from rest_framework import serializers
+from ..utils import convert_binary_to_image, convert_image_to_binary
 from ..models import School, ContactInformation, CustomUser, Module
+from .user_serializer import ContactInforSerializer
 
 
 class ContactInformationSerializer(serializers.ModelSerializer):
@@ -24,7 +26,7 @@ class ModuleSerializer(serializers.ModelSerializer):
         return super().to_representation(instance)
 
 
-class ReadSchoolSerializer(serializers.ModelSerializer):
+class ReadUserSchoolSerializer(serializers.ModelSerializer):
     contactInfo = ContactInformationSerializer()
     directives = DirectiveSerializer(many=True)
 
@@ -45,7 +47,39 @@ class ReadSchoolSerializer(serializers.ModelSerializer):
 class IdDirectiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id'] 
+        fields = ['id']
+
+
+class ReadSchoolSerializer(serializers.ModelSerializer):
+    contactInfo = ContactInforSerializer()
+    logo = serializers.ImageField(required=False)
+
+    class Meta:
+        model = School
+        fields = ['pk', 'name', 'logo' , 'abbreviation', 'logo', 'email', 'directives', 'contactInfo']
+        read_only_fields = ['email', 'directives']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.logo:
+            representation['logo'] = convert_binary_to_image(instance.logo)
+        else:
+            representation['logo'] = None
+        return representation
+    
+    def update(self, instance, validated_data):
+        contact_info_data = validated_data.pop('contactInfo', None)
+        if contact_info_data:
+            contact_info_instance = instance.contactInfo
+            for key, value in contact_info_data.items():
+                setattr(contact_info_instance, key, value)
+            contact_info_instance.save()
+        imagen = validated_data.pop('logo', None)
+        print(imagen)
+        if imagen:
+            instance.logo = convert_image_to_binary(imagen)
+
+        return super().update(instance, validated_data)
 
 
 class CreateSchoolSerializer(serializers.ModelSerializer):
