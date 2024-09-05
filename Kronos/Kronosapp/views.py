@@ -844,6 +844,7 @@ class EventListCreate(generics.ListCreateAPIView):
         elif user.is_teacher(school):
             queryset = queryset.filter(roles__name="Teacher")
 
+
         current_time = datetime.now()
         queryset = queryset.annotate(
             event_status=Case(
