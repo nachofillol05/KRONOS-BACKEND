@@ -506,16 +506,24 @@ class SubjectListCreate(generics.ListCreateAPIView):
 
     def export_to_excel(self, queryset):
         # Convertir el queryset a un DataFrame de pandas
-        data = list(queryset.values('id', 'name', 'abbreviation', 'color', 'coursesubjects__course__name'))
+        data = list(queryset.values('id','name', 'abbreviation', 'color', 'coursesubjects__course__name'))
 
         df = pd.DataFrame(data)
 
+        df = df.rename(columns={
+        'id': 'ID',
+        'name': 'Nombre',
+        'abbreviation': 'Abreviatura',
+        'color': 'Color',
+        'coursesubjects__course__name': 'Nombre del Curso'
+        })
+
         # Crear un archivo Excel en la memoria utilizando un buffer
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename=Subjects.xlsx'
+        response['Content-Disposition'] = 'attachment; filename=Materias.xlsx'
         
         # Escribir el DataFrame en un archivo Excel usando pandas
-        df.to_excel(response, index=False, sheet_name='Subjects')
+        df.to_excel(response, index=False, sheet_name='Materias')
         
         return response
     
@@ -1361,11 +1369,21 @@ class StaffToExel(APIView):
 
     def export_to_excel(self, roles_data):
         df = pd.DataFrame(roles_data)
+
+        df = df.rename(columns={
+            'user_id': 'ID de Usuario',
+            'first_name': 'Nombre',
+            'last_name': 'Apellido',
+            'email': 'Correo Electrónico',
+            'phone': 'Teléfono',
+            'roles': 'Roles'
+        })
+
         # Crear un archivo Excel en la memoria utilizando un buffer
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename=SchoolStaff.xlsx'
+        response['Content-Disposition'] = 'attachment; filename=PersonalEscuela.xlsx'
         # Escribir el DataFrame en un archivo Excel usando openpyxl (por defecto)
-        df.to_excel(response, index=False, sheet_name='Staff')
+        df.to_excel(response, index=False, sheet_name='Personal')
         return response
 
 class DirectivesView(APIView):
