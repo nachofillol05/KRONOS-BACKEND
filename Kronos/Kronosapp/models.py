@@ -174,6 +174,7 @@ class Subject(models.Model):
     description = models.CharField(max_length=255, blank=True)
     color = models.CharField(max_length=7, blank=True)  # Including # for hex color
     abbreviation = models.CharField(max_length=10, blank=True)
+    school = models.ForeignKey(School, on_delete=models.CASCADE)
     def __str__(self) -> str:
         return f"{self.name}"
 
