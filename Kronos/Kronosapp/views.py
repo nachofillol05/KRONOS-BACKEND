@@ -7,7 +7,6 @@ from django.db.models import Q, Case, When, IntegerField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as ValidationErrorDjango
 from django.shortcuts import get_object_or_404
-from datetime import datetime
 
 from django.db import connection
 
@@ -22,6 +21,7 @@ from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.authtoken.models import Token
 
+from django.utils.dateparse import parse_time   
 from datetime import datetime
 from email.message import EmailMessage
 from validate_email_address import validate_email
@@ -466,22 +466,26 @@ class SubjectListCreate(generics.ListCreateAPIView):
         name = request.query_params.get('name')
         school = self.request.school
         
-        queryset = Subject.objects.filter(coursesubjects__course__year__school=school).distinct()
+        queryset = Subject.objects.filter(
+            coursesubjects__course__year__school=school
+        )
         
         if start_time and end_time:
             queryset = queryset.filter(
-                teachersubjectschool__schedules__module__startTime__gte=start_time,
-                teachersubjectschool__schedules__module__endTime__lte=end_time
-            ).distinct()
+                coursesubjects__teachersubjectschool__schedules__module__startTime__gte=start_time,
+                coursesubjects__teachersubjectschool__schedules__module__endTime__lte=end_time
+            )
         
         if teacher:
             queryset = queryset.filter(
-                teachersubjectschool__teacher__id=teacher
-            ).distinct()
+                coursesubjects__teachersubjectschool__teacher__id=teacher
+            )
         
         if name:
             queryset = queryset.filter(name__icontains=name)
-
+        
+        queryset = queryset.distinct()
+        
         if 'export' in request.GET and request.GET['export'] == 'excel':
             return self.export_to_excel(queryset)
 
