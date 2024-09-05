@@ -66,7 +66,7 @@ class ContactInformation(models.Model):
 class School(models.Model):
     name = models.CharField(max_length=255)
     abbreviation = models.CharField(max_length=10)
-    logo = models.ImageField(upload_to='logos/', null=True, blank=True)
+    logo = models.BinaryField(null=True, blank=True)
     email = models.EmailField(max_length=255, unique=True)
     contactInfo = models.OneToOneField(ContactInformation, null=True, blank=True, on_delete=models.SET_NULL)
     directives = models.ManyToManyField('CustomUser', related_name='directed_schools', blank=True)
@@ -174,6 +174,7 @@ class Subject(models.Model):
     description = models.CharField(max_length=255, blank=True)
     color = models.CharField(max_length=7, blank=True)  # Including # for hex color
     abbreviation = models.CharField(max_length=10, blank=True)
+    school = models.ForeignKey(School, on_delete=models.CASCADE)
     def __str__(self) -> str:
         return f"{self.name}"
 
@@ -184,7 +185,7 @@ class CourseSubjects(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     weeklyHours = models.IntegerField()
     def __str__(self) -> str:
-       return f"{self.course} - {self.subject}"
+       return f"{self.pk} - {self.course} - {self.subject}"
 
 
 class TeacherSubjectSchool(models.Model):

@@ -31,12 +31,13 @@ from pandas.errors import EmptyDataError
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from .schedule_creation import schedule_creation
 from .utils import register_user, send_email
-from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
+from .serializers.school_serializer import ReadUserSchoolSerializer, ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from .serializers.preceptor_serializer import PreceptorSerializer
 from .serializers.user_serializer import UserSerializer, UpdateUserSerializer, UserWithRoleSerializer
-from .serializers.Subject_serializer import SubjectWithCoursesSerializer
+from .serializers.Subject_serializer import SubjectWithCoursesSerializer, SubjectSerializer
 from .serializers.course_serializer import CourseSerializer
+from .serializers.cousesubject_serializer import CourseSubjectSerializer
 from .serializers.year_serializer import YearSerializer
 from .serializers.module_serializer import ModuleSerializer
 from .serializers.event_serializer import EventSerializer, EventTypeSerializer, CreateEventSerializer
@@ -96,6 +97,14 @@ class RegisterView(generics.GenericAPIView):
             created, results = register_user(data=request.data, request=request)
             status_code = status.HTTP_201_CREATED if created else status.HTTP_400_BAD_REQUEST
             return Response(results, status=status_code)
+
+class VerifiedView(generics.GenericAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = self.request.user
+        return Response({"user_is_verified": user.email_verified}, 200)
 
 
 class ExcelToteacher(generics.GenericAPIView):
@@ -250,7 +259,7 @@ class ChangePasswordView(APIView):
 
 class ProfileView(generics.GenericAPIView):
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, SchoolHeader]
     serializer_class = UserSerializer
     """
     Vista para obtener el perfil de un usuario
@@ -258,7 +267,76 @@ class ProfileView(generics.GenericAPIView):
     def get(self, request):
         user = request.user
         serializer = UserSerializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = serializer.data
+        date = datetime.now().strftime('%Y-%m-%d')
+        school = request.school
+        
+        with connection.cursor() as cursor:
+            sql_query = """
+                SELECT COUNT(*)
+                FROM (
+                    SELECT sh.id as id,
+                        sh.date,
+                        tss.teacher_id as teacher_id,
+                        sc.id school,
+                        RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
+                    FROM Kronosapp_schedules sh
+                    INNER JOIN Kronosapp_teachersubjectschool tss
+                        ON sh.tssId_id = tss.id
+                    INNER JOIN Kronosapp_coursesubjects cs
+                        ON tss.coursesubjects_id = cs.id
+                    INNER JOIN Kronosapp_customuser t
+                        ON tss.teacher_id = t.id
+                    INNER JOIN Kronosapp_school sc
+                        ON tss.school_id = sc.id
+                    INNER JOIN Kronosapp_subject s
+                        ON cs.subject_id = s.id
+                    WHERE DATE(sh.`date`) <= %s
+                    AND t.id = %s
+                    AND sc.id = %s
+                ) as t
+                WHERE t.RN = 1;
+            """
+            cursor.execute(sql_query, [date, user.id, school.id])
+            results = cursor.fetchall()
+            if results:
+                data['hoursToWorkBySchool'] = results[0][0]
+        countSchool = TeacherSubjectSchool.objects.filter(teacher=user).values('school').distinct().count()
+        print(countSchool)
+        if countSchool > 1:
+            with connection.cursor() as cursor:
+                sql_query = """
+                    SELECT COUNT(*)
+                    FROM (
+                        SELECT sh.id as id,
+                            sh.date,
+                            tss.teacher_id as teacher_id,
+                            sc.id school,
+                            RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
+                        FROM Kronosapp_schedules sh
+                        INNER JOIN Kronosapp_teachersubjectschool tss
+                            ON sh.tssId_id = tss.id
+                        INNER JOIN Kronosapp_coursesubjects cs
+                            ON tss.coursesubjects_id = cs.id
+                        INNER JOIN Kronosapp_customuser t
+                            ON tss.teacher_id = t.id
+                        INNER JOIN Kronosapp_school sc
+                            ON tss.school_id = sc.id
+                        INNER JOIN Kronosapp_subject s
+                            ON cs.subject_id = s.id
+                        WHERE DATE(sh.`date`) <= %s
+                        AND t.id = %s
+                    ) as t
+                    WHERE t.RN = 1;
+                """
+                cursor.execute(sql_query, [date, user.id])
+                results = cursor.fetchall()
+                if results:
+                    data['hoursToWork'] = results[0][0]
+        else:
+             data['hoursToWork'] = data['hoursToWorkBySchool']
+
+        return Response(data, status=status.HTTP_200_OK)
     """
     Vista para acualizar los datos de un usuario
     """
@@ -271,12 +349,25 @@ class ProfileView(generics.GenericAPIView):
         return Response(serializer.errors, status=400)
 
 
-class SchoolsView(generics.ListAPIView):
+
+class SchoolView(generics.RetrieveUpdateAPIView):
+    '''
+    VISTA PARA OBTENER LAS ESCUELAS DEL DIRECTIVO
+    '''
+    serializer_class = ReadSchoolSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+
+    def get_object(self):
+        return self.request.school
+
+
+class UserSchoolsView(generics.ListAPIView):
     '''
     VISTA PARA OBTENER LAS ESCUELAS DEL DIRECTIVO
     '''
     queryset = School.objects.all()
-    serializer_class = ReadSchoolSerializer
+    serializer_class = ReadUserSchoolSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -400,13 +491,18 @@ class SubjectListCreate(generics.ListCreateAPIView):
 
         serializer = SubjectWithCoursesSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def perform_create(self, serializer):
-        validated_data = serializer.validated_data
-        course = validated_data.get('course')
-        if course.year.school != self.request.school:
-            raise ValidationError({'course': ['You can only modify the school you belong to']})
-        serializer.save()
+    
+    def post(self, request):
+        create_serializer = SubjectSerializer(data=self.request.data)
+        create_serializer.is_valid(raise_exception=True)
+        school = create_serializer.validated_data.get('school')
+        if school != self.request.school:
+            raise ValidationError({'school': ['You can only modify the school you belong to']})
+        create_serializer.save()
+        return Response(
+            {'Saved': 'La materia ha sido creada', 'data': create_serializer.data},
+            status=status.HTTP_201_CREATED
+        )
 
     def export_to_excel(self, queryset):
         # Convertir el queryset a un DataFrame de pandas
@@ -490,7 +586,9 @@ class CourseListCreate(generics.ListCreateAPIView):
 class CourseRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    
     def delete(self, request, *args, **kwargs):
         response = super().delete(request, *args, **kwargs)
         return Response({'Deleted': 'El curso ha sido eliminado'}, status=status.HTTP_204_NO_CONTENT)
@@ -498,6 +596,29 @@ class CourseRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
         response = super().put(request, *args, **kwargs)
         return Response({'Updated': 'El curso ha sido actualizado', 'data': response.data}, status=status.HTTP_200_OK)
+
+class CourseSubjectListCreate(generics.ListCreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    queryset = CourseSubjects.objects.all()
+    serializer_class = CourseSubjectSerializer
+    
+    def get_queryset(self):
+        queryset = CourseSubjects.objects.filter(course__year__school = self.request.school)
+        if not queryset.exists():
+            return Response({'detail': 'not found'}, status=status.HTTP_404_NOT_FOUND)
+        return queryset
+    
+    def post (self, request, *args, **kwargs):
+        serializer = CourseSubjectSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(
+            {'Saved': 'La materia se ha asignado a un curso', 'data': serializer.data},
+            status=status.HTTP_201_CREATED
+        )
+
 
 
 
@@ -549,8 +670,17 @@ class ModuleViewSet(viewsets.ModelViewSet):
         serializer.save()
 
     def get_queryset(self):
-        queryset = Module.objects.filter(school=self.request.school).order_by('moduleNumber')
-
+        current_time = datetime.now()
+        queryset = Module.objects.filter(school=self.request.school)
+        queryset = queryset.annotate(
+            event_status=Case(
+            When(day='lunes', then=1), 
+            When(day='martes', then=2),
+            When(day='miércoles', then=3),
+            When(day='jueves', then=4),
+            When(day='viernes', then=5),
+            )
+        ).order_by('event_status','startTime','moduleNumber')
         day = self.request.query_params.get('day')
         if day:
             queryset = queryset.filter(day=day)
@@ -735,6 +865,8 @@ class EventListCreate(generics.ListCreateAPIView):
             )
         ).order_by('event_status', 'startDate')
 
+
+
         name = self.request.query_params.get('name', None)
         event_type = self.request.query_params.get('eventType', None)
         max_date = self.request.query_params.get('maxDate', None)
@@ -879,7 +1011,25 @@ class TeacherSubjectSchoolListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = TeacherSubjectSchool.objects.filter(school=self.request.school)
         return queryset
+    
+    def post(self, serializer):
+        course_subject_id = self.request.data.get('coursesubjects')
+        teacher_id = self.request.data.get('teacher')
+        school = self.request.school
 
+        try:
+            course_subject = CourseSubjects.objects.get(id=course_subject_id)
+            teacher = CustomUser.objects.get(id=teacher_id)
+        except (CourseSubjects.DoesNotExist, CustomUser.DoesNotExist, School.DoesNotExist) as e:
+            raise ValidationError('La materia, Curso y Profesor deben existir')
+
+        
+        TeacherSubjectSchool.objects.create(
+                coursesubjects=course_subject,
+                teacher=teacher,
+                school=school
+            )
+        return Response({"message": "Profesor asignado correctamente"}, status=status.HTTP_201_CREATED)
 
 class TeacherSubjectSchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
@@ -1135,6 +1285,40 @@ class SchoolStaffAPIView(APIView):
                 user_roles.append(user_dict)
 
         return user_roles
+    
+
+class RolesUserView(APIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+
+    def get(self, request, pk):
+        try:
+            user = CustomUser.objects.get(pk=pk)
+        except CustomUser.DoesNotExist:
+            return Response({'error': 'Usuario no existe'}, status=status.HTTP_404_NOT_FOUND)
+        
+        school = request.school
+        
+        roles = []
+        if user.is_directive(school):
+            roles.append('Directivo')
+        if user.is_teacher(school):
+            roles.append('Profesor')
+        if user.is_preceptor(school):
+            roles.append('Preceptor')
+        print(roles)
+
+        if not roles:
+            return Response({'error': 'Usuario sin relaciones'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {
+                "user_pk": user.pk,
+                "roles": roles
+            }, 
+            status=status.HTTP_200_OK
+        )
+    
+
 
 
 class StaffToExel(APIView):
@@ -1238,7 +1422,7 @@ class DirectivesView(APIView):
             status_code = status.HTTP_200_OK
         
         school.save()
-        serializer = CreateSchoolSerializer(school)
+        serializer = ReadUserSchoolSerializer(school)
         return Response(serializer.data, status=status_code)
 
 

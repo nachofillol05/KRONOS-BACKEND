@@ -12,9 +12,10 @@ from .views import (
     DniComprobation,
     SubjectListCreate, 
     SubjectRetrieveUpdateDestroy,
+    CourseSubjectListCreate,
     ModuleViewSet,
     verifyToken,
-    SchoolsView,
+    UserSchoolsView,
     CourseListCreate, 
     CourseRetrieveUpdateDestroy,
     YearListCreate,
@@ -40,6 +41,9 @@ from .views import (
     ViewSchedule,
     StaffToExel,
     NationalityViewSet,
+    SchoolView,
+    VerifiedView,
+    RolesUserView
 )
 
 from .utils import (
@@ -59,19 +63,22 @@ urlpatterns = [
     path('forgotPassword/', OlvideMiContrasenia.as_view(), name='OlvideMiContrasenia'),
     path('forgot-password/<uuid:token>/', reset_password, name='forgot-password'),
     path('changePassword/', ChangePasswordView.as_view(), name='ChangePassword'),
-    
+    path('isVerified/', VerifiedView.as_view(), name='verified'),
+    path('rolesUser/<int:pk>/', RolesUserView.as_view(), name='rolesUser'),
     # Schools
-    path('user_schools/', SchoolsView.as_view(), name='user_schools'),
+    path('school/', SchoolView.as_view(), name='user_schools'),
+    path('user_schools/', UserSchoolsView.as_view(), name='user_schools'),
     path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
     path('directives/', DirectivesView.as_view(), name='directives'),
     # Subject
     path('subjects/', SubjectListCreate.as_view(), name='subject-list-create'),
     path('subjects/?export=excel', SubjectListCreate.as_view(), name='subject-list-create-excel'),
     path('subjects/<int:pk>/', SubjectRetrieveUpdateDestroy.as_view(), name='subject-detail'),
-
     # courses
     path('courses/', CourseListCreate.as_view(), name='course-list-create'),
     path('courses/<int:pk>/', CourseRetrieveUpdateDestroy.as_view(), name='course-detail'),
+    # CourseSubjects
+    path('coursesubjects/', CourseSubjectListCreate.as_view(), name='course-subject-list-create'),
     # Year
     path('years/', YearListCreate.as_view(), name='year-list-create'),
     path('years/<int:pk>/', YearRetrieveUpdateDestroy.as_view(), name='year-detail'),

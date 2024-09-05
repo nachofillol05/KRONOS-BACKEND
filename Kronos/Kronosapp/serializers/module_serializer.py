@@ -6,4 +6,4 @@ class ModuleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Module
-        fields = ['id','name','description', 'year']
+        fields = ['id','moduleNumber', 'day','endTime', 'startTime']
