@@ -31,7 +31,7 @@ from pandas.errors import EmptyDataError
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from .schedule_creation import schedule_creation
 from .utils import register_user, send_email
-from .serializers.school_serializer import ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
+from .serializers.school_serializer import ReadUserSchoolSerializer, ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from .serializers.preceptor_serializer import PreceptorSerializer
 from .serializers.user_serializer import UserSerializer, UpdateUserSerializer, UserWithRoleSerializer
@@ -349,12 +349,25 @@ class ProfileView(generics.GenericAPIView):
         return Response(serializer.errors, status=400)
 
 
-class SchoolsView(generics.ListAPIView):
+
+class SchoolView(generics.RetrieveUpdateAPIView):
+    '''
+    VISTA PARA OBTENER LAS ESCUELAS DEL DIRECTIVO
+    '''
+    serializer_class = ReadSchoolSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+
+    def get_object(self):
+        return self.request.school
+
+
+class UserSchoolsView(generics.ListAPIView):
     '''
     VISTA PARA OBTENER LAS ESCUELAS DEL DIRECTIVO
     '''
     queryset = School.objects.all()
-    serializer_class = ReadSchoolSerializer
+    serializer_class = ReadUserSchoolSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -822,7 +835,14 @@ class EventListCreate(generics.ListCreateAPIView):
     serializer_class = EventSerializer
 
     def get_queryset(self):
-        queryset = Event.objects.filter(school=self.request.school)
+        school = self.request.school
+        user = self.request.user
+        queryset = Event.objects.filter(school=school)
+
+        if user.is_preceptor(school):
+            queryset = queryset.filter(roles__name__in=["Preceptor", "Teacher"])
+        elif user.is_teacher(school):
+            queryset = queryset.filter(roles__name="Teacher")
 
         current_time = datetime.now()
         queryset = queryset.annotate(
@@ -834,7 +854,8 @@ class EventListCreate(generics.ListCreateAPIView):
             )
         ).order_by('event_status', 'startDate')
 
-
+        
+        
 
         name = self.request.query_params.get('name', None)
         event_type = self.request.query_params.get('eventType', None)
@@ -1357,7 +1378,7 @@ class DirectivesView(APIView):
             status_code = status.HTTP_200_OK
         
         school.save()
-        serializer = CreateSchoolSerializer(school)
+        serializer = ReadUserSchoolSerializer(school)
         return Response(serializer.data, status=status_code)
 
 
