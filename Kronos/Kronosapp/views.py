@@ -861,7 +861,15 @@ class EventListCreate(generics.ListCreateAPIView):
     serializer_class = EventSerializer
 
     def get_queryset(self):
-        queryset = Event.objects.filter(school=self.request.school)
+        school = self.request.school
+        user = self.request.user
+        queryset = Event.objects.filter(school=school)
+
+        if user.is_preceptor(school):
+            queryset = queryset.filter(roles__name__in=["Preceptor", "Teacher"])
+        elif user.is_teacher(school):
+            queryset = queryset.filter(roles__name="Teacher")
+
 
         current_time = datetime.now()
         queryset = queryset.annotate(
@@ -873,7 +881,8 @@ class EventListCreate(generics.ListCreateAPIView):
             )
         ).order_by('event_status', 'startDate')
 
-
+        
+        
 
         name = self.request.query_params.get('name', None)
         event_type = self.request.query_params.get('eventType', None)
