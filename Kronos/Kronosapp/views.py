@@ -863,6 +863,7 @@ class EventListCreate(generics.ListCreateAPIView):
     def get_queryset(self):
         school = self.request.school
         user = self.request.user
+        roles = self.request.query_params.getlist('rolesIds', None)
         queryset = Event.objects.filter(school=school)
 
         if user.is_preceptor(school):
@@ -870,6 +871,8 @@ class EventListCreate(generics.ListCreateAPIView):
         elif user.is_teacher(school):
             queryset = queryset.filter(roles__name="Teacher")
 
+        if roles:
+            queryset = queryset.filter(roles__in=roles)
 
         current_time = datetime.now()
         queryset = queryset.annotate(
@@ -880,9 +883,6 @@ class EventListCreate(generics.ListCreateAPIView):
                 output_field=IntegerField(),
             )
         ).order_by('event_status', 'startDate')
-
-        
-        
 
         name = self.request.query_params.get('name', None)
         event_type = self.request.query_params.get('eventType', None)
@@ -959,36 +959,47 @@ class EventRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
 
 class AffiliatedView(APIView):
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    permission_classes = [IsAuthenticated, SchoolHeader]
 
     def post(self, request, *args, **kwargs):
         """
-        Se le indica el año y el usuario que sera añadido como preceptor.
-        Devuelve el año actualizado
+        Se le indica el evento y el usuario que sera adherido.
         """
         return self.manage_user(request, is_add=True)
     
     def delete(self, request, *args, **kwargs):
         """
-        Se le indica el año y el usuario que sera removido como preceptor.
-        Devuelve el año actualizado
+        Se le indica el evento y el usuario que sera desadherido.
         """
         return self.manage_user(request, is_add=False)
 
     def manage_user(self, request, is_add):
         event_id = request.data.get('event_id')
         user = request.user
-
+        school = request.school
         if not event_id:
             return Response({'detail': '"event_id" is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             event: Event = Event.objects.get(pk=event_id)
-        except (Year.DoesNotExist):
-            return Response({'detail': 'Year or User do not exist'}, status=status.HTTP_404_NOT_FOUND)
+        except (Event.DoesNotExist):
+            return Response({'detail': 'Event do not exist'}, status=status.HTTP_404_NOT_FOUND)
 
-        if event.school != request.school:
-            return Response({'detail': 'Year not recognized at school'})
+        if event.school != school:
+            return Response({'detail': 'Event not recognized at school'})
+        
+        event_roles = set(event.roles.values_list('name', flat=True))
+        user_roles = set()
+
+        if user.is_directive(school):
+            user_roles.add('Directivo')
+        if user.is_teacher(school):
+            user_roles.add('Profesor')
+        if user.is_preceptor(school):
+            user_roles.add('Preceptor')
+
+        if not user_roles & event_roles: 
+            return Response({'detail': 'User does not have the required role for this event'}, status=status.HTTP_403_FORBIDDEN)
 
         if is_add:
             if user in event.affiliated_teachers.all():
