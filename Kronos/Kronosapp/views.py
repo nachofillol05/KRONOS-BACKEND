@@ -466,9 +466,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
         name = request.query_params.get('name')
         school = self.request.school
         
-        queryset = Subject.objects.filter(
-            coursesubjects__course__year__school=school
-        )
+        queryset = Subject.objects.filter(school=school)
         
         if start_time and end_time:
             queryset = queryset.filter(
@@ -495,10 +493,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
     def post(self, request):
         create_serializer = SubjectSerializer(data=self.request.data)
         create_serializer.is_valid(raise_exception=True)
-        school = create_serializer.validated_data.get('school')
-        if school != self.request.school:
-            raise ValidationError({'school': ['You can only modify the school you belong to']})
-        create_serializer.save()
+        create_serializer.save(school=self.request.school)
         return Response(
             {'Saved': 'La materia ha sido creada', 'data': create_serializer.data},
             status=status.HTTP_201_CREATED

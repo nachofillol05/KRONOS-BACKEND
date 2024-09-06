@@ -35,4 +35,9 @@ class SubjectWithCoursesSerializer(serializers.ModelSerializer):
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subject
-        fields = ['pk', 'name', 'abbreviation', 'color', 'school']
+        fields = ['pk', 'name', 'abbreviation', 'color']
+
+    def create(self, validated_data):
+        school = validated_data.pop('school', None)
+        subject = Subject.objects.create(school=school, **validated_data)
+        return subject
