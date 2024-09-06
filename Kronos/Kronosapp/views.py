@@ -467,9 +467,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
         name = request.query_params.get('name')
         school = self.request.school
         
-        queryset = Subject.objects.filter(
-            coursesubjects__course__year__school=school
-        )
+        queryset = Subject.objects.filter(school=school)
         
         if start_time and end_time:
             queryset = queryset.filter(
@@ -496,10 +494,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
     def post(self, request):
         create_serializer = SubjectSerializer(data=self.request.data)
         create_serializer.is_valid(raise_exception=True)
-        school = create_serializer.validated_data.get('school')
-        if school != self.request.school:
-            raise ValidationError({'school': ['You can only modify the school you belong to']})
-        create_serializer.save()
+        create_serializer.save(school=self.request.school)
         return Response(
             {'Saved': 'La materia ha sido creada', 'data': create_serializer.data},
             status=status.HTTP_201_CREATED
@@ -507,16 +502,24 @@ class SubjectListCreate(generics.ListCreateAPIView):
 
     def export_to_excel(self, queryset):
         # Convertir el queryset a un DataFrame de pandas
-        data = list(queryset.values('id', 'name', 'abbreviation', 'color', 'coursesubjects__course__name'))
+        data = list(queryset.values('id','name', 'abbreviation', 'color', 'coursesubjects__course__name'))
 
         df = pd.DataFrame(data)
 
+        df = df.rename(columns={
+        'id': 'ID',
+        'name': 'Nombre',
+        'abbreviation': 'Abreviatura',
+        'color': 'Color',
+        'coursesubjects__course__name': 'Nombre del Curso'
+        })
+
         # Crear un archivo Excel en la memoria utilizando un buffer
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename=Subjects.xlsx'
+        response['Content-Disposition'] = 'attachment; filename=Materias.xlsx'
         
         # Escribir el DataFrame en un archivo Excel usando pandas
-        df.to_excel(response, index=False, sheet_name='Subjects')
+        df.to_excel(response, index=False, sheet_name='Materias')
         
         return response
     
@@ -854,7 +857,19 @@ class EventListCreate(generics.ListCreateAPIView):
     serializer_class = EventSerializer
 
     def get_queryset(self):
-        queryset = Event.objects.filter(school=self.request.school)
+        school = self.request.school
+        user = self.request.user
+        roles = self.request.query_params.getlist('rolesIds', None)
+        rol = self.request.query_params.get('role', None)
+        print(rol, " aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        queryset = Event.objects.filter(school=school)
+
+        if user.is_preceptor(school) and rol == 'Preceptor':
+            queryset = queryset.filter(roles__name__in=["Preceptor", "Profesor"])
+        elif user.is_teacher(school) and rol == 'Profesor':
+            queryset = queryset.filter(roles__name="Profesor")
+        if roles:
+            queryset = queryset.filter(roles__in=roles)
 
         current_time = datetime.now()
         queryset = queryset.annotate(
@@ -865,8 +880,6 @@ class EventListCreate(generics.ListCreateAPIView):
                 output_field=IntegerField(),
             )
         ).order_by('event_status', 'startDate')
-
-
 
         name = self.request.query_params.get('name', None)
         event_type = self.request.query_params.get('eventType', None)
@@ -943,36 +956,47 @@ class EventRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
 
 class AffiliatedView(APIView):
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    permission_classes = [IsAuthenticated, SchoolHeader]
 
     def post(self, request, *args, **kwargs):
         """
-        Se le indica el año y el usuario que sera añadido como preceptor.
-        Devuelve el año actualizado
+        Se le indica el evento y el usuario que sera adherido.
         """
         return self.manage_user(request, is_add=True)
     
     def delete(self, request, *args, **kwargs):
         """
-        Se le indica el año y el usuario que sera removido como preceptor.
-        Devuelve el año actualizado
+        Se le indica el evento y el usuario que sera desadherido.
         """
         return self.manage_user(request, is_add=False)
 
     def manage_user(self, request, is_add):
         event_id = request.data.get('event_id')
         user = request.user
-
+        school = request.school
         if not event_id:
             return Response({'detail': '"event_id" is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             event: Event = Event.objects.get(pk=event_id)
-        except (Year.DoesNotExist):
-            return Response({'detail': 'Year or User do not exist'}, status=status.HTTP_404_NOT_FOUND)
+        except (Event.DoesNotExist):
+            return Response({'detail': 'Event do not exist'}, status=status.HTTP_404_NOT_FOUND)
 
-        if event.school != request.school:
-            return Response({'detail': 'Year not recognized at school'})
+        if event.school != school:
+            return Response({'detail': 'Event not recognized at school'})
+        
+        event_roles = set(event.roles.values_list('name', flat=True))
+        user_roles = set()
+
+        if user.is_directive(school):
+            user_roles.add('Directivo')
+        if user.is_teacher(school):
+            user_roles.add('Profesor')
+        if user.is_preceptor(school):
+            user_roles.add('Preceptor')
+
+        if not user_roles & event_roles: 
+            return Response({'detail': 'User does not have the required role for this event'}, status=status.HTTP_403_FORBIDDEN)
 
         if is_add:
             if user in event.affiliated_teachers.all():
@@ -1397,11 +1421,21 @@ class StaffToExel(APIView):
 
     def export_to_excel(self, roles_data):
         df = pd.DataFrame(roles_data)
+
+        df = df.rename(columns={
+            'user_id': 'ID de Usuario',
+            'first_name': 'Nombre',
+            'last_name': 'Apellido',
+            'email': 'Correo Electrónico',
+            'phone': 'Teléfono',
+            'roles': 'Roles'
+        })
+
         # Crear un archivo Excel en la memoria utilizando un buffer
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename=SchoolStaff.xlsx'
+        response['Content-Disposition'] = 'attachment; filename=PersonalEscuela.xlsx'
         # Escribir el DataFrame en un archivo Excel usando openpyxl (por defecto)
-        df.to_excel(response, index=False, sheet_name='Staff')
+        df.to_excel(response, index=False, sheet_name='Personal')
         return response
 
 class DirectivesView(APIView):
