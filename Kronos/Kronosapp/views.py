@@ -18,7 +18,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework import viewsets
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework.authtoken.models import Token
 
 from django.utils.dateparse import parse_time   
@@ -43,7 +43,7 @@ from .serializers.module_serializer import ModuleSerializer
 from .serializers.event_serializer import EventSerializer, EventTypeSerializer, CreateEventSerializer
 from .serializers.documenttype_serializer import DocumentTypeSerializer
 from .serializers.teacherSubSchool_serializer import TeacherSubjectSchoolSerializer
-from .serializers.teacherAvailability_serializer import TeacherAvailabilitySerializer
+from .serializers.teacherAvailability_serializer import TeacherAvailabilitySerializer, AvailabilityStateSerializer
 from .serializers.roles_serializer import RoleSerializer
 from .serializers.schedule_serializer import ScheduleSerializer
 from .serializers.nationality_serializer import NationalitySerializer
@@ -63,8 +63,9 @@ from .models import(
     CourseSubjects,
     DocumentType,
     TeacherAvailability,
+    AvailabilityState,
     Nationality,
-    Role
+    Role,
 )
 
 
@@ -1038,15 +1039,59 @@ class TeacherSubjectSchoolDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
-    queryset = TeacherAvailability.objects.all()
+    permission_classes = [IsAuthenticated, SchoolHeader]
     serializer_class = TeacherAvailabilitySerializer
+
+    def get_queryset(self):
+        queryset = TeacherAvailability.objects.filter(
+           module__school=self.request.school, 
+           teacher=self.request.user
+        )
+        queryset = queryset.annotate(
+            weekday=Case(
+               When(module__day='lunes', then=1), 
+               When(module__day='martes', then=2),
+               When(module__day='miércoles', then=3),
+               When(module__day='jueves', then=4),
+               When(module__day='viernes', then=5),
+            )
+        ).order_by('weekday','module__startTime','module__moduleNumber')
+       
+
+    def filter_queryset(self, queryset):
+       day = self.request.query_params.get('day')
+       if day:
+           queryset = queryset.filter(module__day=day)
+       return queryset
+
+    def get_serializer(self, *args, **kwargs):
+        if self.request.method == 'GET':
+            return super().get_serializer(*args, **kwargs)
+        kwargs['data']['teacher'] = self.request.user.pk
+        return super().get_serializer(*args, **kwargs)
 
     
 class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
-    queryset = TeacherAvailability.objects.all()
+    permission_classes = [IsAuthenticated, SchoolHeader]
     serializer_class = TeacherAvailabilitySerializer
+
+    def get_queryset(self):
+        return TeacherAvailability.objects.filter(module__school=self.request.school)
+
+    def get_object(self):
+        obj = super().get_object()
+        school = self.request.school
+        
+        if obj.module.school != school:
+            raise PermissionDenied("No tienes permiso para acceder a este recurso.")
+        
+        return obj
+
+
+class AvailabilityStateView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = AvailabilityState.objects.all()
+    serializer_class = AvailabilityStateSerializer
 
 
 class ViewSchedule(generics.ListAPIView):
