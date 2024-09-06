@@ -439,7 +439,8 @@ class DniComprobation(generics.GenericAPIView):
     '''
     def post(self, request):
             document = request.data.get('document')
-            user = CustomUser.objects.filter(document=document)
+            documentType = request.data.get('documentType')
+            user = CustomUser.objects.filter(documentType=documentType, document=document)
 
             if user.exists():
                 user = user.first()
