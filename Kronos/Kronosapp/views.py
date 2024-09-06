@@ -368,7 +368,7 @@ class UserSchoolsView(generics.ListAPIView):
     VISTA PARA OBTENER LAS ESCUELAS DEL DIRECTIVO
     '''
     queryset = School.objects.all()
-    serializer_class = ReadUserSchoolSerializer
+    serializer_class = ReadSchoolSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
