@@ -32,6 +32,7 @@ from .views import (
     TeacherSubjectSchoolDetailView,
     TeacherAvailabilityListCreateView,
     TeacherAvailabilityDetailView,
+    AvailabilityStateView,
     SubjectPerModuleView,
     RoleView,
     UserRolesViewSet,
@@ -104,6 +105,7 @@ urlpatterns = [
     #teacherAvailability
     path('teacheravailability/', TeacherAvailabilityListCreateView.as_view(), name='teacher-availability-list-create'),
     path('teacheravailability/<int:pk>/', TeacherAvailabilityDetailView.as_view(), name='teacher-availability-detail'),
+    path('availabilityState/', AvailabilityStateView.as_view(), name='AvailabilityState'),
     #Myroles
     path('school/myroles/', UserRolesViewSet.as_view(), name='user-roles'),
     #SchoolStaff
