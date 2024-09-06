@@ -859,13 +859,14 @@ class EventListCreate(generics.ListCreateAPIView):
         school = self.request.school
         user = self.request.user
         roles = self.request.query_params.getlist('rolesIds', None)
+        rol = self.request.query_params.get('role', None)
+        print(rol, " aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
         queryset = Event.objects.filter(school=school)
 
-        if user.is_preceptor(school):
-            queryset = queryset.filter(roles__name__in=["Preceptor", "Teacher"])
-        elif user.is_teacher(school):
-            queryset = queryset.filter(roles__name="Teacher")
-
+        if user.is_preceptor(school) and rol == 'Preceptor':
+            queryset = queryset.filter(roles__name__in=["Preceptor", "Profesor"])
+        elif user.is_teacher(school) and rol == 'Profesor':
+            queryset = queryset.filter(roles__name="Profesor")
         if roles:
             queryset = queryset.filter(roles__in=roles)
 
