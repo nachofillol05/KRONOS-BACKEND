@@ -440,7 +440,9 @@ class DniComprobation(generics.GenericAPIView):
     '''
     def post(self, request):
             document = request.data.get('document')
-            user = CustomUser.objects.filter(document=document)
+            documentType = request.data.get('documentType')
+            print(document,documentType)
+            user = CustomUser.objects.filter(documentType=documentType, document=document)
 
             if user.exists():
                 user = user.first()
@@ -1167,11 +1169,17 @@ class ViewSchedule(generics.ListAPIView):
                            tss.teacher_id as teacher_id,
                            CONCAT(t.first_name, ' ', t.last_name) AS nombre,
                            t.profile_picture,
-                           s.name,
+                           s.abbreviation,
                            s.color,
                            cs.subject_id,
+                           c.name as course_name,
+                           m.day as day,
+                           m.moduleNumber,
+                           s.name as subject_name,
                            RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
                     FROM Kronosapp_schedules sh
+                    INNER JOIN Kronosapp_module m 
+                            ON sh.module_id = m.id
                     INNER JOIN Kronosapp_teachersubjectschool tss
                            ON sh.tssId_id = tss.id
                     INNER JOIN Kronosapp_coursesubjects cs
@@ -1180,6 +1188,8 @@ class ViewSchedule(generics.ListAPIView):
                            ON tss.teacher_id = t.id
                     INNER JOIN Kronosapp_subject s
                            ON cs.subject_id = s.id
+                    INNER JOIN Kronosapp_course c 
+                            ON cs.course_id = c.id
                     WHERE DATE(sh.`date`) <= %s
                 ) as t
                 WHERE t.RN = 1
@@ -1197,10 +1207,15 @@ class ViewSchedule(generics.ListAPIView):
                     "teacher_id": row[4],
                     "nombre": row[5],
                     "profile_picture": row[6],
-                    "subject_name": row[7],
+                    "subject_abreviation": row[7],
                     "subject_color": row[8],
-                    "subject_id": row[9]
+                    "subject_id": row[9],
+                    "course_name": row[10],
+                    "day": row[11],
+                    "moduleNumber": row[12],
+                    "subject_name": row[13]
                 }
+                
                 for row in results
             ]
 
@@ -1210,8 +1225,6 @@ class ViewSchedule(generics.ListAPIView):
 
             if course_ids is not None:
                 data = [row for row in data if row["course_id"] in course_ids]
-            
-
         return Response(data)
 
 
@@ -1244,9 +1257,6 @@ class SubjectPerModuleView(generics.ListAPIView):
             if weeklyHours < course_subject.weeklyHours:
                 validate_course_subjects.append(course_subject)
                 
-
-
-
         available_subjects = []
         for course_subject in validate_course_subjects:
             teacher_subject_school = TeacherSubjectSchool.objects.filter(coursesubjects=course_subject).first()
