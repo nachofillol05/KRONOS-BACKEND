@@ -1105,13 +1105,16 @@ class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
         return TeacherAvailability.objects.filter(module__school=self.request.school)
 
     def get_object(self):
-        obj = super().get_object()
-        school = self.request.school
+        obj: TeacherAvailability = super().get_object()
+        user = self.request.user
         
-        if obj.module.school != school:
+        if obj.teacher != user:
             raise PermissionDenied("No tienes permiso para acceder a este recurso.")
-        
         return obj
+
+    def get_serializer(self, *args, **kwargs):
+        kwargs['data']['teacher'] = self.request.user.pk
+        return super().get_serializer(*args, **kwargs)
 
 
 class AvailabilityStateView(generics.ListAPIView):
