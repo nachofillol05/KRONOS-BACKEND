@@ -10,10 +10,11 @@ class SchoolSerializer(serializers.ModelSerializer):
 
 class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
     teacher_name = serializers.CharField(source='teacher.get_full_name')
+    teacher_id = serializers.IntegerField(source='teacher.id') 
 
     class Meta:
         model = TeacherSubjectSchool
-        fields = ['id', 'teacher_name']
+        fields = ['id', 'teacher_name','teacher_id']
 
 class CourseSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source='course.name')
