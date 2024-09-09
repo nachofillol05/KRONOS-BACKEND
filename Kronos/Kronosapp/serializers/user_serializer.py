@@ -129,3 +129,25 @@ class UserWithRoleSerializer(UserSerializer):
             'profile_picture',
             'roles'
         ]
+
+
+class ProfilePictureUpdateSerializer(serializers.ModelSerializer):
+    profile_picture = serializers.ImageField(required=True)
+
+    class Meta:
+        model = CustomUser
+        fields = ['profile_picture']
+
+    def update(self, instance, validated_data):
+        imagen = validated_data.pop('profile_picture', None)
+        print(self.context['request'].data)
+        print(validated_data)
+        if imagen:
+            instance.profile_picture = convert_image_to_binary(imagen)
+        return super().update(instance, validated_data)
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.profile_picture:
+            representation['profile_picture'] = convert_binary_to_image(instance.profile_picture)
+        return representation
