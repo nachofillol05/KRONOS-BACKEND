@@ -34,7 +34,7 @@ from .utils import register_user, send_email
 from .serializers.school_serializer import ReadUserSchoolSerializer, ReadSchoolSerializer, CreateSchoolSerializer, DirectiveSerializer, ModuleSerializer
 from .serializers.teacher_serializer import TeacherSerializer, CreateTeacherSerializer
 from .serializers.preceptor_serializer import PreceptorSerializer
-from .serializers.user_serializer import UserSerializer, UpdateUserSerializer, UserWithRoleSerializer
+from .serializers.user_serializer import UserSerializer, UpdateUserSerializer, UserWithRoleSerializer, ProfilePictureUpdateSerializer
 from .serializers.Subject_serializer import SubjectWithCoursesSerializer, SubjectSerializer
 from .serializers.course_serializer import CourseSerializer
 from .serializers.cousesubject_serializer import CourseSubjectSerializer
@@ -349,6 +349,16 @@ class ProfileView(generics.GenericAPIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
 
+
+
+class UpdateProfileView(generics.RetrieveUpdateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    queryset = CustomUser.objects.all()
+    serializer_class = ProfilePictureUpdateSerializer
+
+    def get_object(self):
+        return self.request.user
 
 
 class SchoolView(generics.RetrieveUpdateAPIView):

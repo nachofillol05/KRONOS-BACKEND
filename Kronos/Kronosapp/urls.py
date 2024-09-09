@@ -7,6 +7,7 @@ from .views import (
     reset_password,
     ChangePasswordView,
     ProfileView,
+    UpdateProfileView,
     TeacherListView,
     ExcelToteacher,
     DniComprobation,
@@ -66,6 +67,8 @@ urlpatterns = [
     path('changePassword/', ChangePasswordView.as_view(), name='ChangePassword'),
     path('isVerified/', VerifiedView.as_view(), name='verified'),
     path('rolesUser/<int:pk>/', RolesUserView.as_view(), name='rolesUser'),
+    path('profile/', ProfileView.as_view(), name='profile'),
+    path('profilePicture/', UpdateProfileView.as_view(), name='profile-picture'),
     # Schools
     path('school/', SchoolView.as_view(), name='user_schools'),
     path('user_schools/', UserSchoolsView.as_view(), name='user_schools'),
@@ -85,7 +88,6 @@ urlpatterns = [
     path('years/<int:pk>/', YearRetrieveUpdateDestroy.as_view(), name='year-detail'),
     # Teachers
     path('teachers/', TeacherListView.as_view(), name='get_teachers'),
-    path('profile/', ProfileView.as_view(), name='profile'),
     path('create_teacher/', DniComprobation.as_view(), name='Comprobation_DNI'),
     path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
     # Event
