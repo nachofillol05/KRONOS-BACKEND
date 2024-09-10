@@ -1216,7 +1216,6 @@ class ViewSchedule(generics.ListAPIView):
             from .utils import convert_binary_to_image
             data = []
             for row in results:
-                print(row[6])
                 data.append({
                     "id": row[0],
                     "date": row[1],
