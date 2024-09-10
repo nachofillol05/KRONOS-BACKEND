@@ -1079,10 +1079,21 @@ class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
     serializer_class = TeacherAvailabilitySerializer
 
     def get_queryset(self):
-        queryset = TeacherAvailability.objects.filter(
-           module__school=self.request.school, 
-           teacher=self.request.user
-        )
+        user: CustomUser = self.request.user
+        school = self.request.school
+
+        teacher_id = self.request.query_params.get('teacher_id')
+        necessary_role = user.is_directive(school) or user.is_preceptor(school)
+        if teacher_id and necessary_role: 
+            queryset = TeacherAvailability.objects.filter(
+                module__school=self.request.school,
+                teacher_id=teacher_id
+            )
+        else:
+            queryset = TeacherAvailability.objects.filter(
+                module__school=self.request.school,
+                teacher=self.request.user
+            )
         queryset = queryset.annotate(
             weekday=Case(
                When(module__day='lunes', then=1), 
@@ -1092,6 +1103,7 @@ class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
                When(module__day='viernes', then=5),
             )
         ).order_by('weekday','module__startTime','module__moduleNumber')
+        return queryset
        
 
     def filter_queryset(self, queryset):
