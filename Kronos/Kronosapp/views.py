@@ -1171,6 +1171,8 @@ class ViewSchedule(generics.ListAPIView):
         except ValueError:
             return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
 
+   
+
         with connection.cursor() as cursor:
             sql_query = """
                 SELECT *
@@ -1211,15 +1213,18 @@ class ViewSchedule(generics.ListAPIView):
             cursor.execute(sql_query, [date])
             results = cursor.fetchall()
 
-            data = [
-                {
+            from .utils import convert_binary_to_image
+            data = []
+            for row in results:
+                print(row[6])
+                data.append({
                     "id": row[0],
                     "date": row[1],
                     "module_id": row[2],
                     "course_id": row[3],
                     "teacher_id": row[4],
                     "nombre": row[5],
-                    "profile_picture": row[6],
+                    "profile_picture": convert_binary_to_image(row[6]) if row[6] else None,
                     "subject_abreviation": row[7],
                     "subject_color": row[8],
                     "subject_id": row[9],
@@ -1227,11 +1232,7 @@ class ViewSchedule(generics.ListAPIView):
                     "day": row[11],
                     "moduleNumber": row[12],
                     "subject_name": row[13]
-                }
-                
-                for row in results
-            ]
-
+                })
 
             if teacher_ids is not None:
                 data = [row for row in data if row["teacher_id"] in teacher_ids]
