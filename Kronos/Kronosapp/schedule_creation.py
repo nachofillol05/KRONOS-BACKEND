@@ -5,7 +5,8 @@ def get_subjects_dynamically():
     subjects = {}
 
     # Obtener todos los registros de TeacherSubjectSchool
-    tss_records = TeacherSubjectSchool.objects.all()
+    tss_records = TeacherSubjectSchool.objects.filter(coursesubjects__isnull=False)
+
 
     for tss in tss_records:
         tss_id = tss.id
@@ -103,7 +104,7 @@ def schedule_creation():
     subject_errors = []
     for subject, remaining_hours in unassigned_subjects.items():
         if remaining_hours > 0:
-            subject_errors.append(f"Subject {subject} has {remaining_hours} hours unassigned")
+            subject_errors.append(f"La materia {subject} Tiene {remaining_hours} horas sin asignar")
         #else:
             #print(f"Materia {materia} fue completamente asignada")
 
