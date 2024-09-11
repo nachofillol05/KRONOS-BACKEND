@@ -393,6 +393,12 @@ class UserSchoolsView(generics.ListAPIView):
             for ts in tss:
                 schools.add(ts.school)
 
+            schools_preceptor = School.objects.filter(
+                years__preceptors__pk=user.pk
+            ).distinct()
+            for school in schools_preceptor:
+                schools.add(school)
+
             # Obtener escuelas donde el usuario es directivo
             dir_schools = School.objects.filter(directives=user).distinct()
             for school in dir_schools:

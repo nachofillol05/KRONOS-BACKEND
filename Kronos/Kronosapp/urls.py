@@ -66,6 +66,7 @@ urlpatterns = [
     path('forgot-password/<uuid:token>/', reset_password, name='forgot-password'),
     path('changePassword/', ChangePasswordView.as_view(), name='ChangePassword'),
     path('isVerified/', VerifiedView.as_view(), name='verified'),
+    path('school/myroles/', UserRolesViewSet.as_view(), name='user-roles'),
     path('rolesUser/<int:pk>/', RolesUserView.as_view(), name='rolesUser'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('profilePicture/', UpdateProfileView.as_view(), name='profile-picture'),
@@ -108,8 +109,6 @@ urlpatterns = [
     path('teacheravailability/', TeacherAvailabilityListCreateView.as_view(), name='teacher-availability-list-create'),
     path('teacheravailability/<int:pk>/', TeacherAvailabilityDetailView.as_view(), name='teacher-availability-detail'),
     path('availabilityState/', AvailabilityStateView.as_view(), name='AvailabilityState'),
-    #Myroles
-    path('school/myroles/', UserRolesViewSet.as_view(), name='user-roles'),
     #SchoolStaff
     path('staff/', SchoolStaffAPIView.as_view(), name='school-staff'),
     path('staff/export', StaffToExel.as_view(), name='school-staff-excel'),
