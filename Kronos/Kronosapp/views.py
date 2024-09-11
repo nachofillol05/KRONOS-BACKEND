@@ -1079,10 +1079,21 @@ class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
     serializer_class = TeacherAvailabilitySerializer
 
     def get_queryset(self):
-        queryset = TeacherAvailability.objects.filter(
-           module__school=self.request.school, 
-           teacher=self.request.user
-        )
+        user: CustomUser = self.request.user
+        school = self.request.school
+
+        teacher_id = self.request.query_params.get('teacher_id')
+        necessary_role = user.is_directive(school) or user.is_preceptor(school)
+        if teacher_id and necessary_role: 
+            queryset = TeacherAvailability.objects.filter(
+                module__school=self.request.school,
+                teacher_id=teacher_id
+            )
+        else:
+            queryset = TeacherAvailability.objects.filter(
+                module__school=self.request.school,
+                teacher=self.request.user
+            )
         queryset = queryset.annotate(
             weekday=Case(
                When(module__day='lunes', then=1), 
@@ -1092,6 +1103,7 @@ class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
                When(module__day='viernes', then=5),
             )
         ).order_by('weekday','module__startTime','module__moduleNumber')
+        return queryset
        
 
     def filter_queryset(self, queryset):
@@ -1171,6 +1183,8 @@ class ViewSchedule(generics.ListAPIView):
         except ValueError:
             return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
 
+   
+
         with connection.cursor() as cursor:
             sql_query = """
                 SELECT *
@@ -1211,15 +1225,17 @@ class ViewSchedule(generics.ListAPIView):
             cursor.execute(sql_query, [date])
             results = cursor.fetchall()
 
-            data = [
-                {
+            from .utils import convert_binary_to_image
+            data = []
+            for row in results:
+                data.append({
                     "id": row[0],
                     "date": row[1],
                     "module_id": row[2],
                     "course_id": row[3],
                     "teacher_id": row[4],
                     "nombre": row[5],
-                    "profile_picture": row[6],
+                    "profile_picture": convert_binary_to_image(row[6]) if row[6] else None,
                     "subject_abreviation": row[7],
                     "subject_color": row[8],
                     "subject_id": row[9],
@@ -1227,11 +1243,7 @@ class ViewSchedule(generics.ListAPIView):
                     "day": row[11],
                     "moduleNumber": row[12],
                     "subject_name": row[13]
-                }
-                
-                for row in results
-            ]
-
+                })
 
             if teacher_ids is not None:
                 data = [row for row in data if row["teacher_id"] in teacher_ids]
@@ -1364,17 +1376,22 @@ class SchoolStaffAPIView(APIView):
         users = CustomUser.objects.all()
         for user in users:
             roles = []
+            user_dict = dict(UserSerializer(user).data)
             if user.is_directive(school):
                 roles.append('Directivo')
             if user.is_teacher(school):
                 roles.append('Profesor')
+                teacher_availability = TeacherAvailabilitySerializer(
+                    user.get_teacher_availability(school),
+                    many=True
+                ).data
+                user_dict['teacher_availability'] = teacher_availability
             if user.is_preceptor(school):
                 roles.append('Preceptor')
 
             if roles:
-                user_dict = dict(UserSerializer(user).data)
                 user_dict["roles"] = roles
-                user_roles.append(user_dict)
+                user_roles.append(user_dict) 
 
         return user_roles
     
@@ -1409,8 +1426,6 @@ class RolesUserView(APIView):
             }, 
             status=status.HTTP_200_OK
         )
-    
-
 
 
 class StaffToExel(APIView):

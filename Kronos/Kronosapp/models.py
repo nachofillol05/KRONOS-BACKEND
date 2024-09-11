@@ -78,7 +78,8 @@ class School(models.Model):
 class CustomUser(AbstractUser):
     GENDER_CHOICES = [
         ('masculino', 'Masculino'),
-        ('femenino', 'Femenino')
+        ('femenino', 'Femenino'),
+        ('otro', "Otro")
     ]
     document = models.CharField(max_length=255, unique=True, blank=True, null=True)
     first_name = models.CharField(max_length=255, blank=True, null=True)
@@ -109,6 +110,10 @@ class CustomUser(AbstractUser):
     
     def is_preceptor(self, school: School):
         return Year.objects.filter(school=school, preceptors=self).exists()
+    
+    def get_teacher_availability(self, school: School):
+        queryset = TeacherAvailability.objects.filter(module__school=school, teacher=self)
+        return queryset.filter(availabilityState__isEnabled=True)
     
     def __str__(self) -> str:
         return f'{self.pk} {self.email}'
