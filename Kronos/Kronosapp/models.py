@@ -110,6 +110,10 @@ class CustomUser(AbstractUser):
     def is_preceptor(self, school: School):
         return Year.objects.filter(school=school, preceptors=self).exists()
     
+    def get_teacher_availability(self, school: School):
+        queryset = TeacherAvailability.objects.filter(module__school=school, teacher=self)
+        return queryset.filter(availabilityState__isEnabled=True)
+    
     def __str__(self) -> str:
         return f'{self.pk} {self.email}'
 

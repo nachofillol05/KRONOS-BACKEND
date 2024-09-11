@@ -1376,17 +1376,22 @@ class SchoolStaffAPIView(APIView):
         users = CustomUser.objects.all()
         for user in users:
             roles = []
+            user_dict = dict(UserSerializer(user).data)
             if user.is_directive(school):
                 roles.append('Directivo')
             if user.is_teacher(school):
                 roles.append('Profesor')
+                teacher_availability = TeacherAvailabilitySerializer(
+                    user.get_teacher_availability(school),
+                    many=True
+                ).data
+                user_dict['teacher_availability'] = teacher_availability
             if user.is_preceptor(school):
                 roles.append('Preceptor')
 
             if roles:
-                user_dict = dict(UserSerializer(user).data)
                 user_dict["roles"] = roles
-                user_roles.append(user_dict)
+                user_roles.append(user_dict) 
 
         return user_roles
     
@@ -1421,8 +1426,6 @@ class RolesUserView(APIView):
             }, 
             status=status.HTTP_200_OK
         )
-    
-
 
 
 class StaffToExel(APIView):
