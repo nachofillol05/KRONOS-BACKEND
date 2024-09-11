@@ -63,9 +63,7 @@ def verify_email(request,token):
 
 
 def convert_image_to_binary(image_file):
-    SIZE = (250, 250)
     image = Image.open(image_file)
-    image = image.resize(SIZE, Image.LANCZOS)
     buffered = BytesIO()
     image.save(buffered, format="PNG")
     return buffered.getvalue()
