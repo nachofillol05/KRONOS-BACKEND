@@ -78,7 +78,8 @@ class School(models.Model):
 class CustomUser(AbstractUser):
     GENDER_CHOICES = [
         ('masculino', 'Masculino'),
-        ('femenino', 'Femenino')
+        ('femenino', 'Femenino'),
+        ('otro', "Otro")
     ]
     document = models.CharField(max_length=255, unique=True, blank=True, null=True)
     first_name = models.CharField(max_length=255, blank=True, null=True)
