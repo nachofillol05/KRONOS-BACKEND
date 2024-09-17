@@ -1,53 +1,62 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
-from .views import (
+
+from .views.user_views import (
     LoginView,
+    VerifiedView,
     RegisterView,
     OlvideMiContrasenia,
     reset_password,
     ChangePasswordView,
     ProfileView,
     UpdateProfileView,
+    RolesUserView,
+    UserSchoolsView,
+    DocumentTypeViewSet,
+    NationalityViewSet,
+    verifyToken
+
+)
+from .views.staff_view import (
+    StaffToExel,
     TeacherListView,
     ExcelToteacher,
+    ContactarPersonal,
+    SchoolStaffAPIView,
     DniComprobation,
-    SubjectListCreate, 
-    SubjectRetrieveUpdateDestroy,
-    CourseSubjectListCreate,
-    ModuleViewSet,
-    verifyToken,
-    UserSchoolsView,
-    CourseListCreate, 
-    CourseRetrieveUpdateDestroy,
-    YearListCreate,
-    YearRetrieveUpdateDestroy,
     PreceptorsView,
-    Newscheduleview,
-    NewScheduleCreation,
-    EventListCreate,
-    EventRetrieveUpdateDestroy,
-    AffiliatedView,
-    EventTypeViewSet,
-    DocumentTypeViewSet,
     TeacherSubjectSchoolListCreateView,
     TeacherSubjectSchoolDetailView,
     TeacherAvailabilityListCreateView,
     TeacherAvailabilityDetailView,
     AvailabilityStateView,
-    SubjectPerModuleView,
-    RoleView,
-    UserRolesViewSet,
-    SchoolStaffAPIView,
-    DirectivesView,
-    ContactarPersonal,
-    ViewSchedule,
-    StaffToExel,
-    NationalityViewSet,
-    SchoolView,
-    VerifiedView,
-    RolesUserView
+    DirectivesView
 )
-
+from .views.school_view import (
+    CourseListCreate,
+    CourseRetrieveUpdateDestroy,
+    CourseSubjectListCreate,
+    ModuleViewSet,
+    SubjectListCreate,
+    SubjectRetrieveUpdateDestroy,
+    SchoolView,
+    YearListCreate,
+    YearRetrieveUpdateDestroy
+)
+from .views.schedule_view import (
+    ViewSchedule,
+    SubjectPerModuleView,
+    Newscheduleview,
+    NewScheduleCreation
+)
+from .views.events_view import (
+    AffiliatedView,
+    EventListCreate,
+    EventRetrieveUpdateDestroy,
+    EventTypeViewSet,
+    RoleView,
+    UserRolesViewSet
+)
 from .utils import (
     verify_email
 )
@@ -70,9 +79,11 @@ urlpatterns = [
     path('rolesUser/<int:pk>/', RolesUserView.as_view(), name='rolesUser'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('profilePicture/', UpdateProfileView.as_view(), name='profile-picture'),
+    path('user_schools/', UserSchoolsView.as_view(), name='user_schools'),
+    path('nationality/', NationalityViewSet.as_view(), name='nationality-list'),
+    path('documentTypes/', DocumentTypeViewSet.as_view(), name='document-type-list-create'),
     # Schools
     path('school/', SchoolView.as_view(), name='user_schools'),
-    path('user_schools/', UserSchoolsView.as_view(), name='user_schools'),
     path('preceptors/', PreceptorsView.as_view(), name='preceptors'),
     path('directives/', DirectivesView.as_view(), name='directives'),
     # Subject
@@ -95,12 +106,9 @@ urlpatterns = [
     path('events/', EventListCreate.as_view(), name='event-list-create'),
     path('events/<int:pk>/', EventRetrieveUpdateDestroy.as_view(), name='event-detail'),
     path('events/affiliated/', AffiliatedView.as_view(), name='event-affiliated'),
-    # EventType
-    path('typeevent/', EventTypeViewSet.as_view(), name='eventType-list-create'),
-    #DocumentType
-    path('documentTypes/', DocumentTypeViewSet.as_view(), name='document-type-list-create'),
-    #roles
     path('roles/', RoleView.as_view(), name='role-list-create'),
+    path('typeevent/', EventTypeViewSet.as_view(), name='eventType-list-create'),
+    #roles
     
     #teacher_subject_school
     path('teachersubjectschool/', TeacherSubjectSchoolListCreateView.as_view(), name='teachersubjectschool-list-create'),
@@ -123,9 +131,6 @@ urlpatterns = [
     path('create_schedule/', NewScheduleCreation.as_view(), name='create_schedule'),
     path('subjectpermodule/', SubjectPerModuleView.as_view(), name='subjectpermodule'),
     path('viewschedule/', ViewSchedule.as_view(), name='viewschedule'),
-
-    #Nationality
-    path('nationality/', NationalityViewSet.as_view(), name='nationality-list')
 
 ]
 
