@@ -19,8 +19,19 @@ from rest_framework.exceptions import ValidationError
 from datetime import datetime
 from ..schedule_creation import schedule_creation
 from ..serializers.Subject_serializer import SubjectWithCoursesSerializer
-from ..serializers.schedule_serializer import ScheduleSerializer
+from ..serializers.schedule_serializer import ScheduleSerializer, CreateScheduleSerializer  
 
+
+class CreateModuleSchedule(generics.CreateAPIView):
+    """
+    Crear un modulo de horario
+    """
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    serializer_class = CreateScheduleSerializer
+
+    def get_serializer_class(self):
+        self.request.data['date'] = datetime.now().isoformat()
+        return CreateScheduleSerializer
 
 
 class Newscheduleview(generics.GenericAPIView):
@@ -66,6 +77,7 @@ class NewScheduleCreation(generics.GenericAPIView):
                 newschedule.save()
 
             return Response({'message': 'Schedules created successfully'})  
+
 
 class ViewSchedule(generics.ListAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
@@ -261,5 +273,4 @@ class SubjectPerModuleView(generics.ListAPIView):
             created_schedules.append(schedule)
 
         return Response({"message": "Schedule creado exitosamente"}, status=status.HTTP_201_CREATED)
-
     
