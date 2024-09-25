@@ -1,7 +1,7 @@
 import time
 import pulp
 
-from .models import TeacherSubjectSchool, TeacherAvailability, Course, Module
+from .models import TeacherSubjectSchool, TeacherAvailability, Module, Schedules
 
 
 def get_subjects_dynamically(user_school):
@@ -41,24 +41,8 @@ def get_subjects_dynamically(user_school):
     return subjects
 
 
-def get_dynamic_schedule(user_school):
-    schedule = {}
-
-    modules = Module.objects.filter(school=user_school)
-
-    for module in modules:
-        day = module.day.capitalize()
-        hour = f"Hour{module.moduleNumber}"
-        course_str = f"Course{module.school.name}" 
-
-        schedule[f"{day}_{hour}_{course_str}"] = None
-
-    return schedule
-
-
 def schedule_creation(user_school):
     subjects = get_subjects_dynamically(user_school=user_school)
-    schedule = get_dynamic_schedule(user_school=user_school)
     
     # Filtrar horarios solo disponibles
     course_schedules = list(set(
@@ -98,7 +82,7 @@ def schedule_creation(user_school):
     # Establecer el límite de tiempo del solver a 2 minutos (120 segundos)
     start_time = time.time()
 
-    solver = pulp.PULP_CBC_CMD(timeLimit=120)
+    solver = pulp.PULP_CBC_CMD(timeLimit=180)
     problem.solve(solver)
 
     elapsed_time = time.time() - start_time
@@ -111,6 +95,29 @@ def schedule_creation(user_school):
             if pulp.value(assignment[subject, course_schedule]) == 1:
                 unassigned_subjects[subject] -= 1
 
+    # Creación de horario vacío
+    schedule = {}
+    modules = Module.objects.filter(school=user_school)
+    assigned_modules = Schedules.objects.filter(tssId__school=user_school).values_list('module', flat=True)
+    available_modules = modules.exclude(id__in=assigned_modules)
+
+    # Actualizar las horas asignadas para cada materia (subject)
+    for subject in subjects:
+        # Filtramos los módulos de disponibilidad de la materia
+        assigned_count = 0
+        for assigned_module in assigned_modules:
+            if assigned_module in subjects[subject]["availability"]:
+                assigned_count += 1
+        # Restar la cantidad correspondiente de horas asignadas
+        subjects[subject]["hours"] -= assigned_count
+
+    # Crear los módulos disponibles
+    for module in available_modules:
+        day = module.day.capitalize()
+        hour = f"Hour{module.moduleNumber}"
+        course_str = module.school.name 
+
+        schedule[f"{day}_{hour}_{course_str}"] = None
 
     for subject in subjects:
         for course_schedule in subjects[subject]["availability"]:
