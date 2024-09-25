@@ -1,7 +1,9 @@
 import time
 import pulp
 
-from .models import TeacherSubjectSchool, TeacherAvailability, Module, Schedules
+from .  utils import convert_binary_to_image
+from .models import TeacherSubjectSchool, TeacherAvailability, Course, Module
+
 
 
 def get_subjects_dynamically(user_school):
@@ -137,6 +139,7 @@ def schedule_creation(user_school):
             day, hour, course_str = course_schedule.split("_")
             tss_id = subjects[subject]["tss_id"]
             school = subjects[subject]["school_id"]
+            
 
             # Extraer solo los campos serializables del profesor (teacher)
             teacher = subjects[subject]["teacher_class"]
@@ -144,6 +147,13 @@ def schedule_creation(user_school):
             teacher_id = teacher.id  # También podrías usar el ID del profesor
 
             subjectt = subjects[subject]["subject"]
+            course_obj = Course.objects.get(name=course_str, year__school=school)
+            course_id = course_obj.id
+            
+            profile_picture_base64 = None
+            if teacher.profile_picture:
+                profile_picture_base64 = convert_binary_to_image(teacher.profile_picture)
+           
             schedule_list.append({
                 "subject_id": subjectt.id,
                 "subject_color": subjectt.color,
@@ -154,6 +164,8 @@ def schedule_creation(user_school):
                 "day": day,
                 "moduleNumber": int(hour.replace("Hour", "")),
                 "course": course_str,
+                "profile_picture": profile_picture_base64,
+                "course_id": course_id,
                 "tss_id": tss_id,
                 "school_id": school
             })

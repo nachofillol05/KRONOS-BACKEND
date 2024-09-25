@@ -20,8 +20,19 @@ from rest_framework.exceptions import ValidationError
 from datetime import datetime
 from ..schedule_creation import schedule_creation
 from ..serializers.Subject_serializer import SubjectWithCoursesSerializer
-from ..serializers.schedule_serializer import ScheduleSerializer
+from ..serializers.schedule_serializer import ScheduleSerializer, CreateScheduleSerializer  
 
+
+class CreateModuleSchedule(generics.CreateAPIView):
+    """
+    Crear un modulo de horario
+    """
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    serializer_class = CreateScheduleSerializer
+
+    def get_serializer_class(self):
+        self.request.data['date'] = datetime.now().isoformat()
+        return CreateScheduleSerializer
 
 
 class Newscheduleview(generics.GenericAPIView):
@@ -107,8 +118,6 @@ class ViewSchedule(generics.ListAPIView):
             date = datetime.strptime(date, '%Y-%m-%d').date()
         except ValueError:
             return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
-
-   
 
         with connection.cursor() as cursor:
             sql_query = """
@@ -230,8 +239,11 @@ class SubjectPerModuleView(generics.ListAPIView):
         
         if not schedules_data:
             return Response({"error": "No se proporcionaron datos de horarios."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        created_schedules = []
+        {
+            "schedules": [{
+                "course"
+            }]
+        }
         for schedule_data in schedules_data:
             
             course_id = schedule_data.get('course_id')
@@ -253,16 +265,34 @@ class SubjectPerModuleView(generics.ListAPIView):
             except Module.DoesNotExist:
                 return Response({"error": "Módulo no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
 
-            
-
             schedule = Schedules.objects.create(
                 date=datetime.now(),
                 action_id=None,
                 module=module,
                 tssId=teacher_subject_school
             )
-            created_schedules.append(schedule)
+            teacher: CustomUser = schedule.tssId.teacher
+            subject: Subject = schedule.tssId.coursesubjects.subject
+            course: Course = schedule.tssId.coursesubjects.course
+            module: Module = schedule.module
+            from ..utils import convert_binary_to_image
+            schedule_dict = {
+                "id": schedule.pk,
+                "date": schedule.date,
+                "module_id": module.pk,
+                "course_id": course.pk,
+                "teacher_id": teacher.pk,
+                "nombre": teacher.first_name + " " + teacher.last_name,
+                "profile_picture": convert_binary_to_image(teacher.profile_picture) if teacher.profile_picture else None,
+                "subject_abreviation": subject.abbreviation,
+                "subject_color": subject.color,
+                "subject_id": subject.pk,
+                "course_name": course.name,
+                "day": module.day,
+                "moduleNumber": module.moduleNumber,
+                "subject_name": subject.name
+            }
 
-        return Response({"message": "Schedule creado exitosamente"}, status=status.HTTP_201_CREATED)
 
+        return Response(schedule_dict, status=status.HTTP_201_CREATED)
     

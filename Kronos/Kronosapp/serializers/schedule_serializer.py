@@ -31,3 +31,8 @@ class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schedules
         fields = ['pk', 'module', 'tssId']
+
+class CreateScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Schedules
+        fields = ['pk', 'module', 'tssId', 'action', 'date']

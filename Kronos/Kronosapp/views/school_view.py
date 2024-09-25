@@ -18,7 +18,7 @@ from datetime import datetime
 import pandas as pd
 from ..serializers.school_serializer import ReadSchoolSerializer, ModuleSerializer
 from ..serializers.Subject_serializer import SubjectWithCoursesSerializer, SubjectSerializer
-from ..serializers.course_serializer import CourseSerializer
+from ..serializers.course_serializer import CourseSerializer, CreateCourseSerializer
 from ..serializers.cousesubject_serializer import CourseSubjectSerializer
 from ..serializers.year_serializer import YearSerializer
 from ..serializers.module_serializer import ModuleSerializer
@@ -139,29 +139,20 @@ class CourseListCreate(generics.ListCreateAPIView):
     serializer_class = CourseSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
-    
 
-    def get(self, request):
+    def get_queryset(self):
         school = self.request.school
-        queryset = Course.objects.filter(year__school = school).order_by('year__number', 'name')
-        serializer = CourseSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Course.objects.filter(year__school = school).order_by('year__number', 'name')
     
     def post(self, request):
         year_number = request.data.get('year')
 
-        # Verificar si el año existe utilizando el campo 'number'
         try:
-            year = Year.objects.get(number=year_number)
+            Year.objects.get(pk=year_number)
         except Year.DoesNotExist:
             return Response({'Error': 'El año especificado no existe.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Crear un diccionario mutable a partir de request.data
-        data = request.data.copy()
-        data['year'] = year
-
-        # Crear el curso si el año existe
-        serializer = CourseSerializer(data=data)
+        serializer = CreateCourseSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -178,6 +169,11 @@ class CourseRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
     
+    def get_serializer_class(self):
+        if self.request.method == 'PUT':
+            return CreateCourseSerializer
+        return super().get_serializer_class()
+
     def delete(self, request, *args, **kwargs):
         response = super().delete(request, *args, **kwargs)
         return Response({'Deleted': 'El curso ha sido eliminado'}, status=status.HTTP_204_NO_CONTENT)
