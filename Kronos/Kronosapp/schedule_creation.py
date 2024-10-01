@@ -2,7 +2,7 @@ import time
 import pulp
 
 from .  utils import convert_binary_to_image
-from .models import TeacherSubjectSchool, TeacherAvailability, Course, Module
+from .models import TeacherSubjectSchool, TeacherAvailability, Course, Module, Schedules
 
 
 
