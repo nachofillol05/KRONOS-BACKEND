@@ -214,7 +214,7 @@ class Schedules(models.Model):
     date = models.DateTimeField()
     action = models.ForeignKey(Action, null=True, on_delete=models.SET_NULL)
     module = models.ForeignKey(Module, on_delete=models.CASCADE)
-    tssId = models.ForeignKey(TeacherSubjectSchool, on_delete=models.CASCADE)
+    tssId = models.ForeignKey(TeacherSubjectSchool, on_delete=models.CASCADE, blank=True, null=True)
 
     def __str__(self) -> str:
         return f"{self.date} - {self.action} - {self.module}"

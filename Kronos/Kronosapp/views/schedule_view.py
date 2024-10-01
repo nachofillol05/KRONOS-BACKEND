@@ -209,21 +209,31 @@ class SubjectPerModuleView(generics.ListAPIView):
                 {'error': 'El módulo o el curso no existen.'}, 
                 status=status.HTTP_404_NOT_FOUND
             )
-
+        # VALIDACION CANTIDAD DE HORAS
         validate_course_subjects = []
         for course_subject in course_subjects:
             weeklyHours = Schedules.objects.filter(tssId__coursesubjects=course_subject).count()
             if weeklyHours < course_subject.weeklyHours:
                 validate_course_subjects.append(course_subject)
-                
-        available_subjects = []
+        # VALIDACION PROFESOR DISPONIBLE
+        available_coursesubjects = []
         for course_subject in validate_course_subjects:
             teacher_subject_school = TeacherSubjectSchool.objects.filter(coursesubjects=course_subject).first()
             if teacher_subject_school:
                 teacher = teacher_subject_school.teacher
-
                 if TeacherAvailability.objects.filter(teacher=teacher, module=module, availabilityState__isEnabled=True).exists():
-                    available_subjects.append(course_subject.subject)
+                    available_coursesubjects.append(course_subject)
+
+        # VALIDAR SI EL PROFESOR YA ESTA ASIGNADO EN ESE MODULO
+        available_subjects = []
+        for available_subject in available_coursesubjects:
+
+            teacher_subject_school = TeacherSubjectSchool.objects.filter(coursesubjects=available_subject).first()
+
+            schedules_with_same_module = Schedules.objects.filter(module=module, tssId__school=self.request.school, tssId__teacher=teacher_subject_school.teacher)
+
+            if not schedules_with_same_module.exists():
+                available_subjects.append(available_subject.subject)
 
         return Subject.objects.filter(id__in=[subject.id for subject in available_subjects])
     
@@ -295,4 +305,3 @@ class SubjectPerModuleView(generics.ListAPIView):
 
 
         return Response(schedule_dict, status=status.HTTP_201_CREATED)
-    
