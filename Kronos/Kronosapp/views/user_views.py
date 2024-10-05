@@ -115,7 +115,7 @@ class ChangePasswordView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         current_password = request.data.get("current_password")
         new_password = request.data.get("new_password")
 
@@ -126,12 +126,12 @@ class ChangePasswordView(APIView):
         
         user = request.user
         if not user.check_password(current_password):
-            return Response({'error': 'La contraseña actual es incorrecta.'})
+            return Response({'error': 'La contraseña actual es incorrecta.'}, status=status.HTTP_401_UNAUTHORIZED)
         
         try:
             password_validation.validate_password(new_password, user)
-        except ValidationErrorDjango:
-            return Response({"error": "Contraseña invaida"}, status=status.HTTP_400_BAD_REQUEST)
+        except ValidationErrorDjango as error:
+            return Response({"detail": "Contraseña invalida", "error": error}, status=status.HTTP_400_BAD_REQUEST)
         
         user.set_password(new_password)
         user.save()
