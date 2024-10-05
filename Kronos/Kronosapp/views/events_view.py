@@ -72,7 +72,7 @@ class EventListCreate(generics.ListCreateAPIView):
             except ValueError:
                     raise ValidationError("Los roles proporcionados no existen.")
                 
-        return queryset
+        return queryset.distinct()
     
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
