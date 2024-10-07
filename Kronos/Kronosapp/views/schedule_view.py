@@ -190,7 +190,8 @@ class ViewTeacherSchedule(generics.ListAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader]
     serializer_class = ScheduleSerializer
     def get(self, request):
-        teacher_id = self.request.query_params.get('teacher_id')
+        teacher_id = self.request.user.pk
+
         with connection.cursor() as cursor:
                 sql_query = """
                     SELECT *
@@ -247,9 +248,9 @@ class ViewTeacherSchedule(generics.ListAPIView):
                         "subject_id": row[7],
                         "course_name": row[8],
                         "day": row[9],
-                        "moduleNumber": row[11],
-                        "subject_name": row[12],
-                        "school_name": row[13]
+                        "moduleNumber": row[10],
+                        "subject_name": row[11],
+                        "school_name": row[12]
                     })
 
         return Response(data)
