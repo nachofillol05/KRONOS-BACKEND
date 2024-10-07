@@ -13,15 +13,22 @@ from django.http import HttpResponse
 
 user = get_user_model()
 
-def send_email(receiver, subject, message, sender="proyecto.villada.solidario@gmail.com"):
+def send_email(receivers, subject, message, sender="proyecto.villada.solidario@gmail.com"):
     email = EmailMessage()
     email["From"] = sender
-    email["To"] = receiver
+    if isinstance(receivers, list):
+        email["To"] = ", ".join(receivers)
+    else:
+        email["To"] = receivers
+    
     email["Subject"] = subject
     email.set_content(message)
+    
     smtp = smtplib.SMTP_SSL("smtp.gmail.com")
     smtp.login(sender, "bptf tqtv hjsb zfpl")
-    smtp.sendmail(sender, receiver, email.as_string())
+    
+    smtp.sendmail(sender, receivers if isinstance(receivers, list) else [receivers], email.as_string())
+    
     smtp.quit()
 
 def register_user(request, data):
