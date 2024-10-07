@@ -50,7 +50,7 @@ def register_user(request, data):
     verification_url = f"http://localhost:3000/mailverificado/{user.verification_token}"
     SUBJECT = "Verifica tu correo electrónico"
     MESSAGE = 'Haz clic en el enlace para verificar tu correo electrónico: ' + verification_url
-    send_email(receiver=user.email, subject=SUBJECT, message=MESSAGE)
+    send_email(receivers=user.email, subject=SUBJECT, message=MESSAGE)
     return True, serializer.data
 
 
