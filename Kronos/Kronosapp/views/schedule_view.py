@@ -186,6 +186,75 @@ class ViewSchedule(generics.ListAPIView):
                 data = [row for row in data if row["course_id"] in course_ids]
         return Response(data)
 
+class ViewTeacherSchedule(generics.ListAPIView):
+    permission_classes = [IsAuthenticated, SchoolHeader]
+    serializer_class = ScheduleSerializer
+    def get(self, request):
+        teacher_id = self.request.query_params.get('teacher_id')
+        with connection.cursor() as cursor:
+                sql_query = """
+                    SELECT *
+                    FROM (
+                        SELECT sh.id as id,
+                            sh.date,
+                            sh.module_id,
+                            cs.course_id as course_id,
+                            tss.teacher_id as teacher_id,
+                            s.abbreviation,
+                            s.color,
+                            cs.subject_id,
+                            c.name as course_name,
+                            m.day as day,
+                            m.moduleNumber,
+                            s.name as subject_name,
+                            sc.name,
+                            RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
+                        FROM Kronosapp_schedules sh
+                        INNER JOIN Kronosapp_module m 
+                                ON sh.module_id = m.id
+                        INNER JOIN Kronosapp_teachersubjectschool tss
+                            ON sh.tssId_id = tss.id
+                        INNER JOIN Kronosapp_school sc
+                                ON tss.school_id = sc.id
+                        INNER JOIN Kronosapp_coursesubjects cs
+                            ON tss.coursesubjects_id = cs.id
+                        INNER JOIN Kronosapp_customuser t
+                            ON tss.teacher_id = t.id
+                        INNER JOIN Kronosapp_subject s
+                            ON cs.subject_id = s.id
+                        INNER JOIN Kronosapp_course c 
+                                ON cs.course_id = c.id
+                        WHERE DATE(sh.`date`) <= %s
+                        AND t.id = %s
+                    ) as t
+                    WHERE t.RN = 1
+                    ORDER BY course_id, module_id
+                """
+                cursor.execute(sql_query, [datetime.now(), teacher_id])
+                results = cursor.fetchall()
+
+                from ..utils import convert_binary_to_image
+                data = []
+                for row in results:
+                    data.append({
+                        "id": row[0],
+                        "date": row[1],
+                        "module_id": row[2],
+                        "course_id": row[3],
+                        "teacher_id": row[4],
+                        "subject_abreviation": row[5],
+                        "subject_color": row[6],
+                        "subject_id": row[7],
+                        "course_name": row[8],
+                        "day": row[9],
+                        "moduleNumber": row[11],
+                        "subject_name": row[12],
+                        "school_name": row[13]
+                    })
+
+        return Response(data)
+
+
 
 class SubjectPerModuleView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]

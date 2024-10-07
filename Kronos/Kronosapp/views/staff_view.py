@@ -31,6 +31,7 @@ from ..serializers.user_serializer import UserSerializer
 from ..serializers.year_serializer import YearSerializer
 from ..serializers.teacherSubSchool_serializer import TeacherSubjectSchoolSerializer
 from ..serializers.teacherAvailability_serializer import TeacherAvailabilitySerializer, AvailabilityStateSerializer
+from ..utils import send_email
 
 
 
@@ -243,26 +244,20 @@ class PreceptorsView(APIView):
 
 class ContactarPersonal(generics.GenericAPIView):
     def post(self, request):
-        remitente = "proyecto.villada.solidario@gmail.com"
-        destinatario = request.data.get('email')
-        titulo = request.data.get('asunto')
-        contenido = request.data.get('contenido')
+        subject = request.data.get('asunto')
+        message = request.data.get('contenido')
+        recivers = request.data.getlist('teacher_mail')
+
+        if not recivers:
+            return Response({'detail': 'recivers are required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        mensaje = EmailMessage()
-        mensaje["From"] = remitente
-        mensaje["To"] = destinatario
-        mensaje["Subject"] = titulo
-        mensaje.set_content(contenido)
+        if not subject or not message:
+            return Response({'detail': 'subject and message are required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        try:
-            smtp = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-            smtp.login(remitente, "bptf tqtv hjsb zfpl")
-            smtp.send_message(mensaje)
-            smtp.quit()
-            return Response({"message": "Correo enviado correctamente"}, status=status.HTTP_200_OK)
-        except smtplib.SMTPException as e:
-            return Response({"message": "Error al enviar el correo electrónico"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-          
+        send_email(recivers, subject, message)
+        return Response({'detail': 'Email enviado correctamente'}, status=status.HTTP_200_OK)
+
+     
 
 class TeacherSubjectSchoolListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
