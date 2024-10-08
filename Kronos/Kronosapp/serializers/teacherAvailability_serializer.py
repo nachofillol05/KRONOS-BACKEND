@@ -37,11 +37,13 @@ class TeacherAvailabilitySerializer(serializers.ModelSerializer):
             'loadDate': {'read_only': True},
             'availabilityState': {'required': True},
         }
-    
+
     def validate(self, data):
         teacher = data.get('teacher')
         module = data.get('module')
 
-        if TeacherAvailability.objects.filter(teacher=teacher, module=module).exists():
+        # Corregido: Excluir el registro actual en la validación de duplicados
+        instance_id = self.instance.pk if self.instance else None
+        if TeacherAvailability.objects.filter(teacher=teacher, module=module).exclude(pk=instance_id).exists():
             raise serializers.ValidationError({"module_id": "El módulo ya está en uso por el usuario."})
         return data
