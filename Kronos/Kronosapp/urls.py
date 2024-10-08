@@ -30,7 +30,8 @@ from .views.staff_view import (
     TeacherAvailabilityListCreateView,
     TeacherAvailabilityDetailView,
     AvailabilityStateView,
-    DirectivesView
+    DirectivesView,
+    SchoolRolesView
 )
 from .views.school_view import (
     CourseListCreate,
@@ -104,6 +105,7 @@ urlpatterns = [
     path('teachers/', TeacherListView.as_view(), name='get_teachers'),
     path('create_teacher/', DniComprobation.as_view(), name='Comprobation_DNI'),
     path('teacher_word/', ExcelToteacher.as_view(), name='teacher_word'),
+    path('addrole/', SchoolRolesView.as_view(), name='add_role'),
     # Event
     path('events/', EventListCreate.as_view(), name='event-list-create'),
     path('events/<int:pk>/', EventRetrieveUpdateDestroy.as_view(), name='event-detail'),

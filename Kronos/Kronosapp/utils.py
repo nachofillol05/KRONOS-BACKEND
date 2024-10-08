@@ -37,14 +37,7 @@ def register_user(request, data):
         return False, serializer.errors
     user = serializer.save()
 
-    data = {
-        'teacher': user.pk,
-        'school': request.school.pk
-    }
-    serializerschool = RegisterTeacherSubjectSchoolSerializer(data=data)
-    if not serializerschool.is_valid():
-        return False, serializerschool.errors
-    serializerschool.save()
+
 
 
     verification_url = f"http://localhost:3000/mailverificado/{user.verification_token}"
