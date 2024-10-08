@@ -17,6 +17,7 @@ class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
         fields = ['id', 'teacher_name','teacher_id']
 
 class CourseSerializer(serializers.ModelSerializer):
+    idCourse = serializers.IntegerField(source='course.id')
     name = serializers.CharField(source='course.name')
     description = serializers.CharField(source='course.description')
     year = serializers.CharField(source='course.year')
@@ -24,7 +25,7 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CourseSubjects
-        fields = ['id', 'name', 'description', 'year', 'studyPlan', 'teacher_subject_schools']
+        fields = ['id', 'name', 'description', 'year', 'studyPlan', 'teacher_subject_schools','idCourse']
 
 class SubjectWithCoursesSerializer(serializers.ModelSerializer):
     courses = CourseSerializer(source='coursesubjects_set', many=True)

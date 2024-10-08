@@ -247,16 +247,26 @@ class ContactarPersonal(generics.GenericAPIView):
     def post(self, request):
         subject = request.data.get('asunto')
         message = request.data.get('contenido')
-        recivers = request.data.getlist('teacher_mail')
+        recivers = request.data.get('teacher_mail')  # Usamos get en lugar de getlist
 
         if not recivers:
-            return Response({'detail': 'recivers are required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'teacher_mail is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         if not subject or not message:
             return Response({'detail': 'subject and message are required'}, status=status.HTTP_400_BAD_REQUEST)
         
+        # Si solo es un string (un solo correo), lo convertimos en una lista
+        if isinstance(recivers, str):
+            recivers = [recivers]
+
+        # Asegurarse de que recivers sea una lista
+        if not isinstance(recivers, list):
+            return Response({'detail': 'teacher_mail must be a string or a list of emails'}, status=status.HTTP_400_BAD_REQUEST)
+        
         send_email(recivers, subject, message)
         return Response({'detail': 'Email enviado correctamente'}, status=status.HTTP_200_OK)
+
+
 
      
 
