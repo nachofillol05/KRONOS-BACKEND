@@ -344,8 +344,48 @@ class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
     def get_serializer(self, *args, **kwargs):
         if self.request.method == 'GET':
             return super().get_serializer(*args, **kwargs)
-        kwargs['data']['teacher'] = self.request.user.pk
+        
+        if isinstance(kwargs.get('data'), list):
+            kwargs['many'] = True
         return super().get_serializer(*args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        
+        # Verifica si es una lista o un solo objeto
+        if isinstance(data, list):
+            print("toma la lista")
+            for item in data:
+                item['teacher'] = request.user.pk
+        else:
+            data['teacher'] = request.user.pk
+
+        # Si es una lista, se procesa cada uno
+        if isinstance(data, list):
+            response_data = []
+            for item in data:
+                # Busca si ya existe una entrada para el mismo teacher y module
+                teacher = request.user
+                module_id = item.get('module_id')
+                existing_record = TeacherAvailability.objects.filter(teacher=teacher, module_id=module_id).first()
+
+                if existing_record:
+                    print("ACTUALIZA")
+                    serializer = self.get_serializer(existing_record, data=item, partial=True)
+                else:
+                    print("CREA UNO NUEVO")
+                    serializer = self.get_serializer(data=item)
+                
+                serializer.is_valid(raise_exception=True)
+                self.perform_create(serializer)
+                response_data.append(serializer.data)
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
+        else:
+            print("no toma la lista")
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
 
     
 class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
