@@ -31,6 +31,7 @@ from ..serializers.user_serializer import UserSerializer
 from ..serializers.year_serializer import YearSerializer
 from ..serializers.teacherSubSchool_serializer import TeacherSubjectSchoolSerializer
 from ..serializers.teacherAvailability_serializer import TeacherAvailabilitySerializer, AvailabilityStateSerializer
+from ..serializers.auth_serializer import RegisterTeacherSubjectSchoolSerializer
 from ..utils import send_email
 
 
@@ -561,3 +562,93 @@ class SchoolStaffAPIView(APIView):
                 user_roles.append(user_dict) 
 
         return user_roles
+    
+class SchoolRolesView(APIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    serializarizer_class = RegisterTeacherSubjectSchoolSerializer
+
+    def post(self, request):
+        rol = request.data.get('role')
+        user = request.data.get('user_id')
+        year = request.data.get('year_id')
+
+        if not rol:
+            return Response({'detail': 'rol is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not user:
+            return Response({'detail': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if rol == 'Profesor':
+            data = {
+                'teacher': user,
+                'school': request.school.pk
+            }
+            serializerschool = RegisterTeacherSubjectSchoolSerializer(data=data)
+            if not serializerschool.is_valid():
+                return Response(serializerschool.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializerschool.save()
+            return Response(serializerschool.data, status=status.HTTP_201_CREATED)
+
+        if rol == 'Preceptor':
+            if not year:
+                return Response({'detail': 'year is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                year_instance = Year.objects.get(pk=year)
+            except Year.DoesNotExist:
+                return Response({'detail': 'Year does not exist'}, status=status.HTTP_404_NOT_FOUND)
+            if year_instance.school != request.school:
+                return Response({'detail': 'Year not recognized at school'}, status=status.HTTP_400_BAD_REQUEST)
+
+            year_instance.preceptors.add(user)
+            year_instance.save()
+
+            return Response(f'user id: {user} asignado como preceptor de {year_instance}', status=status.HTTP_200_OK)
+
+        if rol == 'Directivo':
+            school = request.school
+            school.directives.add(user)
+            return Response(f'user id: {user} asignado como directivo', status=status.HTTP_200_OK)
+        
+        return Response({'detail': 'Role not recognized'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    def delete(self, request):
+        
+        rol = request.data.get('role')
+        user = request.data.get('user_id')
+        year = request.data.get('year_id')
+
+        if not rol:
+            return Response({'detail': 'rol is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not user:
+            return Response({'detail': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if rol == 'Preceptor':
+            if not year:
+                return Response({'detail': 'year is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            year_instance = Year.objects.get(pk=year)
+            if year_instance.school != request.school:
+                return Response({'detail': 'Year not recognized at school'}, status=status.HTTP_400_BAD_REQUEST)
+
+            year_instance.preceptors.remove(user)
+            year_instance.save()
+
+            return Response(f'user id: {user} removido como preceptor de {year_instance}', status=status.HTTP_200_OK)
+        
+        elif rol == 'Directivo':
+            school = request.school
+            school.directives.remove(user)
+            return Response(f'user id: {user} removido como directivo', status=status.HTTP_200_OK)
+        
+        elif rol == 'Profesor':
+            try:
+                teacher_subject_school = TeacherSubjectSchool.objects.get(teacher=user, school=request.school)
+            except:
+                return Response({'detail': 'Este Usuario no pertece a la escuela'}, status=status.HTTP_400_BAD_REQUEST)
+            teacher_subject_school.delete()
+            return Response(f'user id: {user} removido como profesor', status=status.HTTP_200_OK)
+        
+        else:
+            return Response({'detail': 'Role not recognized'}, status=status.HTTP_400_BAD_REQUEST)
