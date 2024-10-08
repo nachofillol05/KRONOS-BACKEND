@@ -25,7 +25,7 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CourseSubjects
-        fields = ['id', 'name', 'description', 'year', 'studyPlan', 'teacher_subject_schools','idCourse']
+        fields = ['id', 'name', 'description', 'year', 'weeklyHours', 'studyPlan', 'teacher_subject_schools','idCourse', ]
 
 class SubjectWithCoursesSerializer(serializers.ModelSerializer):
     courses = CourseSerializer(source='coursesubjects_set', many=True)
