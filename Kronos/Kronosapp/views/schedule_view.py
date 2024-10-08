@@ -208,6 +208,7 @@ class ViewTeacherSchedule(generics.ListAPIView):
                             m.day as day,
                             m.moduleNumber,
                             s.name as subject_name,
+                            sc.logo,
                             sc.name,
                             RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
                         FROM Kronosapp_schedules sh
@@ -250,7 +251,8 @@ class ViewTeacherSchedule(generics.ListAPIView):
                         "day": row[9],
                         "moduleNumber": row[10],
                         "subject_name": row[11],
-                        "school_name": row[12]
+                        "logo": convert_binary_to_image(row[12]) if row[12] else None,
+                        "school_name": row[13]
                     })
 
         return Response(data)
