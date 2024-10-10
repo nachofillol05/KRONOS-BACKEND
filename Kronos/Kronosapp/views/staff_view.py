@@ -556,10 +556,11 @@ class SchoolStaffAPIView(APIView):
                 user_dict['teacher_availability'] = teacher_availability
             if user.is_preceptor(school):
                 roles.append('Preceptor')
-
+    
             if roles:
                 user_dict["roles"] = roles
-                user_roles.append(user_dict) 
+                if user.document != '11111111':
+                    user_roles.append(user_dict) 
 
         return user_roles
     

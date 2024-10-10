@@ -85,15 +85,15 @@ def call_free_teacher():
     except:
         try:
             document_type = DocumentType.objects.get(name="DNI")
-        except:
+        except DocumentType.DoesNotExist:
             return Response({"error": "El tipo de documento DNI no fue encontrado."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         try:
             nationality = Nationality.objects.get(name="Argentina")
-        except:
+        except Nationality.DoesNotExist:
             return Response({"error": "El pais Argentina no fue encontrado."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         try: 
             contact_info = ContactInformation.objects.get(street="ProfesorLibre") 
-        except:
+        except ContactInformation.DoesNotExist:
             contact_info = ContactInformation.objects.create(
                 postalCode = 111,
                 street = "ProfesorLibre",
