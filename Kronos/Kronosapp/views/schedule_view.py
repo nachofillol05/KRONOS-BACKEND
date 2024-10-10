@@ -7,7 +7,8 @@ from ..models import(
     Schedules,
     Action,
     CourseSubjects,
-    TeacherAvailability
+    TeacherAvailability,
+    Course
 )
 from django.core.cache import cache
 from django.db import connection
@@ -21,6 +22,7 @@ from datetime import datetime
 from ..schedule_creation import schedule_creation
 from ..serializers.Subject_serializer import SubjectWithCoursesSerializer
 from ..serializers.schedule_serializer import ScheduleSerializer, CreateScheduleSerializer  
+from ..utils import call_free_teacher,call_free_subject
 
 
 class CreateModuleSchedule(generics.CreateAPIView):
@@ -162,22 +164,23 @@ class ViewSchedule(generics.ListAPIView):
             from ..utils import convert_binary_to_image
             data = []
             for row in results:
-                data.append({
-                    "id": row[0],
-                    "date": row[1],
-                    "module_id": row[2],
-                    "course_id": row[3],
-                    "teacher_id": row[4],
-                    "nombre": row[5],
-                    "profile_picture": convert_binary_to_image(row[6]) if row[6] else None,
-                    "subject_abreviation": row[7],
-                    "subject_color": row[8],
-                    "subject_id": row[9],
-                    "course_name": row[10],
-                    "day": row[11],
-                    "moduleNumber": row[12],
-                    "subject_name": row[13]
-                })
+                if not row[13] == "freeSubject":
+                    data.append({
+                        "id": row[0],
+                        "date": row[1],
+                        "module_id": row[2],
+                        "course_id": row[3],
+                        "teacher_id": row[4],
+                        "nombre": row[5],
+                        "profile_picture": convert_binary_to_image(row[6]) if row[6] else None,
+                        "subject_abreviation": row[7],
+                        "subject_color": row[8],
+                        "subject_id": row[9],
+                        "course_name": row[10],
+                        "day": row[11],
+                        "moduleNumber": row[12],
+                        "subject_name": row[13]
+                    })
 
             if teacher_ids is not None:
                 data = [row for row in data if row["teacher_id"] in teacher_ids]
@@ -238,22 +241,23 @@ class ViewTeacherSchedule(generics.ListAPIView):
                 from ..utils import convert_binary_to_image
                 data = []
                 for row in results:
-                    data.append({
-                        "id": row[0],
-                        "date": row[1],
-                        "module_id": row[2],
-                        "course_id": row[3],
-                        "teacher_id": row[4],
-                        "subject_abreviation": row[5],
-                        "subject_color": row[6],
-                        "subject_id": row[7],
-                        "course_name": row[8],
-                        "day": row[9],
-                        "moduleNumber": row[10],
-                        "subject_name": row[11],
-                        "logo": convert_binary_to_image(row[12]) if row[12] else None,
-                        "school_name": row[13]
-                    })
+                    if not row[11] == "freeSubject":
+                        data.append({
+                            "id": row[0],
+                            "date": row[1],
+                            "module_id": row[2],
+                            "course_id": row[3],
+                            "teacher_id": row[4],
+                            "subject_abreviation": row[5],
+                            "subject_color": row[6],
+                            "subject_id": row[7],
+                            "course_name": row[8],
+                            "day": row[9],
+                            "moduleNumber": row[10],
+                            "subject_name": row[11],
+                            "logo": convert_binary_to_image(row[12]) if row[12] else None,
+                            "school_name": row[13]
+                        })
 
         return Response(data)
 
@@ -377,3 +381,44 @@ class SubjectPerModuleView(generics.ListAPIView):
 
 
         return Response(schedule_dict, status=status.HTTP_201_CREATED)
+
+    def delete(self, request):
+        module_id = self.request.query_params.get('module_id', None)
+        course_id = self.request.query_params.get('course_id', None)
+
+        if not module_id or not course_id:
+            return Response({"error": "Se necesita pasar el ID del curso y el ID del módulo."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        freesubject=call_free_subject(request.school)
+        freeTeacher=call_free_teacher()
+        try:
+            module = Module.objects.get(pk=module_id)
+        except Module.DoesNotExist:
+            print("NO EXISTE EL MODULO")
+            return Response({"error": "El modulo proporcionado no existe."}, status=status.HTTP_400_BAD_REQUEST)
+        try: 
+            course = Course.objects.get(pk=course_id)
+        except Course.DoesNotExist:
+            print("NO EXISTE EL CURSO")
+            return Response({"error": "El curso proporcionado no existe."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            course_subject = CourseSubjects.objects.get(course=course, subject=freesubject)
+        except:
+            course_subject = CourseSubjects.objects.create(course=course,subject=freesubject, weeklyHours=999, studyPlan= "")
+        try:
+            teacher_subject_school = TeacherSubjectSchool.objects.get(school=request.school, teacher=freeTeacher, coursesubjects=course_subject)
+        except TeacherSubjectSchool.DoesNotExist:
+            teacher_subject_school = TeacherSubjectSchool.objects.create(school=request.school, teacher=freeTeacher, coursesubjects=course_subject)
+
+        try:
+            print("ELIMINA EL SHEDULE")
+            schedule = Schedules.objects.create(
+                date = datetime.now(),
+                action = None,
+                module = module,
+                tssId = teacher_subject_school
+            )
+        except:
+            return Response({"error": "Error al eliminar el shedule."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response({"message": "Shedule deleted successfully."}, status=status.HTTP_201_CREATED)

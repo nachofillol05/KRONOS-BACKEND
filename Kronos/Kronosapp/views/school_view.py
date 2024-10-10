@@ -52,7 +52,8 @@ class SubjectListCreate(generics.ListCreateAPIView):
         name = request.query_params.get('name')
         school = self.request.school
         
-        queryset = Subject.objects.filter(school=school)
+        queryset = Subject.objects.filter(school=school).exclude(name="freeSubject")
+
         
         if start_time and end_time:
             queryset = queryset.filter(

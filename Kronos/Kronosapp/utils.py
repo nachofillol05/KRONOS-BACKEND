@@ -6,8 +6,10 @@ from .serializers.auth_serializer import RegisterSerializer, RegisterTeacherSubj
 from PIL import Image
 from io import BytesIO
 import base64
-from .models import CustomUser
+from .models import CustomUser, DocumentType, Nationality, ContactInformation, Subject
 from django.http import HttpResponse
+from rest_framework import generics, status
+from rest_framework.response import Response
 
 
 
@@ -76,3 +78,52 @@ def convert_binary_to_image(binary_data):
     image.save(buffered, format="PNG")
     image_base64 = base64.b64encode(buffered.getvalue()).decode()
     return f"data:image/jpeg;base64,{image_base64}"
+
+def call_free_teacher():
+    try:
+        freeTeacher = CustomUser.objects.get(document=11111111)
+    except:
+        try:
+            document_type = DocumentType.objects.get(name="DNI")
+        except:
+            return Response({"error": "El tipo de documento DNI no fue encontrado."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        try:
+            nationality = Nationality.objects.get(name="Argentina")
+        except:
+            return Response({"error": "El pais Argentina no fue encontrado."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        try: 
+            contact_info = ContactInformation.objects.get(street="ProfesorLibre") 
+        except:
+            contact_info = ContactInformation.objects.create(
+                postalCode = 111,
+                street = "ProfesorLibre",
+                streetNumber = 111,
+                city = "Córdoba",
+                province = "Córdoba"
+            )
+        freeTeacher = CustomUser.objects.create(
+            document = 11111111,
+            first_name = "Profesor",
+            last_name = "Libre",
+            gender = "Otro"   ,        
+            email = "profesorlibre@gmail.com",
+            hoursToWork = 999,
+            phone = 3511111111,
+            documentType = document_type,
+            nationality = nationality,
+            contactInfo =  contact_info,
+            email_verified = True
+        )
+    return freeTeacher
+
+def call_free_subject(school):
+    try:
+        freeSubject = Subject.objects.get(name = "freeSubject", school = school)
+    except Subject.DoesNotExist:
+        freeSubject = Subject.objects.create(
+            name = "freeSubject",
+            description = "A non-existent subject that is used when deleting a schedule",
+            abbreviation = "Free",
+            school = school
+        )
+    return freeSubject
