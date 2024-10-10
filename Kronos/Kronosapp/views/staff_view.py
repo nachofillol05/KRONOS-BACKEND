@@ -122,7 +122,7 @@ class TeacherListView(generics.ListAPIView):
         subject_id = request.GET.get('subject_id')
         search_name = request.GET.get('search_name')
 
-        queryset = TeacherSubjectSchool.objects.filter(school=request.school)
+        queryset = TeacherSubjectSchool.objects.filter(school=request.school).exclude(teacher__document=11111111)
         
         if subject_id:
             queryset = queryset.filter(coursesubjects__subject__id=subject_id).distinct()
@@ -556,10 +556,11 @@ class SchoolStaffAPIView(APIView):
                 user_dict['teacher_availability'] = teacher_availability
             if user.is_preceptor(school):
                 roles.append('Preceptor')
-
+    
             if roles:
                 user_dict["roles"] = roles
-                user_roles.append(user_dict) 
+                if user.document != '11111111':
+                    user_roles.append(user_dict) 
 
         return user_roles
     
