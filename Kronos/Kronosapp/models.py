@@ -53,11 +53,11 @@ class Nationality(models.Model):
 
 
 class ContactInformation(models.Model):
-    postalCode = models.CharField(max_length=20)
-    street = models.CharField(max_length=255)
-    streetNumber = models.CharField(max_length=10, validators=[validate_numeric])
-    city = models.CharField(max_length=255)
-    province = models.CharField(max_length=255)
+    postalCode = models.CharField(max_length=20, blank=True)
+    street = models.CharField(max_length=255, blank=True)
+    streetNumber = models.CharField(max_length=10, validators=[validate_numeric], blank=True)
+    city = models.CharField(max_length=255, blank=True)
+    province = models.CharField(max_length=255, blank=True)
 
     def __str__(self) -> str:
         return f"{self.street} {self.streetNumber}, {self.city}, {self.province}"

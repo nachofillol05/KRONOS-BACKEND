@@ -34,13 +34,19 @@ def send_email(receivers, subject, message, sender="proyecto.villada.solidario@g
     smtp.quit()
 
 def register_user(request, data):
+    contact_info_empty = {
+        "postalCode": "",
+        "street": "",
+        "streetNumber": "",
+        "city": "",
+        "province": ""
+    }
+    contact_info = ContactInformation.objects.create(**contact_info_empty)
+    data['contactInfo'] = contact_info.pk
     serializer = RegisterSerializer(data=data)
     if not serializer.is_valid():
         return False, serializer.errors
     user = serializer.save()
-
-
-
 
     verification_url = f"http://localhost:3000/mailverificado/{user.verification_token}"
     SUBJECT = "Verifica tu correo electrónico"
