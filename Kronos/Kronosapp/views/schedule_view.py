@@ -306,7 +306,7 @@ class SubjectPerModuleView(generics.ListAPIView):
 
             teacher_subject_school = TeacherSubjectSchool.objects.filter(coursesubjects=available_subject).first()
 
-            schedules_with_same_module = Schedules.objects.filter(module=module, tssId__school=self.request.school, tssId__teacher=teacher_subject_school.teacher)
+            schedules_with_same_module = Schedules.objects.filter(date=datetime.now() ,module=module, tssId__school=self.request.school, tssId__teacher=teacher_subject_school.teacher)
 
             if not schedules_with_same_module.exists():
                 available_subjects.append(available_subject.subject)
