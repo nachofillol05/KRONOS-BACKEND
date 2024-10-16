@@ -26,7 +26,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             'last_name',
             'documentType',
             'document',
-            'phone'
+            'phone',
+            'contactInfo'
         ]
         extra_kwargs = {
             'email': {'required': True},
@@ -36,6 +37,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             'documentType': {'required': True},
             'document': {'required': True},
             'phone': {'required': True},
+            'contactInfo': {'required': True},
         }
 
     def validate_password(self, value):
