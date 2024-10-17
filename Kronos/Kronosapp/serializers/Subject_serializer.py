@@ -28,11 +28,21 @@ class CourseSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'year', 'weeklyHours', 'studyPlan', 'teacher_subject_schools','idCourse', ]
 
 class SubjectWithCoursesSerializer(serializers.ModelSerializer):
-    courses = CourseSerializer(source='coursesubjects_set', many=True)
+    courses = serializers.SerializerMethodField()
 
     class Meta:
         model = Subject
         fields = ['id', 'name', 'description', 'color', 'abbreviation', 'courses']
+
+    def get_courses(self, obj):
+        teacher = self.context.get('teacher')
+        courses = obj.coursesubjects_set.all()
+
+        if teacher:
+            courses = courses.filter(teachersubjectschool__teacher__id=teacher)
+        
+        serializer = CourseSerializer(courses, many=True, context=self.context)
+        return serializer.data
 
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
