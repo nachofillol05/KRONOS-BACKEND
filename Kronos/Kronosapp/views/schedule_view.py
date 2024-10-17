@@ -288,9 +288,39 @@ class SubjectPerModuleView(generics.ListAPIView):
         # VALIDACION CANTIDAD DE HORAS
         validate_course_subjects = []
         for course_subject in course_subjects:
-            weeklyHours = Schedules.objects.filter(tssId__coursesubjects=course_subject).count()
+            with connection.cursor() as cursor:
+                sql_query = """
+                    SELECT COUNT(*)
+                    FROM (
+                        SELECT sh.id as id,
+                            sh.date,
+                            sh.module_id,
+                            cs.id AS course_subject,
+                            cs.course_id as course_id,
+                            cs.subject_id,
+                            RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
+                        FROM Kronosapp_schedules sh
+                        INNER JOIN Kronosapp_module m 
+                                ON sh.module_id = m.id
+                        INNER JOIN Kronosapp_teachersubjectschool tss
+                            ON sh.tssId_id = tss.id
+                        INNER JOIN Kronosapp_coursesubjects cs
+                            ON tss.coursesubjects_id = cs.id
+                    ) as t
+                    WHERE t.RN = 1
+                    AND (t.course_subject = %s);
+                    """
+                cursor.execute(sql_query, [course_subject.id])
+                weekly_hours_result = cursor.fetchone()
+                
+                if weekly_hours_result:
+                    weeklyHours = int(weekly_hours_result[0])
+                else:
+                    weeklyHours = 0
+
             if weeklyHours < course_subject.weeklyHours:
                 validate_course_subjects.append(course_subject)
+
         # VALIDACION PROFESOR DISPONIBLE
         available_coursesubjects = []
         for course_subject in validate_course_subjects:
@@ -306,9 +336,42 @@ class SubjectPerModuleView(generics.ListAPIView):
 
             teacher_subject_school = TeacherSubjectSchool.objects.filter(coursesubjects=available_subject).first()
 
-            schedules_with_same_module = Schedules.objects.filter(date=datetime.now() ,module=module, tssId__school=self.request.school, tssId__teacher=teacher_subject_school.teacher)
-
-            if not schedules_with_same_module.exists():
+            #schedules_with_same_module = Schedules.objects.filter(module=module, tssId__school=self.request.school, tssId__teacher=teacher_subject_school.teacher)
+            with connection.cursor() as cursor:
+                sql_query = """
+                    SELECT *
+                        FROM (
+                            SELECT sh.id as id,
+                                sh.date,
+                                sh.module_id,
+                                cs.course_id as course_id,
+                                t.id as t_id,
+                                RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
+                            FROM Kronosapp_schedules sh
+                            INNER JOIN Kronosapp_module m 
+                                    ON sh.module_id = m.id
+                            INNER JOIN Kronosapp_teachersubjectschool tss
+                                ON sh.tssId_id = tss.id
+                            INNER JOIN Kronosapp_school sc
+                                    ON tss.school_id = sc.id
+                            INNER JOIN Kronosapp_coursesubjects cs
+                                ON tss.coursesubjects_id = cs.id
+                            INNER JOIN Kronosapp_customuser t
+                                ON tss.teacher_id = t.id
+                            INNER JOIN Kronosapp_subject s
+                                ON cs.subject_id = s.id
+                            INNER JOIN Kronosapp_course c 
+                                    ON cs.course_id = c.id
+                            WHERE DATE(sh.`date`) <=  %s
+                            AND m.id = %s
+                        ) as t
+                        WHERE t.RN = 1
+                        ORDER BY course_id, module_id;
+                    """
+                cursor.execute(sql_query, [datetime.now(), module.id])
+                teachers_busy =  [row[4] for row in cursor.fetchall()]
+            
+            if teacher_subject_school.teacher.id not in teachers_busy:
                 available_subjects.append(available_subject.subject)
 
         return Subject.objects.filter(id__in=[subject.id for subject in available_subjects])
