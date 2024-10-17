@@ -74,7 +74,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
         if 'export' in request.GET and request.GET['export'] == 'excel':
             return self.export_to_excel(queryset)
 
-        serializer = SubjectWithCoursesSerializer(queryset, many=True)
+        serializer = SubjectWithCoursesSerializer(queryset, many=True, context={'teacher': teacher})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
