@@ -129,7 +129,7 @@ def schedule_creation(user_school):
     # Mostrar los errores de asignación
     subject_errors = []
     for subject, remaining_hours in unassigned_subjects.items():
-        if remaining_hours > 0:
+        if remaining_hours > 0 and "freeSubject" not in subject:
             subject_errors.append(f"La materia {subject} tiene {remaining_hours} horas sin asignar")
 
     # Crear la lista final de horarios
