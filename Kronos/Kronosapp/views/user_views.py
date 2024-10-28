@@ -6,6 +6,7 @@ from ..models import(
     Nationality
 )
 from django.contrib.auth import authenticate, login, password_validation
+from django.contrib.auth.password_validation import validate_password 
 from django.http import JsonResponse
 from django.urls import reverse
 from django.contrib.auth.hashers import make_password
@@ -88,29 +89,37 @@ class OlvideMiContrasenia(generics.GenericAPIView):
         message = 'Haz clic en el enlace para cambiar tu contrasenia: ' + verification_url 
 
         try:
-            send_email(message=message, subject=subject, receiver=user.email)
+            send_email(message=message, subject=subject, receivers=user.email)
         except smtplib.SMTPException as e:
             return {"error": "Error al enviar correo"}
 
-        return Response('Correo enviado con exito', status=200)
+        return Response({'messaje': 'Correo enviado con exito'}, status=200)
 
-def reset_password(request, token):
-    try:
-        user = CustomUser.objects.get(verification_token=token)
+
+class ResetPasswordView(APIView):
+
+    def post(self, request, token):
+        try:
+            user = CustomUser.objects.get(verification_token=token)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "Token de verificación no válido"}, status=404)
 
         if not user.email_verified:
             return Response({"error": "Email no verificado"}, status=400)
-
+        
         new_password = request.data.get('new_password')
         if not new_password:
-            return Response({"error": "Debe pasar una nueva contraseña"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Debe pasar un field 'new_password'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_password(new_password)
+        except ValidationErrorDjango as e:
+            return Response({"error": e.messages}, status=status.HTTP_400_BAD_REQUEST)
 
         user.password = make_password(new_password)
         user.save()
-        return Response({'result': 'Contraseña cambiada'}, status=200)    
-            
-    except CustomUser.DoesNotExist:
-        return Response({"error": "Token de verificación no válido"}, status=404)
+
+        return Response({'result': 'Contraseña cambiada'}, status=200)
     
 
 class ChangePasswordView(APIView):
