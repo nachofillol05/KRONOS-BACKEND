@@ -12,7 +12,7 @@ from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError as ValidationErrorDjango
 from django.db import connection
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from ..permissions import SchoolHeader, IsDirectiveOrOnlyRead
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import generics, status
@@ -68,6 +68,8 @@ class VerifiedView(generics.GenericAPIView):
     
 
 class OlvideMiContrasenia(generics.GenericAPIView):
+    permission_classes = [AllowAny] 
+
     def post(self, request):
         email = request.data.get('email')
         
