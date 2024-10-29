@@ -79,14 +79,18 @@ class OlvideMiContrasenia(generics.GenericAPIView):
         except CustomUser.DoesNotExist:
             return Response({"error": "email no reconocido no válido"}, status=404)
         
-        subject = 'Restablecer contraseña'
+        """subject = 'Restablecer contraseña'
         verification_url = request.build_absolute_uri(
             reverse('forgot-password', args=[str(user.verification_token)])
         )
-        message = 'Haz clic en el enlace para cambiar tu contrasenia: ' + verification_url 
+        message = 'Haz clic en el enlace para cambiar tu contrasenia: ' + verification_url """
+
+        verification_url = f"http://localhost:3000/recuperarContrasenia/{user.verification_token}"
+        subject = "Verifica tu correo electrónico"
+        message = 'Haz clic para recuperar la contraseña: ' + verification_url
 
         try:
-            send_email(message=message, subject=subject, receiver=user.email)
+            send_email(message=message, subject=subject, receivers=user.email)
         except smtplib.SMTPException as e:
             return {"error": "Error al enviar correo"}
 
