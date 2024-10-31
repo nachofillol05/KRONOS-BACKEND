@@ -382,6 +382,7 @@ class Command(BaseCommand):
         # Crear estados de disponibilidad
         available = AvailabilityState.objects.create(name='Disponible', isEnabled=True)
         not_available = AvailabilityState.objects.create(name='No Disponible', isEnabled=False)
+        asigned = AvailabilityState.objects.create(name='Asignado', isEnabled=False)
 
         # Crear disponibilidad de profesor en Jesús María
         for j, teacher in enumerate(teacherJM):
@@ -589,6 +590,7 @@ class Command(BaseCommand):
         event_type3 = EventType.objects.create(name='Paro docente', description='Paro de docentes')
         event_type4 = EventType.objects.create(name='Taller Docente', description='Dictado de taller docente')
         event_type5 = EventType.objects.create(name='Mantenimiento Infraestructura', description='realizacion de mantenimiento en el instituto')
+        event_type = EventType.objects.create(name='Otro', description='Otro tipo de evento')
         
         # Crear roles
         directive_role = Role.objects.create(name='Directivo')

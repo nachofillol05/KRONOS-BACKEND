@@ -8,7 +8,8 @@ from ..models import(
     Action,
     CourseSubjects,
     TeacherAvailability,
-    Course
+    Course,
+    AvailabilityState,
 )
 from django.core.cache import cache
 from django.db import connection
@@ -420,6 +421,8 @@ class SubjectPerModuleView(generics.ListAPIView):
                 module=module,
                 tssId=teacher_subject_school
             )
+
+            
             teacher: CustomUser = schedule.tssId.teacher
             subject: Subject = schedule.tssId.coursesubjects.subject
             course: Course = schedule.tssId.coursesubjects.course
@@ -442,6 +445,11 @@ class SubjectPerModuleView(generics.ListAPIView):
                 "subject_name": subject.name
             }
 
+            state = AvailabilityState.objects.get(name="Asignado")
+            availability = TeacherAvailability.objects.get(module=module, teacher=teacher_subject_school.teacher)
+            availability.availabilityState = state
+            availability.loadDate = datetime.now()  
+            availability.save() 
 
         return Response(schedule_dict, status=status.HTTP_201_CREATED)
 
@@ -449,6 +457,36 @@ class SubjectPerModuleView(generics.ListAPIView):
         module_id = self.request.query_params.get('module_id', None)
         course_id = self.request.query_params.get('course_id', None)
 
+        with connection.cursor() as cursor:
+                sql_query = """
+                    SELECT *
+                        FROM (
+                            SELECT sh.id as id,
+                                sh.date,
+                                sh.module_id,
+                                cs.id AS course_subject,
+                                cs.course_id as course_id,
+                                tss.teacher_id AS teacher_id,
+                                RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
+                            FROM Kronosapp_schedules sh
+                            INNER JOIN Kronosapp_module m 
+                                    ON sh.module_id = m.id
+                            INNER JOIN Kronosapp_teachersubjectschool tss
+                                ON sh.tssId_id = tss.id
+                            INNER JOIN Kronosapp_coursesubjects cs
+                                ON tss.coursesubjects_id = cs.id
+                        ) as t
+                        WHERE t.RN = 1
+                        AND module_id = %s
+                        AND course_id = %s;
+                    """
+                cursor.execute(sql_query, [module_id, course_id])
+                old_teacher =  [row[5] for row in cursor.fetchall()]
+                teacher = int(old_teacher[0])
+
+        
+        print(old_teacher)
+        
         if not module_id or not course_id:
             return Response({"error": "Se necesita pasar el ID del curso y el ID del módulo."}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -483,5 +521,14 @@ class SubjectPerModuleView(generics.ListAPIView):
             )
         except:
             return Response({"error": "Error al eliminar el shedule."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+        if teacher:
+            state = AvailabilityState.objects.get(name="Disponible")
+            try:
+                availability = TeacherAvailability.objects.get(teacher=teacher, module_id=module_id)
+            except TeacherAvailability.DoesNotExist:
+                print("NO EXISTE LA DISPONIBILIDAD DEL PROFESOR")
+                return Response({"error": "No se encontro la disponibilidad del profesor."}, status=status.HTTP_404_NOT_FOUND)
+            availability.availabilityState = state
+            availability.loadDate = datetime.now()
+            availability.save()
         return Response({"message": "Shedule deleted successfully."}, status=status.HTTP_201_CREATED)
