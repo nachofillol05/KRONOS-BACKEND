@@ -2,6 +2,10 @@ from ..models import(
     EventType,
     Event,
     Role,
+    TeacherSubjectSchool,
+    Year,
+    School,
+    CustomUser
 )
 from django.db.models import Case, When, IntegerField
 from rest_framework.views import APIView
@@ -14,6 +18,7 @@ from rest_framework.exceptions import ValidationError
 from datetime import datetime
 from ..serializers.event_serializer import EventSerializer, EventTypeSerializer, CreateEventSerializer
 from ..serializers.roles_serializer import RoleSerializer
+from ..utils import send_email
 
 
 
@@ -88,6 +93,31 @@ class EventListCreate(generics.ListCreateAPIView):
             data = self.request.data
             data['school'] = self.request.school.pk
             kwargs['data'] = data
+            users_reivers = []
+            for role in data['roles']:
+                if role == 1:
+                    directives = School.objects.filter(pk=data['school']).values('directives').distinct()
+                    for directive in directives:
+                        dir = CustomUser.objects.get(pk=directive['directives']).email
+                        users_reivers.append(dir)
+                if role == 2:
+                    tss = TeacherSubjectSchool.objects.filter(school= data['school']).values('teacher').distinct()
+                    for tss in tss:
+                        teacher = CustomUser.objects.get(pk=tss['teacher'])
+                        users_reivers.append(teacher.email)
+                if role == 3:
+                    preceptors = Year.objects.filter(school=data['school']).values('preceptors').distinct()
+                    for preceptor in preceptors:
+                        pre = CustomUser.objects.get(pk=preceptor['preceptors']).email
+                        users_reivers.append(pre)
+
+            if users_reivers:       
+                send_email(receivers=users_reivers, 
+                           subject= str(data['school'])+" publico un nuevo Evento", 
+                           message= data['name']+
+                                    '\nDel dia: ' + data['startDate'] + ' hasta el dia: ' + data['endDate'] +
+                                    '\nDescripción: '+ data['description'] +
+                                    '\nEntrar en la pagina del colegio para confirmar la adherencia al evento')
         return super().get_serializer(*args, **kwargs)
     
     def get_serializer_class(self):
