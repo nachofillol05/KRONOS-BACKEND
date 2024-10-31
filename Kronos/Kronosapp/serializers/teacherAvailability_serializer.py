@@ -47,3 +47,13 @@ class TeacherAvailabilitySerializer(serializers.ModelSerializer):
         if TeacherAvailability.objects.filter(teacher=teacher, module=module).exclude(pk=instance_id).exists():
             raise serializers.ValidationError({"module_id": "El módulo ya está en uso por el usuario."})
         return data
+    
+    def validate_module(self, module: Module):
+        request = self.context.get('request')
+        if request and hasattr(request, 'school'):
+            raise serializers.ValidationError("The request has not been passed to the serializer")
+        
+        if request.school != module.school:
+            raise serializers.ValidationError("El modulo no pertenece a la escuela")
+        
+        return module

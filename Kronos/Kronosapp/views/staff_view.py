@@ -351,41 +351,22 @@ class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
         return super().get_serializer(*args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        data = request.data
-        
-        # Verifica si es una lista o un solo objeto
-        if isinstance(data, list):
-            print("toma la lista")
-            for item in data:
-                item['teacher'] = request.user.pk
-        else:
-            data['teacher'] = request.user.pk
+        modules_data = request.data.get("modules", None)
 
-        # Si es una lista, se procesa cada uno
-        if isinstance(data, list):
-            response_data = []
-            for item in data:
-                # Busca si ya existe una entrada para el mismo teacher y module
-                teacher = request.user
-                module_id = item.get('module_id')
-                existing_record = TeacherAvailability.objects.filter(teacher=teacher, module_id=module_id).first()
+        if modules_data is None or not isinstance(modules_data, list):
+            return Response(
+                {"error": "Expected a JSON object with a 'modules' key containing a list of objects."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-                if existing_record:
-                    print("ACTUALIZA")
-                    serializer = self.get_serializer(existing_record, data=item, partial=True)
-                else:
-                    print("CREA UNO NUEVO")
-                    serializer = self.get_serializer(data=item)
-                
-                serializer.is_valid(raise_exception=True)
-                self.perform_create(serializer)
-                response_data.append(serializer.data)
+        if not modules_data:
+            return Response({"error": "Lista de modulos vacia"}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response(response_data, status=status.HTTP_201_CREATED)
-        else:
-            print("no toma la lista")
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        serializer = self.get_serializer(data=modules_data, many=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
 
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
     
