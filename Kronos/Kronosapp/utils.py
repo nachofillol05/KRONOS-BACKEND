@@ -30,7 +30,6 @@ def send_email(receivers, subject, message, sender="proyecto.villada.solidario@g
     smtp.login(sender, "bptf tqtv hjsb zfpl")
     
     smtp.sendmail(sender, receivers if isinstance(receivers, list) else [receivers], email.as_string())
-    
     smtp.quit()
 
 def register_user(request, data):
