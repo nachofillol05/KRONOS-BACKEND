@@ -196,6 +196,8 @@ class ViewTeacherSchedule(generics.ListAPIView):
     def get(self, request):
         teacher_id = self.request.user.pk
 
+        freeteacher = call_free_teacher()
+
         with connection.cursor() as cursor:
                 sql_query = """
                     SELECT *
@@ -231,12 +233,13 @@ class ViewTeacherSchedule(generics.ListAPIView):
                         INNER JOIN Kronosapp_course c 
                                 ON cs.course_id = c.id
                         WHERE DATE(sh.`date`) <= %s
-                        AND t.id = %s
+                        AND t.id = %s OR t.id = %s
                     ) as t
                     WHERE t.RN = 1
-                    ORDER BY course_id, module_id
+                    AND t.teacher_id = %s
+                    ORDER BY course_id, module_id	
                 """
-                cursor.execute(sql_query, [datetime.now(), teacher_id])
+                cursor.execute(sql_query, [datetime.now(), teacher_id, freeteacher, teacher_id])
                 results = cursor.fetchall()
 
                 from ..utils import convert_binary_to_image
