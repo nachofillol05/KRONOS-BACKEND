@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from ..models import CustomUser, ContactInformation, DocumentType, Nationality, TeacherSubjectSchool
 from ..utils import convert_binary_to_image, convert_image_to_binary
 
@@ -131,6 +132,7 @@ class UserWithRoleSerializer(UserSerializer):
         ]
 
 
+
 class ProfilePictureUpdateSerializer(serializers.ModelSerializer):
     profile_picture = serializers.ImageField(required=True)
 
@@ -138,10 +140,14 @@ class ProfilePictureUpdateSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['profile_picture']
 
+    def validate_profile_picture(self, value):
+        # Verificar el tipo de contenido del archivo
+        if value.content_type not in ['image/jpeg', 'image/png', 'image/jpg', 'image/webp']:
+            raise ValidationError("Solo esta permitido subir imagenes en formato jpeg, jpg, png o webp")
+        return value
+
     def update(self, instance, validated_data):
         imagen = validated_data.pop('profile_picture', None)
-        print(self.context['request'].data)
-        print(validated_data)
         if imagen:
             instance.profile_picture = convert_image_to_binary(imagen)
         return super().update(instance, validated_data)
