@@ -262,8 +262,14 @@ class ViewTeacherSchedule(generics.ListAPIView):
                             "logo": convert_binary_to_image(row[12]) if row[12] else None,
                             "school_name": row[13]
                         })
-
-        return Response(data)
+        if data:
+            return Response(data)
+        else:
+            return Response(
+                    {'error': "No se encontraron materias para el profesor"}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
 
 
 
