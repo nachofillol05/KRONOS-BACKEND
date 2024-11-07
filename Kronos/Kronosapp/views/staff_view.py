@@ -152,7 +152,6 @@ class DniComprobation(generics.GenericAPIView):
     def post(self, request):
             document = request.data.get('document')
             documentType = request.data.get('documentType')
-            print(document,documentType)
             user = CustomUser.objects.filter(documentType=documentType, document=document)
 
             if user.exists():
@@ -314,7 +313,7 @@ class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
 
         teacher_id = self.request.query_params.get('teacher_id')
         necessary_role = user.is_directive(school) or user.is_preceptor(school)
-        if teacher_id and necessary_role: 
+        if teacher_id and necessary_role:
             queryset = TeacherAvailability.objects.filter(
                 module__school=self.request.school,
                 teacher_id=teacher_id
@@ -335,7 +334,6 @@ class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
         ).order_by('weekday','module__startTime','module__moduleNumber')
         return queryset
        
-
     def filter_queryset(self, queryset):
        day = self.request.query_params.get('day')
        if day:
@@ -351,23 +349,54 @@ class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
         return super().get_serializer(*args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        modules_data = request.data.get("modules", None)
+        teacher_availability = request.data.get("teacher_availability", None)
 
-        if modules_data is None or not isinstance(modules_data, list):
+        if teacher_availability is None or not isinstance(teacher_availability, list):
             return Response(
-                {"error": "Expected a JSON object with a 'modules' key containing a list of objects."},
+                {"error": "Expected a JSON object with a 'teacher_availability' key containing a list of objects."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        if not modules_data:
-            return Response({"error": "Lista de modulos vacia"}, status=status.HTTP_400_BAD_REQUEST)
+        if not teacher_availability:
+            return Response(
+                {"error": "Lista de disponibilidad vacia"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        serializer = self.get_serializer(data=modules_data, many=True)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        responses = []
+        all_errors = {}
+        
+        for index, item in enumerate(teacher_availability):
+            serializer = TeacherAvailabilitySerializer(data=item, context={'request': request}, partial=False)
+            if serializer.is_valid():
+                # Si tiene pk, actualizar; si no, crear
+                if item.get('pk'):
+                    try:
+                        instance = TeacherAvailability.objects.get(pk=item['pk'])
+                        serializer.update(instance, serializer.validated_data)
+                        responses.append({"status": "updated", "pk": item['pk']})
+                    except TeacherAvailability.DoesNotExist:
+                        all_errors[index] = f"Disponibilidad con pk {item['pk']} no encontrada."
+                else:
+                    serializer.save()
+                    responses.append({"status": "created", "pk": serializer.instance.pk})
+            else:
+                all_errors[index] = serializer.errors
+        
+        # Verificamos si hay errores acumulados
+        if all_errors:
+            return Response({"errors": all_errors}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(responses, status=status.HTTP_201_CREATED)
+    
+    def create_availability(self, data):
+        pass
 
+    def update_availability(self, data):
+        pass
+
+    def perform_create(self, serializer):
+        return serializer.save(teacher=self.request.user)
 
     
 class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
