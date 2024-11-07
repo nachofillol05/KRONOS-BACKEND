@@ -388,12 +388,6 @@ class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
             return Response({"errors": all_errors}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(responses, status=status.HTTP_201_CREATED)
-    
-    def create_availability(self, data):
-        pass
-
-    def update_availability(self, data):
-        pass
 
     def perform_create(self, serializer):
         return serializer.save(teacher=self.request.user)
