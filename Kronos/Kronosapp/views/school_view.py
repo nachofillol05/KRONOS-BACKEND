@@ -19,7 +19,7 @@ import pandas as pd
 from ..serializers.school_serializer import ReadSchoolSerializer, ModuleSerializer
 from ..serializers.Subject_serializer import SubjectWithCoursesSerializer, SubjectSerializer
 from ..serializers.course_serializer import CourseSerializer, CreateCourseSerializer
-from ..serializers.cousesubject_serializer import CourseSubjectSerializer
+from ..serializers.cousesubject_serializer import CourseSubjectSerializer, CourseSubjectSerializerDetail
 from ..serializers.year_serializer import YearSerializer
 from ..serializers.module_serializer import ModuleSerializer
 
@@ -133,8 +133,6 @@ class SubjectRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
         return Response({'Updated': 'La materia ha sido actualizada', 'data': response.data}, status=status.HTTP_200_OK)
 
 
-
-
 class CourseListCreate(generics.ListCreateAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
@@ -206,7 +204,14 @@ class CourseSubjectListCreate(generics.ListCreateAPIView):
         )
 
 
+class CourseSubjectDetail(generics.RetrieveUpdateDestroyAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    serializer_class = CourseSubjectSerializerDetail
 
+    def get_queryset(self):
+        queryset = CourseSubjects.objects.filter(course__year__school = self.request.school)
+        return queryset
 
 class YearListCreate(generics.ListCreateAPIView):
     authentication_classes = [TokenAuthentication]
