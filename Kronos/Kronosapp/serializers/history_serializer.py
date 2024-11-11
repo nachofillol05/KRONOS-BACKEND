@@ -42,6 +42,11 @@ class HistorySerializer(serializers.ModelSerializer):
     module = ModuleSerializer()
     action = ActionSerializer()
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['date'] = instance.date.strftime('%d-%m-%Y %H:%M:%S')
+        return representation
+
     class Meta:
         model = Schedules
         fields = '__all__'
