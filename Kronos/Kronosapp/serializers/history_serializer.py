@@ -40,6 +40,7 @@ class ActionSerializer(serializers.ModelSerializer):
 class HistorySerializer(serializers.ModelSerializer):
     tssId = tssSerializer()
     module = ModuleSerializer()
+    action = ActionSerializer()
 
     class Meta:
         model = Schedules
