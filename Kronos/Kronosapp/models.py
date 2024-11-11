@@ -141,7 +141,7 @@ class AvailabilityState(models.Model):
     isEnabled = models.BooleanField(default=True)
 
     def __str__(self) -> str:
-        return self.name
+        return f"{self.pk}. {self.name}"
 
 
 class TeacherAvailability(models.Model):

@@ -8,7 +8,7 @@ class AvailabilityStateSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class TeacherAvailabilitySerializer(serializers.ModelSerializer):
-    teacher = serializers.PrimaryKeyRelatedField(required=True, queryset=CustomUser.objects.all())
+    teacher = serializers.PrimaryKeyRelatedField(required=False, queryset=CustomUser.objects.all())
     module_id = serializers.PrimaryKeyRelatedField(
         queryset=Module.objects.all(),
         source='module',
@@ -26,6 +26,7 @@ class TeacherAvailabilitySerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         request = self.context.get('request')
+
         if request and hasattr(request, 'school'):
             self.fields['module'].queryset = Module.objects.filter(school=request.school)
 
@@ -34,16 +35,21 @@ class TeacherAvailabilitySerializer(serializers.ModelSerializer):
         fields = ['pk', 'module', 'module_id', 'loadDate', 'availabilityState', 'availabilityState_id', 'teacher']
         depth = 1
         extra_kwargs = {
+            'pk': {'read_only': True},
             'loadDate': {'read_only': True},
             'availabilityState': {'required': True},
         }
 
     def validate(self, data):
-        teacher = data.get('teacher')
-        module = data.get('module')
-
-        # Corregido: Excluir el registro actual en la validación de duplicados
-        instance_id = self.instance.pk if self.instance else None
-        if TeacherAvailability.objects.filter(teacher=teacher, module=module).exclude(pk=instance_id).exists():
-            raise serializers.ValidationError({"module_id": "El módulo ya está en uso por el usuario."})
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            data['teacher'] = request.user
         return data
+    
+    def validate_module_id(self, module_id: Module):
+        request = self.context.get('request')
+        
+        if request.school != module_id.school:
+            raise serializers.ValidationError("El modulo no pertenece a la escuela")
+
+        return module_id

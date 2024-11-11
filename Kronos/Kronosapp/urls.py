@@ -47,6 +47,7 @@ from .views.school_view import (
 )
 from .views.schedule_view import (
     ViewSchedule,
+    ViewHistorySchedule,
     SubjectPerModuleView,
     Newscheduleview,
     NewScheduleCreation,
@@ -137,6 +138,7 @@ urlpatterns = [
     path('create_schedule/', NewScheduleCreation.as_view(), name='create_schedule'),
     path('subjectpermodule/', SubjectPerModuleView.as_view(), name='subjectpermodule'),
     path('viewschedule/', ViewSchedule.as_view(), name='viewschedule'),
+    path('history_schedule/', ViewHistorySchedule.as_view(), name='views-history-chedule'),
     path('moduleSchedule/', CreateModuleSchedule.as_view(), name='create-module-schedule'),
     path('ViewTeacherSchedule/', ViewTeacherSchedule.as_view(), name='ViewTeacherSchedule'),
 
