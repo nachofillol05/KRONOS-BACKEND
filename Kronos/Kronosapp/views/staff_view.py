@@ -593,18 +593,18 @@ class SchoolRolesView(APIView):
         if rol == 'Preceptor':
             if not year:
                 return Response({'detail': 'year is required'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            try:
-                year_instance = Year.objects.get(pk=year)
-            except Year.DoesNotExist:
-                return Response({'detail': 'Year does not exist'}, status=status.HTTP_404_NOT_FOUND)
-            if year_instance.school != request.school:
-                return Response({'detail': 'Year not recognized at school'}, status=status.HTTP_400_BAD_REQUEST)
+            for year_one in year:
+                try:
+                    year_instance = Year.objects.get(pk=year_one)
+                except Year.DoesNotExist:
+                    continue
+                if year_instance.school != request.school:
+                    continue
 
-            year_instance.preceptors.add(user)
-            year_instance.save()
+                year_instance.preceptors.add(user)
+                year_instance.save()
 
-            return Response(f'user id: {user} asignado como preceptor de {year_instance}', status=status.HTTP_200_OK)
+            return Response(f'user id: {user} asignado como preceptor de algunos años', status=status.HTTP_200_OK)
 
         if rol == 'Directivo':
             school = request.school
