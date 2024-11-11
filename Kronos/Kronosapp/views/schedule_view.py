@@ -22,7 +22,8 @@ from rest_framework.exceptions import ValidationError
 from datetime import datetime
 from ..schedule_creation import schedule_creation
 from ..serializers.Subject_serializer import SubjectWithCoursesSerializer
-from ..serializers.schedule_serializer import ScheduleSerializer, CreateScheduleSerializer  
+from ..serializers.schedule_serializer import ScheduleSerializer, CreateScheduleSerializer
+from ..serializers.history_serializer import HistorySerializer
 from ..utils import call_free_teacher,call_free_subject
 
 
@@ -189,6 +190,20 @@ class ViewSchedule(generics.ListAPIView):
             if course_ids is not None:
                 data = [row for row in data if row["course_id"] in course_ids]
         return Response(data)
+
+
+class ViewHistorySchedule(generics.ListAPIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    serializer_class = HistorySerializer
+    NAME_FREE_SUBJECT = "freeSubject"
+
+    def get_queryset(self):
+        school = self.request.school
+        queryset = Schedules.objects.filter(module__school=school)
+        queryset = queryset.exclude(tssId__coursesubjects__subject__name=self.NAME_FREE_SUBJECT)
+        queryset = queryset.order_by('-date')
+        return queryset
+
 
 class ViewTeacherSchedule(generics.ListAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader]
