@@ -14,3 +14,9 @@ class YearSerializer(serializers.ModelSerializer):
         if str(value) in years_number:
             raise serializers.ValidationError('Ya existe un año con ese número')
         return value
+
+
+class YearSerializerWithoutPreceptors(serializers.ModelSerializer):
+    class Meta:
+        model = Year
+        fields = ['id','name', 'description', 'number']

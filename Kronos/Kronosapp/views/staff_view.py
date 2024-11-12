@@ -149,17 +149,24 @@ class DniComprobation(generics.GenericAPIView):
     '''
     COMPROBACION SI EL PROFESOR EXISTE ANTES DE CREAR UN NUEVO PROFESOR
     '''
-    def post(self, request):
-            document = request.data.get('document')
-            documentType = request.data.get('documentType')
-            user = CustomUser.objects.filter(documentType=documentType, document=document)
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, SchoolHeader]
 
-            if user.exists():
-                user = user.first()
-                serializer = TeacherSerializer(user)
-                return Response({'results': 'DNI en uso', 'user': serializer.data}, status=400)
-            else:
-                return Response({'results': 'DNI no está en uso'}, status=200)
+    def post(self, request):
+        document = request.data.get('document')
+        documentType = request.data.get('documentType')
+        user = CustomUser.objects.filter(documentType=documentType, document=document)            
+
+        if not user.exists():
+            return Response({'results': 'DNI no está en uso'}, status=200)
+        
+        user = user.first()
+        serializer = TeacherSerializer(user, context={'request': request})
+        return Response(
+            {'results': 'DNI en uso', 'user': serializer.data},
+            status=400
+        )
+            
 
 class PreceptorsView(APIView):
     """

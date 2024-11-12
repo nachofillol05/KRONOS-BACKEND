@@ -39,13 +39,15 @@ class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
             representation['subject_name'] = ''
         return representation
         
+
 class TeacherSerializer(UserSerializer):
     availability = serializers.SerializerMethodField()
     subjects = serializers.SerializerMethodField()
+    years = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'first_name', 'last_name', 'profile_picture', 'gender', 'profile_picture', 'phone', 'email', 'document', 'documentType', 'nationality', 'email_verified', 'contactInfo', 'availability', 'subjects']
+        fields = ['id', 'first_name', 'last_name', 'profile_picture', 'gender', 'profile_picture', 'phone', 'email', 'document', 'documentType', 'nationality', 'email_verified', 'contactInfo', 'availability', 'subjects', 'years']
 
     def get_availability(self, obj):
         availabilities = obj.teacheravailability_set.all()
@@ -54,6 +56,16 @@ class TeacherSerializer(UserSerializer):
     def get_subjects(self, obj):
         subjects = obj.teachersubjectschool_set.all()
         return TeacherSubjectSchoolSerializer(subjects, many=True).data
+    
+    def get_years(self, obj: CustomUser):
+        request = self.context.get('request')
+        if obj.is_preceptor(school=request.school):
+            from ..models import Year
+            from .year_serializer import YearSerializerWithoutPreceptors
+            years = Year.objects.filter(preceptors=obj)
+            return YearSerializerWithoutPreceptors(years, many=True).data
+        return None
+    
 
 class CreateTeacherSerializer(serializers.ModelSerializer):
 
