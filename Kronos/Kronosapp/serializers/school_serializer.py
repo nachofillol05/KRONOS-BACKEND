@@ -24,6 +24,30 @@ class ModuleSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         instance.endTime = instance.endTime.replace(second=0, microsecond=0)
         return super().to_representation(instance)
+    def validate_moduleNumber(self, value):
+        # filtrar por la misma school y el mismo moduleNumber
+        modules = Module.objects.filter(school=self.context['school'], moduleNumber=value)
+        for module in modules:
+            if module.day == self.initial_data.get('day'):
+                raise serializers.ValidationError("Ya existe un módulo con ese número para ese día.")
+        return value
+    def validate(self, data):
+        school = self.context['school']
+        day = data.get('day')
+        start_time = data.get('startTime')
+        end_time = data.get('endTime')
+
+        overlapping_modules = Module.objects.filter(
+            school=school,
+            day=day,
+            startTime__lt=end_time,  
+            endTime__gt=start_time  
+        )
+
+        if overlapping_modules.exists():
+            raise serializers.ValidationError("Ya existe un módulo que se superpone en el mismo horario.")
+
+        return data
 
 
 class ReadUserSchoolSerializer(serializers.ModelSerializer):
