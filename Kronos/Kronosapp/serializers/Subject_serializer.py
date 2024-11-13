@@ -44,6 +44,7 @@ class SubjectWithCoursesSerializer(serializers.ModelSerializer):
         serializer = CourseSerializer(courses, many=True, context=self.context)
         return serializer.data
 
+
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subject
@@ -53,3 +54,17 @@ class SubjectSerializer(serializers.ModelSerializer):
         school = validated_data.pop('school', None)
         subject = Subject.objects.create(school=school, **validated_data)
         return subject
+    
+    def validate_color(self, value):
+        print(value, len(value))
+        if len(value) > 9:
+            raise serializers.ValidationError('Tiene que ser menor a 9 caracteres.')
+        request = self.context.get('request')
+        subjects = (
+            Subject.objects
+            .filter(school=request.school)
+            .exclude(pk=self.instance.pk if self.instance else None)
+        )
+        if subjects.filter(color=value).exists():
+            raise serializers.ValidationError(f"El color {value} ya esta asignado a otra materia")
+        return value
