@@ -52,7 +52,8 @@ from .views.schedule_view import (
     Newscheduleview,
     NewScheduleCreation,
     CreateModuleSchedule,
-    ViewTeacherSchedule
+    ViewTeacherSchedule,
+    ViewScheduleToExel
 )
 from .views.events_view import (
     AffiliatedView,
@@ -139,6 +140,7 @@ urlpatterns = [
     path('subjectpermodule/', SubjectPerModuleView.as_view(), name='subjectpermodule'),
     path('viewschedule/', ViewSchedule.as_view(), name='viewschedule'),
     path('history_schedule/', ViewHistorySchedule.as_view(), name='views-history-chedule'),
+    path('exel_schedule/', ViewScheduleToExel.as_view(), name='exel-schedule'),
     path('moduleSchedule/', CreateModuleSchedule.as_view(), name='create-module-schedule'),
     path('ViewTeacherSchedule/', ViewTeacherSchedule.as_view(), name='ViewTeacherSchedule'),
 

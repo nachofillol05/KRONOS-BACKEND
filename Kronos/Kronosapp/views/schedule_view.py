@@ -205,6 +205,71 @@ class ViewHistorySchedule(generics.ListAPIView):
         return queryset
 
 
+class ViewScheduleToExel(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+    
+    def get(self, request):
+        print(self.get_schedules()[0:2])
+        print("hola")
+        return Response({}, 200)
+
+    def get_schedules(self):
+        with connection.cursor() as cursor:
+            sql_query = """
+                SELECT *
+                FROM (
+                    SELECT sh.id as id,
+                           sh.date,
+                           CONCAT(t.first_name, ' ', t.last_name) AS nombre,
+                           s.abbreviation,
+                           s.color,
+                           c.name as course_name,
+                           m.day as day,
+                           m.moduleNumber,
+                           s.name as subject_name,
+                           sh.module_id,
+                           cs.course_id as course_id,
+                           RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
+                    FROM Kronosapp_schedules sh
+                    INNER JOIN Kronosapp_module m 
+                            ON sh.module_id = m.id
+                    INNER JOIN Kronosapp_teachersubjectschool tss
+                           ON sh.tssId_id = tss.id
+                    INNER JOIN Kronosapp_coursesubjects cs
+                           ON tss.coursesubjects_id = cs.id
+                    INNER JOIN Kronosapp_customuser t
+                           ON tss.teacher_id = t.id
+                    INNER JOIN Kronosapp_subject s
+                           ON cs.subject_id = s.id
+                    INNER JOIN Kronosapp_course c 
+                            ON cs.course_id = c.id
+                ) as t
+                WHERE t.RN = 1
+                ORDER BY course_id, module_id
+            """
+            cursor.execute(sql_query)
+            results = cursor.fetchall()
+
+            data = []
+            for row in results:
+                if row[8] == "freeSubject":
+                    continue
+                data.append({
+                    "id": row[0],
+                    "date": row[1],
+                    "nombre": row[2],
+                    "subject_abreviation": row[3],
+                    "subject_color": row[4],
+                    "course_name": row[5],
+                    "day": row[6],
+                    "moduleNumber": row[7],
+                    "subject_name": row[8]
+                })
+            
+            return data
+
+
+
 class ViewTeacherSchedule(generics.ListAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader]
     serializer_class = ScheduleSerializer
@@ -285,8 +350,6 @@ class ViewTeacherSchedule(generics.ListAPIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-
-
 
 class SubjectPerModuleView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
