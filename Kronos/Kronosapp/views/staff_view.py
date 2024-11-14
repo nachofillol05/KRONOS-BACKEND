@@ -6,7 +6,8 @@ from ..models import(
     CourseSubjects,
     DocumentType,
     TeacherAvailability,
-    AvailabilityState
+    AvailabilityState,
+    Module
 )
 from django.http import HttpResponse, JsonResponse, FileResponse
 from django.conf import settings
@@ -355,7 +356,17 @@ class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
             kwargs['many'] = True
         return super().get_serializer(*args, **kwargs)
 
-    def post(self, request, *args, **kwargs):
+    def get_estado(self, habilitado: bool):
+        nombre = "Disponible" if habilitado else "No Disponible"
+        try:
+            estado = AvailabilityState.objects.get(name=nombre)
+        except AvailabilityState.DoesNotExist:
+            raise ValidationError(
+                {'error': 'No se encontro el estado'}, 
+            )
+        return estado
+
+    def manage_availability(self, request, habilitado):
         teacher_availability = request.data.get("teacher_availability", None)
 
         if teacher_availability is None or not isinstance(teacher_availability, list):
@@ -369,36 +380,40 @@ class TeacherAvailabilityListCreateView(generics.ListCreateAPIView):
                 {"error": "Lista de disponibilidad vacia"}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        responses = []
-        all_errors = {}
         
-        for index, item in enumerate(teacher_availability):
-            serializer = TeacherAvailabilitySerializer(data=item, context={'request': request}, partial=False)
-            if serializer.is_valid():
-                # Si tiene pk, actualizar; si no, crear
-                if item.get('pk'):
-                    try:
-                        instance = TeacherAvailability.objects.get(pk=item['pk'])
-                        serializer.update(instance, serializer.validated_data)
-                        responses.append({"status": "updated", "pk": item['pk']})
-                    except TeacherAvailability.DoesNotExist:
-                        all_errors[index] = f"Disponibilidad con pk {item['pk']} no encontrada."
-                else:
-                    serializer.save()
-                    responses.append({"status": "created", "pk": serializer.instance.pk})
-            else:
-                all_errors[index] = serializer.errors
-        
-        # Verificamos si hay errores acumulados
-        if all_errors:
-            return Response({"errors": all_errors}, status=status.HTTP_400_BAD_REQUEST)
+        for module_id in teacher_availability:
+            try:
+                module = Module.objects.get(id=module_id)
+            except Module.DoesNotExist:
+                return Response({"error": f"Modulo con pk {module_id} no existe :("})
+            
+            availability, created = TeacherAvailability.objects.update_or_create(
+                module=module,
+                teacher=request.user,
+                defaults={"availabilityState": self.get_estado(habilitado=habilitado)}
+            )
+            availability.save()
 
-        return Response(responses, status=status.HTTP_201_CREATED)
+        serializer = self.get_serializer(self.get_disponibilidad(), many=True)
+        return Response(serializer.data, status=200)
+
+
+    def post(self, request, *args, **kwargs):
+        return self.manage_availability(request, habilitado=True)
+
+    def delete(self, request, *args, **kwargs):
+        return self.manage_availability(request, habilitado=False)
 
     def perform_create(self, serializer):
         return serializer.save(teacher=self.request.user)
-
+    
+    def get_disponibilidad(self):
+        request = self.request
+        instances = TeacherAvailability.objects.filter(
+            module__school=request.school, 
+            teacher=request.user
+        )
+        return instances
     
 class TeacherAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader]
