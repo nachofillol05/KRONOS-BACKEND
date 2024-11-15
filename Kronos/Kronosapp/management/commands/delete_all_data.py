@@ -1,33 +1,40 @@
 from django.core.management.base import BaseCommand
+
+from django.db import connection #Allows direct interaction with the database via the use of regular MySQL sintax.
+
 from Kronosapp.models import (
     DocumentType, Nationality, ContactInformation, School,
     CustomUser, Module, AvailabilityState, TeacherAvailability,
     Year, Course, Subject, TeacherSubjectSchool, Action,
-    EventType, Event, Role
-)
+    EventType, Event, Role #WHEN ADDING A MODEL HERE, ALSO ADD IT TO 'selected_kronosapp_models' BELOW
+    )
+
+selected_kronosapp_models = [DocumentType, Nationality, ContactInformation, School,
+    CustomUser, Module, AvailabilityState, TeacherAvailability,
+    Year, Course, Subject, TeacherSubjectSchool, Action,
+    EventType, Event, Role]
 
 class Command(BaseCommand):
     help = 'Delete all data from the database'
     # python manage.py delete_all_data
     def handle(self, *args, **options):
-        # Eliminar datos de las tablas
-        Event.objects.all().delete()
-        EventType.objects.all().delete()
-        TeacherSubjectSchool.objects.all().delete()
-        Subject.objects.all().delete()
-        Course.objects.all().delete()
-        Year.objects.all().delete()
-        TeacherAvailability.objects.all().delete()
-        AvailabilityState.objects.all().delete()
-        Module.objects.all().delete()
-        School.objects.all().delete()
-        #CustomUser.objects.all().delete()
-        ContactInformation.objects.all().delete()
-        Nationality.objects.all().delete()
-        DocumentType.objects.all().delete()
-        Action.objects.all().delete()
-        Role.objects.all().delete()
-
+        with connection.cursor() as cursor:
+            self.stdout.write(self.style.SUCCESS('Disabling foreign key checks...'))
+            cursor.execute('SET FOREIGN_KEY_CHECKS = 0;') #Prevents constraint violations temporarily
+            
+            #Automatically fetches all KronosApp models currently imported
+            self.stdout.write(self.style.SUCCESS('Importing tables...'))
+            tables = [model._meta.db_table for model in selected_kronosapp_models]
+            
+            # Truncate (delete) tables and reset AUTO_INCREMENT
+            for table in tables:
+                self.stdout.write(self.style.SUCCESS(f'Deleting table {table}...'))
+                cursor.execute(f'TRUNCATE TABLE `{table}`;')
+            
+            self.stdout.write(self.style.SUCCESS('Enabling foreign key checks...'))
+            cursor.execute('SET FOREIGN_KEY_CHECKS = 1;')
+            
+        
         CustomUser.objects.filter(is_staff=False, is_superuser=False).delete()
 
-        self.stdout.write(self.style.SUCCESS('All data has been deleted from the database.'))
+        self.stdout.write(self.style.SUCCESS('All data has been successfuly deleted from the database.'))

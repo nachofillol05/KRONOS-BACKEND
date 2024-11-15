@@ -726,8 +726,8 @@ class Command(BaseCommand):
 
         event6 = Event.objects.create(
             name='Capacitación en tecnologías educativas',
-            startDate=now + timedelta(days=15),
-            endDate=now + timedelta(days=15, hours=8),
+            startDate=timezone.now()  + timedelta(days=15),
+            endDate=timezone.now()  + timedelta(days=15, hours=8),
             school=school,
             eventType=event_type4
         )
@@ -736,8 +736,8 @@ class Command(BaseCommand):
 
         event7 = Event.objects.create(
             name='Día de puertas abiertas',
-            startDate=now + timedelta(days=20),
-            endDate=now + timedelta(days=20, hours=6),
+            startDate=timezone.now()    + timedelta(days=20),
+            endDate=timezone.now()  + timedelta(days=20, hours=6),
             school=school,
             eventType=event_type2
         )
@@ -746,8 +746,8 @@ class Command(BaseCommand):
 
         event8 = Event.objects.create(
             name='Simulacro de evacuación',
-            startDate=now + timedelta(days=3),
-            endDate=now + timedelta(days=3, hours=1),
+            startDate=timezone.now()    + timedelta(days=3),
+            endDate=timezone.now()   + timedelta(days=3, hours=1),
             school=school,
             eventType=event_type5
         )
@@ -756,8 +756,8 @@ class Command(BaseCommand):
 
         event9 = Event.objects.create(
             name='Charlas sobre educación ambiental',
-            startDate=now + timedelta(days=5),
-            endDate=now + timedelta(days=5, hours=3),
+            startDate=timezone.now()    + timedelta(days=5),
+            endDate=timezone.now()    + timedelta(days=5, hours=3),
             school=school,
             eventType=event_type2
         )
@@ -766,8 +766,8 @@ class Command(BaseCommand):
 
         event10 = Event.objects.create(
             name='Jornada de salud y bienestar',
-            startDate=now + timedelta(days=12),
-            endDate=now + timedelta(days=12, hours=4),
+            startDate=timezone.now()    + timedelta(days=12),
+            endDate=timezone.now()    + timedelta(days=12, hours=4),
             school=school,
             eventType=event_type4
         )
@@ -777,8 +777,8 @@ class Command(BaseCommand):
         # Eventos que ocurren durante el mismo periodo para probar la concurrencia de eventos
         event11 = Event.objects.create(
             name='Feria del libro escolar',
-            startDate=now + timedelta(days=25),
-            endDate=now + timedelta(days=26),
+            startDate=timezone.now()    + timedelta(days=25),
+            endDate=timezone.now()   + timedelta(days=26),
             school=school,
             eventType=event_type2
         )
@@ -787,8 +787,8 @@ class Command(BaseCommand):
 
         event12 = Event.objects.create(
             name='Competencia deportiva interescolar',
-            startDate=now + timedelta(days=26),
-            endDate=now + timedelta(days=27, hours=5),
+            startDate=timezone.now()    + timedelta(days=26),
+            endDate=timezone.now() + timedelta(days=27, hours=5),
             school=school,
             eventType=event_type
         )
@@ -798,8 +798,8 @@ class Command(BaseCommand):
         # Evento a largo plazo que dure varios días
         event13 = Event.objects.create(
             name='Semana de actividades culturales',
-            startDate=now + timedelta(days=30),
-            endDate=now + timedelta(days=34, hours=12),
+            startDate=timezone.now()    + timedelta(days=30),
+            endDate=timezone.now()    + timedelta(days=34, hours=12),
             school=school,
             eventType=event_type2
         )
@@ -809,8 +809,8 @@ class Command(BaseCommand):
         # Evento simultáneo con restricciones de roles
         event14 = Event.objects.create(
             name='Capacitación en primeros auxilios',
-            startDate=now + timedelta(days=10),
-            endDate=now + timedelta(days=10, hours=3),
+            startDate=timezone.now()   + timedelta(days=10),
+            endDate=timezone.now()    + timedelta(days=10, hours=3),
             school=school,
             eventType=event_type4
         )
