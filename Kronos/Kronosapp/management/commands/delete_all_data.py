@@ -19,22 +19,20 @@ class Command(BaseCommand):
     # python manage.py delete_all_data
     def handle(self, *args, **options):
         with connection.cursor() as cursor:
-            self.stdout.write(self.style.SUCCESS('Disabling foreign key checks...'))
+            self.stdout.write(self.style.WARNING('Initializing data deletion...'))
+
             cursor.execute('SET FOREIGN_KEY_CHECKS = 0;') #Prevents constraint violations temporarily
             
             #Automatically fetches all KronosApp models currently imported
-            self.stdout.write(self.style.SUCCESS('Importing tables...'))
+            self.stdout.write(self.style.WARNING('Importing tables...'))
             tables = [model._meta.db_table for model in selected_kronosapp_models]
             
             # Truncate (delete) tables and reset AUTO_INCREMENT
-            for table in tables:
-                self.stdout.write(self.style.SUCCESS(f'Deleting table {table}...'))
+            modelsCount = len(selected_kronosapp_models)
+            for i,table in enumerate(tables, start=1):
+                self.stdout.write(self.style.WARNING(f'Deleting table {table}...({i}/{modelsCount})'))
                 cursor.execute(f'TRUNCATE TABLE `{table}`;')
             
-            self.stdout.write(self.style.SUCCESS('Enabling foreign key checks...'))
             cursor.execute('SET FOREIGN_KEY_CHECKS = 1;')
-            
-        
-        CustomUser.objects.filter(is_staff=False, is_superuser=False).delete()
 
         self.stdout.write(self.style.SUCCESS('All data has been successfuly deleted from the database.'))
