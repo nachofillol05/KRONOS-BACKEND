@@ -582,7 +582,7 @@ class SchoolRolesView(APIView):
     def post(self, request):
         rol = request.data.get('role')
         user = request.data.get('user_id')
-        year = request.data.get('year_id')
+        years = request.data.get('years_id')
 
         if not rol:
             return Response({'detail': 'rol is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -602,15 +602,24 @@ class SchoolRolesView(APIView):
             return Response(serializerschool.data, status=status.HTTP_201_CREATED)
 
         if rol == 'Preceptor':
-            if not year:
-                return Response({'detail': 'year is required'}, status=status.HTTP_400_BAD_REQUEST)
-            for year_one in year:
+            if not years or not isinstance(years, list):
+                return Response(
+                    {'detail': 'years_id is required. It Must be list'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            for year_id in years:
                 try:
-                    year_instance = Year.objects.get(pk=year_one)
+                    year_instance = Year.objects.get(pk=year_id)
                 except Year.DoesNotExist:
-                    continue
+                    return Response(
+                        {"error": f"Year with pk {year_id} does not exist."}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
                 if year_instance.school != request.school:
-                    continue
+                    return Response(
+                        {"error": f"Year with pk {year_id} does not exist."}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
                 year_instance.preceptors.add(user)
                 year_instance.save()
@@ -627,27 +636,41 @@ class SchoolRolesView(APIView):
     def delete(self, request):
         
         rol = request.data.get('role')
-        user = request.data.get('user_id')
-        year = request.data.get('year_id')
+        user_id = request.data.get('user_id')
+        years_ids = request.data.get('years_id')
 
         if not rol:
             return Response({'detail': 'rol is required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        if not user:
+        if not user_id:
             return Response({'detail': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
         
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {"error": "Users does not exist"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         if rol == 'Preceptor':
-            if not year:
-                return Response({'detail': 'year is required'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            year_instance = Year.objects.get(pk=year)
-            if year_instance.school != request.school:
-                return Response({'detail': 'Year not recognized at school'}, status=status.HTTP_400_BAD_REQUEST)
-
-            year_instance.preceptors.remove(user)
-            year_instance.save()
-
-            return Response(f'user id: {user} removido como preceptor de {year_instance}', status=status.HTTP_200_OK)
+            """
+            Si borran los años cuya ids esten en la lista 'years_id'.
+            Si no se pasa ese parametro se borra al usuario como preceptor
+            """
+            if not years_ids:
+                user.year_set.clear()
+                return Response(
+                    {"Resultado": "Todos los años borrados"},
+                    status=status.HTTP_200_OK
+                )
+                
+            years_instances = Year.objects.filter(id__in=years_ids)
+            user.year_set.remove(*years_instances)
+            return Response(
+                {f'user id: {user} removido como preceptor de {years_instances}'}, 
+                status=status.HTTP_200_OK
+            )
         
         elif rol == 'Directivo':
             school = request.school
