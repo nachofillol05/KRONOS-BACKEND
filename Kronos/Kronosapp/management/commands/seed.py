@@ -998,7 +998,7 @@ class Command(BaseCommand):
         )
 
         # Crear escuela Villada
-        school_villada = School.objects.create(
+        school2 = School.objects.create(
             name='Villada',
             abbreviation='VIL',
             logo=logovillada,  # Define este logotipo en seed_images.py
@@ -1007,7 +1007,7 @@ class Command(BaseCommand):
         )
 
         # Crear escuela Lasalle
-        school_lasalle = School.objects.create(
+        school3 = School.objects.create(
             name='Lasalle',
             abbreviation='LAS',
             logo=logolasalle,  # Define este logotipo en seed_images.py
