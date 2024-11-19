@@ -21,7 +21,7 @@ from ..serializers.Subject_serializer import SubjectWithCoursesSerializer, Subje
 from ..serializers.course_serializer import CourseSerializer, CreateCourseSerializer
 from ..serializers.cousesubject_serializer import CourseSubjectSerializer, CourseSubjectSerializerDetail
 from ..serializers.year_serializer import YearSerializer
-from ..serializers.module_serializer import ModuleSerializer
+#from ..serializers.module_serializer import ModuleSerializer
 
 
 
@@ -245,12 +245,21 @@ class ModuleViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
 
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        school_id = request.headers.get('SCHOOL-ID')
+        
+        if not school_id or int(school_id) != request.school.pk:
+            raise ValidationError({'school': ['You can only modify the school you belong to']})
+
+        serializer = self.get_serializer(data=request.data, context={'school': request.school})
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     def perform_create(self, serializer):
         validated_data = serializer.validated_data
-        school = validated_data.get('school')
-        if school != self.request.school:
+        school = self.request.headers.get('SCHOOL-ID')
+        if int(school) != self.request.school.pk:
+            print(int(school), '  ', self.request.school.pk)
             raise ValidationError({'school': ['You can only modify the school you belong to']})
         serializer.save()
 
