@@ -281,7 +281,7 @@ class Command(BaseCommand):
             first_name='Daniel',
             last_name='Suárez',
             gender='masculino',
-            document='56789012',
+            document='56784012',
             profile_picture=defaultuser,
             hoursToWork=18,
             phone='3516701128',
@@ -297,7 +297,7 @@ class Command(BaseCommand):
             first_name='Lucía',
             last_name='Méndez',
             gender='femenino',
-            document='67890123',
+            document='67830123',
             profile_picture=defaultuser,
             hoursToWork=30,
             phone='3516701129',
@@ -313,7 +313,7 @@ class Command(BaseCommand):
             first_name='José',
             last_name='Aguilar',
             gender='masculino',
-            document='78901234',
+            document='78301234',
             profile_picture=defaultuser,
             hoursToWork=15,
             phone='3516701130',
@@ -329,7 +329,7 @@ class Command(BaseCommand):
             first_name='Marta',
             last_name='Vázquez',
             gender='femenino',
-            document='89012345',
+            document='89015345',
             profile_picture=defaultuser,
             hoursToWork=20,
             phone='3516701131',
@@ -345,7 +345,7 @@ class Command(BaseCommand):
             first_name='Ramiro',
             last_name='Romero',
             gender='masculino',
-            document='90123456',
+            document='90210456',
             profile_picture=defaultuser,
             hoursToWork=23,
             phone='3516701132',
@@ -361,7 +361,7 @@ class Command(BaseCommand):
             first_name='Clara',
             last_name='Fernández',
             gender='femenino',
-            document='15437893',
+            document='15447893',
             profile_picture=defaultuser,
             hoursToWork=25,
             phone='3516701133',
@@ -377,7 +377,7 @@ class Command(BaseCommand):
             first_name='Luciano',
             last_name='Pereyra',
             gender='masculino',
-            document='17894563',
+            document='17894553',
             profile_picture=defaultuser,
             hoursToWork=30,
             phone='3516752234',
@@ -396,7 +396,7 @@ class Command(BaseCommand):
             first_name='Andrea',
             last_name='Quiroga',
             gender='femenino',
-            document='26789012',
+            document='26789022',
             profile_picture=defaultuser,
             hoursToWork=20,
             phone='3516701200',
@@ -411,7 +411,7 @@ class Command(BaseCommand):
             first_name='Miguel',
             last_name='Bustamante',
             gender='masculino',
-            document='27890123',
+            document='27290123',
             profile_picture=defaultuser,
             hoursToWork=25,
             phone='3516701211',
@@ -425,7 +425,7 @@ class Command(BaseCommand):
             first_name='Lucía',
             last_name='Fernández',
             gender='femenino',
-            document='28901234',
+            document='28901334',
             profile_picture=defaultuser,
             hoursToWork=20,
             phone='3516701222',
@@ -439,7 +439,7 @@ class Command(BaseCommand):
             first_name='José',
             last_name='Morales',
             gender='masculino',
-            document='29012345',
+            document='29012445',
             profile_picture=defaultuser,
             hoursToWork=20,
             phone='3516701233',
@@ -453,7 +453,7 @@ class Command(BaseCommand):
             first_name='Elena',
             last_name='Ramírez',
             gender='femenino',
-            document='30123456',
+            document='30153456',
             profile_picture=defaultuser,
             hoursToWork=20,
             phone='3516701244',
@@ -467,7 +467,7 @@ class Command(BaseCommand):
             first_name='Ricardo',
             last_name='Guzmán',
             gender='masculino',
-            document='31234567',
+            document='32234567',
             profile_picture=defaultuser,
             hoursToWork=20,
             phone='3516701255',
@@ -998,19 +998,19 @@ class Command(BaseCommand):
         )
 
         # Crear escuela Villada
-        school2 = School.objects.create(
+        school_villada = School.objects.create(
             name='Villada',
             abbreviation='VIL',
-            logo=logovillada,  # Define este logotipo en seed_images.py
+            logo=defaultuser,  # Define este logotipo en seed_images.py
             email='contacto@villada.edu',
             contactInfo=contact_info_villada
         )
 
         # Crear escuela Lasalle
-        school3 = School.objects.create(
+        school_lasalle = School.objects.create(
             name='Lasalle',
             abbreviation='LAS',
-            logo=logolasalle,  # Define este logotipo en seed_images.py
+            logo=defaultuser,  # Define este logotipo en seed_images.py
             email='contacto@lasalle.edu',
             contactInfo=contact_info_lasalle
         )
@@ -1028,95 +1028,95 @@ class Command(BaseCommand):
                 )
                 modules_villada.append(module_villada)
 
-            # Módulos Lasalle
-            modules_lasalle = []
-            for i, day in enumerate(days_of_week, start=1):
-                for j in range(1, 6):
-                    module_lasalle = Module.objects.create(
-                        moduleNumber=j,
-                        day=day,
-                        startTime=time(9 + j, 0),
-                        endTime=time(10 + j, 0),
-                        school=school_lasalle
-                    )
-                    modules_lasalle.append(module_lasalle)
+        # Módulos Lasalle
+        modules_lasalle = []
+        for i, day in enumerate(days_of_week, start=1):
+            for j in range(1, 6):
+                module_lasalle = Module.objects.create(
+                    moduleNumber=j,
+                    day=day,
+                    startTime=time(9 + j, 0),
+                    endTime=time(10 + j, 0),
+                    school=school_lasalle
+                )
+                modules_lasalle.append(module_lasalle)
 
-            # Crear años para Villada
-            year1_villada = Year.objects.create(name='1er Año', number='1', school=school_villada)
-            year2_villada = Year.objects.create(name='2do Año', number='2', school=school_villada)
-            year3_villada = Year.objects.create(name='3er Año', number='3', school=school_villada)
-            year4_villada = Year.objects.create(name='4to Año', number='4', school=school_villada)
-            year5_villada = Year.objects.create(name='5to Año', number='5', school=school_villada)
-            year6_villada = Year.objects.create(name='6to Año', number='6', school=school_villada)
+        # Crear años para Villada
+        year1_villada = Year.objects.create(name='1er Año', number='1', school=school_villada)
+        year2_villada = Year.objects.create(name='2do Año', number='2', school=school_villada)
+        year3_villada = Year.objects.create(name='3er Año', number='3', school=school_villada)
+        year4_villada = Year.objects.create(name='4to Año', number='4', school=school_villada)
+        year5_villada = Year.objects.create(name='5to Año', number='5', school=school_villada)
+        year6_villada = Year.objects.create(name='6to Año', number='6', school=school_villada)
 
-            # Crear años para Lasalle
-            year1_lasalle = Year.objects.create(name='1er Año', number='1', school=school_lasalle)
-            year2_lasalle = Year.objects.create(name='2do Año', number='2', school=school_lasalle)
-            year3_lasalle = Year.objects.create(name='3er Año', number='3', school=school_lasalle)
-            year4_lasalle = Year.objects.create(name='4to Año', number='4', school=school_lasalle)
-            year5_lasalle = Year.objects.create(name='5to Año', number='5', school=school_lasalle)
-            year6_lasalle = Year.objects.create(name='6to Año', number='6', school=school_lasalle)
+        # Crear años para Lasalle
+        year1_lasalle = Year.objects.create(name='1er Año', number='1', school=school_lasalle)
+        year2_lasalle = Year.objects.create(name='2do Año', number='2', school=school_lasalle)
+        year3_lasalle = Year.objects.create(name='3er Año', number='3', school=school_lasalle)
+        year4_lasalle = Year.objects.create(name='4to Año', number='4', school=school_lasalle)
+        year5_lasalle = Year.objects.create(name='5to Año', number='5', school=school_lasalle)
+        year6_lasalle = Year.objects.create(name='6to Año', number='6', school=school_lasalle)
 
-            # Asignar preceptores a años en Villada
-            year1_villada.preceptors.add(preceptor_1ro_villada)
-            year2_villada.preceptors.add(preceptor_2do_villada)
+        # Asignar preceptores a años en Villada
+        year1_villada.preceptors.add(preceptor_1ro_villada)
+        year2_villada.preceptors.add(preceptor_2do_villada)
 
-            # Asignar preceptores a años en Lasalle
-            year1_lasalle.preceptors.add(preceptor_1ro_lasalle)
-            year2_lasalle.preceptors.add(preceptor_2do_lasalle)
+        # Asignar preceptores a años en Lasalle
+        year1_lasalle.preceptors.add(preceptor_1ro_lasalle)
+        year2_lasalle.preceptors.add(preceptor_2do_lasalle)
 
-            # Crear cursos para Villada
-            course_names = ['A', 'B', 'C']
-            courses_villada = []
-            for year in [year1_villada, year2_villada, year3_villada, year4_villada, year5_villada, year6_villada]:
-                for name in course_names:
-                    course_name = f"{year.number}°{name}"
-                    course = Course.objects.create(name=course_name, year=year)
-                    courses_villada.append(course)
+        # Crear cursos para Villada
+        course_names = ['A', 'B', 'C']
+        courses_villada = []
+        for year in [year1_villada, year2_villada, year3_villada, year4_villada, year5_villada, year6_villada]:
+            for name in course_names:
+                course_name = f"{year.number}°{name}"
+                course = Course.objects.create(name=course_name, year=year)
+                courses_villada.append(course)
 
-            # Crear cursos para Lasalle
-            courses_lasalle = []
-            for year in [year1_lasalle, year2_lasalle, year3_lasalle, year4_lasalle, year5_lasalle, year6_lasalle]:
-                for name in course_names:
-                    course_name = f"{year.number}°{name}"
-                    course = Course.objects.create(name=course_name, year=year)
-                    courses_lasalle.append(course)
+        # Crear cursos para Lasalle
+        courses_lasalle = []
+        for year in [year1_lasalle, year2_lasalle, year3_lasalle, year4_lasalle, year5_lasalle, year6_lasalle]:
+            for name in course_names:
+                course_name = f"{year.number}°{name}"
+                course = Course.objects.create(name=course_name, year=year)
+                courses_lasalle.append(course)
 
-            # Materias para Villada
-            subjects_villada = []
-            subject_math_villada = Subject.objects.create(
-                name="Matemáticas",
-                color='#C0392B',  
-                abbreviation="MAT",
-                school=school_villada
-            )
-            subjects_villada.append(subject_math_villada)
+        # Materias para Villada
+        subjects_villada = []
+        subject_math_villada = Subject.objects.create(
+            name="Matemáticas",
+            color='#C0392B',  
+            abbreviation="MAT",
+            school=school_villada
+        )
+        subjects_villada.append(subject_math_villada)
 
-            subject_physics_villada = Subject.objects.create(
-                name="Física",
-                color='#2980B9',  
-                abbreviation="FIS",
-                school=school_villada
-            )
-            subjects_villada.append(subject_physics_villada)
+        subject_physics_villada = Subject.objects.create(
+            name="Física",
+            color='#2980B9',  
+            abbreviation="FIS",
+            school=school_villada
+        )
+        subjects_villada.append(subject_physics_villada)
 
-            # Materias para Lasalle
-            subjects_lasalle = []
-            subject_math_lasalle = Subject.objects.create(
-                name="Matemáticas",
-                color='#C0392B',  
-                abbreviation="MAT",
-                school=school_lasalle
-            )
-            subjects_lasalle.append(subject_math_lasalle)
+        # Materias para Lasalle
+        subjects_lasalle = []
+        subject_math_lasalle = Subject.objects.create(
+            name="Matemáticas",
+            color='#C0392B',  
+            abbreviation="MAT",
+            school=school_lasalle
+        )
+        subjects_lasalle.append(subject_math_lasalle)
 
-            subject_physics_lasalle = Subject.objects.create(
-                name="Física",
-                color='#2980B9',  
-                abbreviation="FIS",
-                school=school_lasalle
-            )
-            subjects_lasalle.append(subject_physics_lasalle)
+        subject_physics_lasalle = Subject.objects.create(
+            name="Física",
+            color='#2980B9',  
+            abbreviation="FIS",
+            school=school_lasalle
+        )
+        subjects_lasalle.append(subject_physics_lasalle)
 
         # Asignar materias a cursos en Villada
         coursesubjects_villada = []
@@ -1277,7 +1277,5 @@ class Command(BaseCommand):
         action_add_subject = Action.objects.create(name='Agregar materia', isEnabled=True)
         action_schedule_event = Action.objects.create(name='Programar evento', isEnabled=True)
 
-        school_villada.actions.add(action_add_subject, action_schedule_event)
-        school_lasalle.actions.add(action_add_subject, action_schedule_event)
 
         self.stdout.write(self.style.SUCCESS('Database successfully seeded!'))
