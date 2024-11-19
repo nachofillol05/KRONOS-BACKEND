@@ -78,7 +78,7 @@ class SubjectListCreate(generics.ListCreateAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
-        create_serializer = SubjectSerializer(data=self.request.data)
+        create_serializer = SubjectSerializer(data=self.request.data, context={"request": request})
         create_serializer.is_valid(raise_exception=True)
         create_serializer.save(school=self.request.school)
         return Response(
