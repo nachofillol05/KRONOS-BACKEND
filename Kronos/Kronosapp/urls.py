@@ -37,7 +37,7 @@ from .views.school_view import (
     CourseListCreate,
     CourseRetrieveUpdateDestroy,
     CourseSubjectListCreate,
-    CourseSubjectDetail,
+    CourseSubjectsRetrieveUpdateDestroyView,
     ModuleViewSet,
     SubjectListCreate,
     SubjectRetrieveUpdateDestroy,
@@ -100,7 +100,7 @@ urlpatterns = [
     path('courses/<int:pk>/', CourseRetrieveUpdateDestroy.as_view(), name='course-detail'),
     # CourseSubjects
     path('coursesubjects/', CourseSubjectListCreate.as_view(), name='course-subject-list-create'),
-    path('coursesubjects/<int:pk>/', CourseSubjectDetail.as_view(), name='course-subject-detail'),
+    path('coursesubjects/<int:pk>/', CourseSubjectsRetrieveUpdateDestroyView.as_view(), name='course-subject-detail'),
     # Year
     path('years/', YearListCreate.as_view(), name='year-list-create'),
     path('years/<int:pk>/', YearRetrieveUpdateDestroy.as_view(), name='year-detail'),

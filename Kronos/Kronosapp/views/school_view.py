@@ -202,16 +202,10 @@ class CourseSubjectListCreate(generics.ListCreateAPIView):
             {'Saved': 'La materia se ha asignado a un curso', 'data': serializer.data},
             status=status.HTTP_201_CREATED
         )
-
-
-class CourseSubjectDetail(generics.RetrieveUpdateDestroyAPIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated, SchoolHeader, IsDirectiveOrOnlyRead]
+class CourseSubjectsRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = CourseSubjects.objects.all()
     serializer_class = CourseSubjectSerializerDetail
-
-    def get_queryset(self):
-        queryset = CourseSubjects.objects.filter(course__year__school = self.request.school)
-        return queryset
+    permission_classes = [IsAuthenticated]
 
 class YearListCreate(generics.ListCreateAPIView):
     authentication_classes = [TokenAuthentication]

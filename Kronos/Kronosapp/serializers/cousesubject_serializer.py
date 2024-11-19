@@ -15,4 +15,6 @@ class CourseSubjectSerializerDetail(serializers.ModelSerializer):
         extra_kwargs = {
             'subject': {'read_only': True},
             'course': {'read_only': True},
+            'studyPlan': {'required': False},
+            'weeklyHours': {'required': False},
         }
