@@ -1,23 +1,33 @@
-from Kronosapp.models import Module
+from Kronosapp.models import Module,School
 from datetime import time
 
-def seed_Module():
-    # Defines modules to create
+def seed_Module_JM():
 
-    # Bulk creation of modules
-
-
-    
-    # Crear módulos
+    school = School.objects.get(name='Jesus Maria')# Defines which school
+         
+    # Creation of some variables
     days_of_week = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes']
-    modulesJM = []
-    for i, day in enumerate(days_of_week, start=1):
-        for j in range(1, 6):
-            module = Module.objects.create(
-                moduleNumber=j,
-                day=day,
-                startTime=time(8 + j, 0),
-                endTime=time(9 + j, 0),
-                school=school
+    modules_list = []
+    max_daily_modules = 6
+
+    # Iterate through each day of the week
+    for day in days_of_week:
+        # Create 5 modules (one for each time slot per day)
+        for module_number in range(1, max_daily_modules):
+            # Create a new module for each day and timeslot
+            module = Module(
+                moduleNumber=module_number,  # Set module number (1-5)
+                day=day,  # Day of the week (e.g., lunes, martes, etc.)
+                startTime=time(8 + module_number, 0),  # Starting time (8:00 + module number)
+                endTime=time(9 + module_number, 0),  # Ending time (9:00 + module number)
+                school=school  # The associated school for the module
             )
-            modulesJM.append(module)
+            # Append the created module to the list
+            modules_list.append(module)
+
+    # Bulk insert all created modules into the database
+    Module.objects.bulk_create(modules_list)
+
+
+    #Comments provided by ChatGPT
+
