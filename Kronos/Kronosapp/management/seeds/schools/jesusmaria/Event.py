@@ -1,3 +1,5 @@
+from Kronosapp.models import Event
+
 # Crear evento
 event1 = Event.objects.create(
     name='Paro general de transporte',

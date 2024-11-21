@@ -1,3 +1,5 @@
+from Kronosapp.models import TeacherSubjectSchool
+
 # Asignar profesor a materia en una escuela
 subjects_per_teacher = 12
 # TSS JM

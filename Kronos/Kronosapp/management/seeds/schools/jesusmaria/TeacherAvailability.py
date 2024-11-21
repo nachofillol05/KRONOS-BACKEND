@@ -1,3 +1,4 @@
+from Kronosapp.models import TeacherAvailability
 
 # Crear disponibilidad de profesor en Jesús María
 for j, teacher in enumerate(teacherJM):

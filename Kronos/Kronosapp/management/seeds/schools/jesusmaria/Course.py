@@ -1,3 +1,5 @@
+from Kronosapp.models import Course
+
 # Crear Curso
 course_names = ['A', 'B', 'C']
 
