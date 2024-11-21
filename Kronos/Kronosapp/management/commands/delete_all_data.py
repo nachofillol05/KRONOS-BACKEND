@@ -35,4 +35,4 @@ class Command(BaseCommand):
             
             cursor.execute('SET FOREIGN_KEY_CHECKS = 1;')
 
-        self.stdout.write(self.style.SUCCESS('All data has been successfuly deleted from the database.'))
+        self.stdout.write(self.style.SUCCESS('\nAll data has been successfuly deleted from the database.\n'))

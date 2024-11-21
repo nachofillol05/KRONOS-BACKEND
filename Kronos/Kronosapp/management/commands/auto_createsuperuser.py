@@ -7,13 +7,14 @@ class Command(BaseCommand):
     help = f'Creates a superuser automatically.'
 
     def handle(self, *args, **kwargs):
-
+        self.stdout.write(self.style.WARNING(f"Creating superuser..."))
+        
         username = 'admin' #Modify these values as desired.
         email = 'admin@example.com'
         password = 'admin'
 
         if not User.objects.filter(document=username).exists():
             User.objects.create_superuser(document=username, email=email, password=password)
-            self.stdout.write(self.style.SUCCESS(f"Superuser {username} created successfully!"))
+            self.stdout.write(self.style.SUCCESS(f"\nSuperuser '{username}' created successfully!\n"))
         else:
-            self.stdout.write(self.style.WARNING(f"Superuser {username} already exists."))
+            self.stdout.write(self.style.ERROR(f"Superuser {username} already exists.\n"))

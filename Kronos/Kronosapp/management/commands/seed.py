@@ -1278,4 +1278,4 @@ class Command(BaseCommand):
         action_schedule_event = Action.objects.create(name='Programar evento', isEnabled=True)
 
 
-        self.stdout.write(self.style.SUCCESS('Database successfully seeded!'))
+        self.stdout.write(self.style.SUCCESS('\nDatabase successfully seeded!\n'))
