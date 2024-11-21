@@ -1,3 +1,5 @@
+from Kronosapp.models import Subject
+
 # Crear materias JM
 subjectsJM = []
 subject1 = Subject.objects.create(

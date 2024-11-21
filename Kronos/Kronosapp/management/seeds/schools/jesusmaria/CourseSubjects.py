@@ -1,3 +1,5 @@
+from Kronosapp.models import CourseSubjects
+
 # Asignar materias a cursos
 coursesubjectJM = []
 for j, subject in enumerate(subjectsJM):

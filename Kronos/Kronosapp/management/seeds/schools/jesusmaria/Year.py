@@ -1,3 +1,5 @@
+from Kronosapp.models import Year
+
 # Crear años JM
 year1 = Year.objects.create(name='1er Año', number='1', school=school)
 year2 = Year.objects.create(name='2do Año', number='2', school=school)

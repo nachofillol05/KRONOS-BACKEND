@@ -1,4 +1,3 @@
-#Order 1
 from Kronosapp.models import ContactInformation
 
 def seed_ContactInformation_JM():
