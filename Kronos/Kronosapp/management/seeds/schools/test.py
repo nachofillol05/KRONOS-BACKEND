@@ -6,7 +6,8 @@ def test_seed():
     # Fetch required related objects
     dni = DocumentType.objects.get(name="DNI")
     argentina = Nationality.objects.get(name="Argentina")
-    
+    nationalities = Nationality.objects.distinct()
+
     contact_info_preceptor_1ro = ContactInformation.objects.create(
                 postalCode='5000',
                 street='Avenida Colón',
