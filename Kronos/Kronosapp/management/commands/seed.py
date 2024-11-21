@@ -1025,7 +1025,7 @@ class Command(BaseCommand):
         school_villada = School.objects.create(
             name='Villada',
             abbreviation='VIL',
-            logo=defaultuser,  # Define este logotipo en seed_images.py
+            logo=logoits,  # Define este logotipo en seed_images.py
             email='contacto@villada.edu',
             contactInfo=contact_info_villada
         )
@@ -1036,7 +1036,7 @@ class Command(BaseCommand):
         school_lasalle = School.objects.create(
             name='Lasalle',
             abbreviation='LAS',
-            logo=defaultuser,  # Define este logotipo en seed_images.py
+            logo=logolasalle,  # Define este logotipo en seed_images.py
             email='contacto@lasalle.edu',
             contactInfo=contact_info_lasalle
         )
