@@ -1,10 +1,9 @@
 from Kronosapp.models import Year, School
 
-def seed_year_JM():
-
+def get_years_JM():
     school = School.objects.get(name='Jesus Maria')# Defines which school
     
-    # Defines years to create
+    # Defines years to manage
     year_data = [
         {"name": "1er Año", "number": "1"},
         {"name": "2do Año", "number": "2"},
@@ -19,6 +18,12 @@ def seed_year_JM():
         Year(name=item['name'], number=item['number'], school=school)
         for item in year_data
     ]
+
+    return yearsJM
+
+def seed_year_JM():
+
+    yearsJM = get_years_JM()
 
     # Bulk create years
     Year.objects.bulk_create(yearsJM)
