@@ -1,4 +1,4 @@
-  # Crear escuela Lasalle
+# Crear escuela Lasalle
 school_lasalle = School.objects.create(
     name='Lasalle',
     abbreviation='LAS',

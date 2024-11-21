@@ -1,4 +1,3 @@
-
 # Módulos Villada
 modules_villada = []
 for i, day in enumerate(days_of_week, start=1):

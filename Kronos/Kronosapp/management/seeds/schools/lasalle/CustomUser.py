@@ -46,3 +46,22 @@ preceptor_2do_lasalle = CustomUser.objects.create_user(
     contactInfo=contact_info_preceptor_2do_lasalle,
     email_verified=True
 )
+
+teacherLS = []
+# Profesores de Lasalle
+teacher_physics_lasalle = CustomUser.objects.create_user(
+    email='physics@lasalle.edu',
+    password='password',
+    first_name='Juan',
+    last_name='Pérez',
+    gender='masculino',
+    document='67890123',
+    profile_picture=defaultuser,
+    hoursToWork=25,
+    phone='3816701134',
+    documentType=dni,
+    nationality=argentina,
+    contactInfo=contact_info_lasalle,
+    email_verified=True
+)
+teacherLS.append(teacher_physics_lasalle)

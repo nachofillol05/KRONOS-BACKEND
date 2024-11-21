@@ -48,7 +48,7 @@ preceptor_2do_villada = CustomUser.objects.create_user(
     contactInfo=contact_info_preceptor_2do_villada,
     email_verified=True
 )
-
+teacherV = []
 # Profesores de Villada
 teacher_math_villada = CustomUser.objects.create_user(
     email='math@villada.edu',
@@ -65,3 +65,4 @@ teacher_math_villada = CustomUser.objects.create_user(
     contactInfo=contact_info_villada,
     email_verified=True
 )
+teacherV.append(teacher_math_villada)
