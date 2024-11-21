@@ -18,20 +18,6 @@ class Command(BaseCommand):
     help = 'Seed database with initial data'
     # python manage.py seed
     def handle(self, *args, **options):
-        # Crear tipos de documentos
-        dni = DocumentType.objects.create(name="DNI", description="Documento Nacional de Identidad")
-        passport = DocumentType.objects.create(name="Pasaporte", description="Documento de viaje internacional")
-        cuit = DocumentType.objects.create(name="CUIT", description="CUIT")
-
-        # Crear nacionalidades
-        argentina = Nationality.objects.create(name="Argentina", description="Nacionalidad argentina")
-        uruguay = Nationality.objects.create(name="Uruguay", description="Nacionalidad uruguaya")
-        brasil = Nationality.objects.create(name="Brasil", description="Nacionalidad brasileña")
-        paraguay = Nationality.objects.create(name="Paraguay", description="Nacionalidad paraguaya")
-        chile = Nationality.objects.create(name="Chile", description="Nacionalidad chilena")
-        bolivia = Nationality.objects.create(name="Bolivia", description="Nacionalidad boliviana")
-        peru = Nationality.objects.create(name="Perú", description="Nacionalidad peruana")
-        otros = Nationality.objects.create(name="Otros", description="Nacionalidad otros")
 
 
         # Crear ContactInformation
@@ -517,10 +503,6 @@ class Command(BaseCommand):
                 modulesJM.append(module)
         
 
-        # Crear estados de disponibilidad
-        available = AvailabilityState.objects.create(name='Disponible', isEnabled=True)
-        not_available = AvailabilityState.objects.create(name='No Disponible', isEnabled=False)
-        asigned = AvailabilityState.objects.create(name='Asignado', isEnabled=False)
 
         # Crear disponibilidad de profesor en Jesús María
         for j, teacher in enumerate(teacherJM):
@@ -653,8 +635,6 @@ class Command(BaseCommand):
         )
         subjectsJM.append(subject11)
 
-
-
         # Asignar materias a cursos
         coursesubjectJM = []
         for j, subject in enumerate(subjectsJM):
@@ -676,25 +656,6 @@ class Command(BaseCommand):
                 coursesubjects=coursesubject,
                 teacher=teacher
             )
-
-        
-        # Crear acciones
-        action1 = Action.objects.create(name='Agregar materia', isEnabled=True)
-        action2 = Action.objects.create(name='Cambiar materia', isEnabled=False)
-
-
-        # Crear tipos de eventos
-        event_type1 = EventType.objects.create(name='Paro de transporte', description='Interrupción de servicios de transporte')
-        event_type2 = EventType.objects.create(name='Viaje escolar', description='Excursión organizada por la escuela')
-        event_type3 = EventType.objects.create(name='Paro docente', description='Paro de docentes')
-        event_type4 = EventType.objects.create(name='Taller Docente', description='Dictado de taller docente')
-        event_type5 = EventType.objects.create(name='Mantenimiento Infraestructura', description='realizacion de mantenimiento en el instituto')
-        event_type = EventType.objects.create(name='Otro', description='Otro tipo de evento')
-        
-        # Crear roles
-        directive_role = Role.objects.create(name='Directivo')
-        teacher_role = Role.objects.create(name='Profesor')
-        preceptor_role = Role.objects.create(name='Preceptor')
 
         # Crear evento
         event1 = Event.objects.create(
@@ -1223,27 +1184,6 @@ class Command(BaseCommand):
             teacher=teacher_physics_lasalle
         )
 
-        # Tipos de eventos compartidos
-        event_type_meeting = EventType.objects.create(
-            name='Reunión General',
-            description='Reunión de directivos y docentes'
-        )
-
-        event_type_trip = EventType.objects.create(
-            name='Excursión',
-            description='Viaje escolar'
-        )
-
-        event_type_maintenance = EventType.objects.create(
-            name='Mantenimiento',
-            description='Revisión de infraestructura escolar'
-        )
-
-        # Roles para los eventos
-        role_directive = Role.objects.create(name='Directivo')
-        role_teacher = Role.objects.create(name='Profesor')
-        role_preceptor = Role.objects.create(name='Preceptor')
-
         # Eventos para Villada
         event_villada_1 = Event.objects.create(
             name='Reunión pedagógica',
@@ -1285,9 +1225,6 @@ class Command(BaseCommand):
         )
         event_lasalle_2.roles.add(role_directive)
 
-        # Disponibilidad de profesores en Villada
-        available = AvailabilityState.objects.create(name='Disponible', isEnabled=True)
-        not_available = AvailabilityState.objects.create(name='No Disponible', isEnabled=False)
 
         for module in modules_villada:
             TeacherAvailability.objects.create(
