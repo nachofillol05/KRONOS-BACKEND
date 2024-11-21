@@ -5,8 +5,6 @@ from Kronosapp.management.seeds.schools.test import test_seed
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        seed_DocumentType()
-        seed_Nationality()
 
         test_seed()
 
