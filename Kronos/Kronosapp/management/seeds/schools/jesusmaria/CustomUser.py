@@ -94,22 +94,7 @@ def seed_CustomUser_JM():
         email_verified=True
     )
 
-    teacher_informatica = CustomUser.objects.create_user(
-            email='informatica@secundaria.edu',
-            password='password',
-            first_name='Luciano',
-            last_name='Pereyra',
-            gender='masculino',
-            document='17894553',
-            profile_picture=defaultuser,
-            hoursToWork=30,
-            phone='3516752234',
-            documentType=dni,
-            nationality=argentina,
-            contactInfo=contact_info_informatica,
-            email_verified=True
-        )
-    
+
     # Crear usuarios personalizados para la escuela "Jesús María"
 
     teacherJM = []
