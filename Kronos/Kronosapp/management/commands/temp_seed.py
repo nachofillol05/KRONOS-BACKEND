@@ -5,11 +5,12 @@
 
 from django.core.management.base import BaseCommand
 from Kronosapp.models import (
-    DocumentType, Nationality, ContactInformation, School,
-    CustomUser, Module, AvailabilityState, TeacherAvailability,
-    Year, Course, Subject, TeacherSubjectSchool, Action,
-    EventType, Event, Role, CourseSubjects
+    DocumentType, Nationality, AvailabilityState, EventType, Role, Action,
+    
+    ContactInformation, School, CustomUser, Module, TeacherAvailability,
+    Year, Course, Subject, TeacherSubjectSchool, Event, CourseSubjects
 )
+
 import uuid
 from django.utils import timezone
 from datetime import time, timedelta, datetime

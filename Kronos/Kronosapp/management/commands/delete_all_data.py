@@ -6,13 +6,13 @@ from Kronosapp.models import (
     DocumentType, Nationality, ContactInformation, School,
     CustomUser, Module, AvailabilityState, TeacherAvailability,
     Year, Course, Subject, TeacherSubjectSchool, Action,
-    EventType, Event, Role #WHEN ADDING A MODEL HERE, ALSO ADD IT TO 'selected_kronosapp_models' BELOW
+    EventType, Event, Role, CourseSubjects #WHEN ADDING A MODEL HERE, ALSO ADD IT TO 'selected_kronosapp_models' BELOW
     )
 
 selected_kronosapp_models = [DocumentType, Nationality, ContactInformation, School,
     CustomUser, Module, AvailabilityState, TeacherAvailability,
     Year, Course, Subject, TeacherSubjectSchool, Action,
-    EventType, Event, Role]
+    EventType, Event, Role, CourseSubjects]
 
 class Command(BaseCommand):
     help = 'Delete all data from the database'
