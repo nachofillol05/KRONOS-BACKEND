@@ -1,4 +1,5 @@
 from Kronosapp.models import CustomUser
+from Kronosapp.management.commands.seed_images import defaultuser
 
 def seed_CustomUser_JM():
     # Preceptores
@@ -321,3 +322,11 @@ def seed_CustomUser_JM():
 
  # Asignar directivos a la escuela
 school.directives.add(directive_user)
+
+
+year1.preceptors.add(preceptor_1ro)
+year2.preceptors.add(preceptor_2do)
+year3.preceptors.add(preceptor_3ro)
+year4.preceptors.add(preceptor_4to)
+year5.preceptors.add(preceptor_5to)
+year6.preceptors.add(preceptor_6to)
