@@ -53,3 +53,4 @@ yarn-error.log
 *.bak
 *.swp
 .DS_Store
+Kronos/Kronosapp/management/commands/demo.py
