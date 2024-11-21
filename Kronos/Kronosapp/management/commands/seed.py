@@ -207,7 +207,8 @@ class Command(BaseCommand):
             phone='351410231',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_directive
+            contactInfo=contact_info_directive,
+            email_verified=True
         )
 
         # Creación de profesores para cada materia
@@ -223,7 +224,8 @@ class Command(BaseCommand):
             phone='3516701124',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_matematica
+            contactInfo=contact_info_matematica,
+            email_verified=True
         )
         teacherJM.append(teacher_matematica)  # Agregar profesor a la lista
 
@@ -239,7 +241,8 @@ class Command(BaseCommand):
             phone='3516701125',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_fisica
+            contactInfo=contact_info_fisica,
+            email_verified=True
         )
         teacherJM.append(teacher_fisica)
 
@@ -255,7 +258,8 @@ class Command(BaseCommand):
             phone='3516701126',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_quimica
+            contactInfo=contact_info_quimica,
+            email_verified=True
         )
         teacherJM.append(teacher_quimica)
 
@@ -271,7 +275,8 @@ class Command(BaseCommand):
             phone='3516701127',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_biologia
+            contactInfo=contact_info_biologia,
+            email_verified=True
         )
         teacherJM.append(teacher_biologia)
 
@@ -287,7 +292,8 @@ class Command(BaseCommand):
             phone='3516701128',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_ingles
+            contactInfo=contact_info_ingles,
+            email_verified=True
         )
         teacherJM.append(teacher_ingles)
 
@@ -303,7 +309,8 @@ class Command(BaseCommand):
             phone='3516701129',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_educacion_fisica
+            contactInfo=contact_info_educacion_fisica,
+            email_verified=True
         )
         teacherJM.append(teacher_educacion_fisica)
 
@@ -319,7 +326,8 @@ class Command(BaseCommand):
             phone='3516701130',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_religion
+            contactInfo=contact_info_religion,
+            email_verified=True
         )
         teacherJM.append(teacher_religion)
 
@@ -335,7 +343,8 @@ class Command(BaseCommand):
             phone='3516701131',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_latin
+            contactInfo=contact_info_latin,
+            email_verified=True
         )
         teacherJM.append(teacher_latin)
 
@@ -351,7 +360,8 @@ class Command(BaseCommand):
             phone='3516701132',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_geografia
+            contactInfo=contact_info_geografia,
+            email_verified=True
         )
         teacherJM.append(teacher_geografia)
 
@@ -367,7 +377,8 @@ class Command(BaseCommand):
             phone='3516701133',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_lengua
+            contactInfo=contact_info_lengua,
+            email_verified=True
         )
         teacherJM.append(teacher_lengua)
 
@@ -383,7 +394,8 @@ class Command(BaseCommand):
             phone='3516752234',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_informatica
+            contactInfo=contact_info_informatica,
+            email_verified=True
         )
         teacherJM.append(teacher_informatica)
 
@@ -402,7 +414,8 @@ class Command(BaseCommand):
             phone='3516701200',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_preceptor_1ro
+            contactInfo=contact_info_preceptor_1ro,
+            email_verified=True
         )
 
         preceptor_2do = CustomUser.objects.create_user(
@@ -417,7 +430,8 @@ class Command(BaseCommand):
             phone='3516701211',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_preceptor_2do
+            contactInfo=contact_info_preceptor_2do,
+            email_verified=True
         )
         preceptor_3ro = CustomUser.objects.create_user(
             email='preceptor3ro@secundaria.edu',
@@ -431,7 +445,8 @@ class Command(BaseCommand):
             phone='3516701222',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_preceptor_3ro
+            contactInfo=contact_info_preceptor_3ro,
+            email_verified=True
         )
         preceptor_4to = CustomUser.objects.create_user(
             email='preceptor4to@secundaria.edu',
@@ -445,7 +460,8 @@ class Command(BaseCommand):
             phone='3516701233',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_preceptor_4to
+            contactInfo=contact_info_preceptor_4to,
+            email_verified=True
         )
         preceptor_5to = CustomUser.objects.create_user(
             email='preceptor5to@secundaria.edu',
@@ -459,7 +475,8 @@ class Command(BaseCommand):
             phone='3516701244',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_preceptor_5to
+            contactInfo=contact_info_preceptor_5to,
+            email_verified=True
         )
         preceptor_6to = CustomUser.objects.create_user(
             email='preceptor6to@secundaria.edu',
@@ -473,7 +490,8 @@ class Command(BaseCommand):
             phone='3516701255',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_preceptor_6to
+            contactInfo=contact_info_preceptor_6to,
+            email_verified=True
         )
 
         # Asignar directivos a la escuela
@@ -899,7 +917,8 @@ class Command(BaseCommand):
             phone='3816001234',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_directive_villada
+            contactInfo=contact_info_directive_villada,
+            email_verified=True
         )
 
         directive_lasalle = CustomUser.objects.create_user(
@@ -914,7 +933,8 @@ class Command(BaseCommand):
             phone='3816005678',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_directive_lasalle
+            contactInfo=contact_info_directive_lasalle,
+            email_verified=True
         )
 
         # Preceptores Villada
@@ -930,7 +950,8 @@ class Command(BaseCommand):
             phone='3816006789',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_preceptor_1ro_villada
+            contactInfo=contact_info_preceptor_1ro_villada,
+            email_verified=True
         )
 
         preceptor_2do_villada = CustomUser.objects.create_user(
@@ -945,7 +966,8 @@ class Command(BaseCommand):
             phone='3816007890',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_preceptor_2do_villada
+            contactInfo=contact_info_preceptor_2do_villada,
+            email_verified=True
         )
 
         # Preceptores Lasalle
@@ -961,7 +983,8 @@ class Command(BaseCommand):
             phone='3816101234',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_preceptor_1ro_lasalle
+            contactInfo=contact_info_preceptor_1ro_lasalle,
+            email_verified=True
         )
 
         preceptor_2do_lasalle = CustomUser.objects.create_user(
@@ -976,7 +999,8 @@ class Command(BaseCommand):
             phone='3816105678',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_preceptor_2do_lasalle
+            contactInfo=contact_info_preceptor_2do_lasalle,
+            email_verified=True
         )
 
         # Información de contacto para la escuela Villada
@@ -1005,6 +1029,8 @@ class Command(BaseCommand):
             email='contacto@villada.edu',
             contactInfo=contact_info_villada
         )
+
+        school_villada.directives.add(directive_villada)
 
         # Crear escuela Lasalle
         school_lasalle = School.objects.create(
@@ -1157,7 +1183,8 @@ class Command(BaseCommand):
             phone='3816701124',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_villada
+            contactInfo=contact_info_villada,
+            email_verified=True
         )
 
         # Asignar profesor a materia en Villada
@@ -1180,7 +1207,8 @@ class Command(BaseCommand):
             phone='3816701134',
             documentType=dni,
             nationality=argentina,
-            contactInfo=contact_info_lasalle
+            contactInfo=contact_info_lasalle,
+            email_verified=True
         )
 
         # Asignar profesor a materia en Lasalle
