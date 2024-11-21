@@ -428,10 +428,11 @@ class SubjectPerModuleView(generics.ListAPIView):
                 return Response({"error": "Se necesita pasar el ID del curso, el ID del módulo y el ID de materia."}, status=status.HTTP_400_BAD_REQUEST)
             
             try:
-                course_subject = CourseSubjects.objects.get(course=course_id, subject=subject_id)
+                course_subject = CourseSubjects.objects.filter(course=course_id, subject=subject_id).first()
                 
                 teacher_subject_school = TeacherSubjectSchool.objects.get(coursesubjects=course_subject, school=request.school)
                 module = Module.objects.get(id=module_id)
+           
             except CourseSubjects.DoesNotExist:
                 return Response({"error": "CourseSubject no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
             except TeacherSubjectSchool.DoesNotExist:

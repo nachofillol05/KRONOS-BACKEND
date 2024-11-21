@@ -44,131 +44,128 @@ def get_subjects_dynamically(user_school):
 
 
 def schedule_creation(user_school):
+    import pulp
+    import time
+
+    # Obtener materias dinámicamente
     subjects = get_subjects_dynamically(user_school=user_school)
-    
-    # Filtrar horarios solo disponibles
+
+    # Reducir horarios redundantes
+    for subject in subjects:
+        subjects[subject]["availability"] = list(set(subjects[subject]["availability"]))
+
+    # Crear lista única de horarios disponibles
     course_schedules = list(set(
-        schedule for s in subjects for schedule in subjects[s]["availability"]
+        schedule for subject in subjects for schedule in subjects[subject]["availability"]
     ))
 
     # Variables de decisión
     assignment = pulp.LpVariable.dicts(
         "assignment",
-        ((subject, course_schedule) for subject in subjects for course_schedule in subjects[subject]["availability"]),
+        ((subject, schedule) for subject in subjects for schedule in subjects[subject]["availability"]),
         cat="Binary"
     )
 
     # Problema de optimización
     problem = pulp.LpProblem("Schedule_Assignment", pulp.LpMaximize)
 
-    # Función objetivo: maximizar las horas asignadas
-    problem += pulp.lpSum(assignment[subject, course_schedule] for subject in subjects for course_schedule in subjects[subject]["availability"])
+    # Función objetivo: Maximizar las horas asignadas
+    problem += pulp.lpSum(assignment[subject, schedule] 
+                          for subject in subjects 
+                          for schedule in subjects[subject]["availability"])
 
-    # Restricciones
+    # Restricción 1: Asignar cada materia hasta las horas requeridas
     for subject in subjects:
-        problem += pulp.lpSum(assignment[subject, course_schedule] for course_schedule in subjects[subject]["availability"]) <= subjects[subject]["hours"]
+        problem += pulp.lpSum(assignment[subject, schedule] 
+                              for schedule in subjects[subject]["availability"]) <= subjects[subject]["hours"]
 
-    for course_schedule in course_schedules:
-        problem += pulp.lpSum(assignment[subject, course_schedule] for subject in subjects if course_schedule in subjects[subject]["availability"]) <= 1
+    # Restricción 2: Evitar más de una asignación por horario
+    for schedule in course_schedules:
+        problem += pulp.lpSum(assignment[subject, schedule] 
+                              for subject in subjects if schedule in subjects[subject]["availability"]) <= 1
 
-    for course_schedule in course_schedules:
-        day_hour = "_".join(course_schedule.split("_")[:2])
-        for subject1 in subjects:
-            for subject2 in subjects:
-                if subject1 != subject2 and subjects[subject1]["teacher"] == subjects[subject2]["teacher"]:
-                    avail1 = [s for s in subjects[subject1]["availability"] if day_hour in s]
-                    avail2 = [s for s in subjects[subject2]["availability"] if day_hour in s]
-                    if avail1 and avail2:
-                        problem += pulp.lpSum(assignment[subject1, s] for s in avail1) + pulp.lpSum(assignment[subject2, s] for s in avail2) <= 1
+    # Restricción 3: Evitar conflictos de profesores en el mismo bloque horario
+    teacher_availability = {}
+    for subject in subjects:
+        teacher = subjects[subject]["teacher"]
+        for schedule in subjects[subject]["availability"]:
+            if teacher not in teacher_availability:
+                teacher_availability[teacher] = {}
+            day_hour = "_".join(schedule.split("_")[:2])
+            if day_hour not in teacher_availability[teacher]:
+                teacher_availability[teacher][day_hour] = []
+            teacher_availability[teacher][day_hour].append((subject, schedule))
 
-    # Establecer el límite de tiempo del solver a 2 minutos (120 segundos)
+    for teacher, day_hours in teacher_availability.items():
+        for day_hour, assignments in day_hours.items():
+            problem += pulp.lpSum(assignment[subject, schedule] for subject, schedule in assignments) <= 1
+
+    # Resolver el problema
     start_time = time.time()
-
-    solver = pulp.PULP_CBC_CMD(timeLimit=180)
+    solver = pulp.PULP_CBC_CMD(timeLimit=180, msg=True)
     problem.solve(solver)
-
     elapsed_time = time.time() - start_time
     print(f"Tiempo de ejecución: {elapsed_time} segundos")
 
-    # Guardar los resultados
+    # Evaluar resultados
     unassigned_subjects = {subject: subjects[subject]["hours"] for subject in subjects}
     for subject in subjects:
-        for course_schedule in subjects[subject]["availability"]:
-            if pulp.value(assignment[subject, course_schedule]) == 1:
+        for schedule in subjects[subject]["availability"]:
+            if pulp.value(assignment[subject, schedule]) == 1:
                 unassigned_subjects[subject] -= 1
 
-    # Creación de horario vacío
+    # Crear horario vacío
     schedule = {}
     modules = Module.objects.filter(school=user_school)
     assigned_modules = Schedules.objects.filter(tssId__school=user_school).values_list('module', flat=True)
     available_modules = modules.exclude(id__in=assigned_modules)
 
-    # Actualizar las horas asignadas para cada materia (subject)
-    for subject in subjects:
-        # Filtramos los módulos de disponibilidad de la materia
-        assigned_count = 0
-        for assigned_module in assigned_modules:
-            if assigned_module in subjects[subject]["availability"]:
-                assigned_count += 1
-        # Restar la cantidad correspondiente de horas asignadas
-        subjects[subject]["hours"] -= assigned_count
-
-    # Crear los módulos disponibles
     for module in available_modules:
         day = module.day.capitalize()
         hour = f"Hour{module.moduleNumber}"
-        course_str = module.school.name 
-
+        course_str = module.school.name
         schedule[f"{day}_{hour}_{course_str}"] = None
 
+    # Llenar horario con asignaciones
     for subject in subjects:
-        for course_schedule in subjects[subject]["availability"]:
-            if pulp.value(assignment[subject, course_schedule]) == 1:
-                schedule[course_schedule] = subject
+        for schedule_key in subjects[subject]["availability"]:
+            if pulp.value(assignment[subject, schedule_key]) == 1:
+                schedule[schedule_key] = subject
 
-    # Mostrar los errores de asignación
-    subject_errors = []
-    for subject, remaining_hours in unassigned_subjects.items():
-        if remaining_hours > 0 and "freeSubject" not in subject:
-            subject_errors.append(f"La materia {subject} tiene {remaining_hours} horas sin asignar")
+    # Crear lista de errores
+    subject_errors = [
+        f"La materia {subject} tiene {hours} horas sin asignar"
+        for subject, hours in unassigned_subjects.items() if hours > 0 and "freeSubject" not in subject
+    ]
 
-    # Crear la lista final de horarios
+    # Crear lista de horarios finales
     schedule_list = []
-    for course_schedule, subject in schedule.items():
+    for schedule_key, subject in schedule.items():
         if subject is not None:
-            day, hour, course_str = course_schedule.split("_")
+            day, hour, course_str = schedule_key.split("_")
             tss_id = subjects[subject]["tss_id"]
             school = subjects[subject]["school_id"]
-            
-
-            # Extraer solo los campos serializables del profesor (teacher)
             teacher = subjects[subject]["teacher_class"]
-            teacher_name = f"{teacher.first_name} {teacher.last_name}"  # serializar solo el nombre
-            teacher_id = teacher.id  # También podrías usar el ID del profesor
-
-            subjectt = subjects[subject]["subject"]
             course_obj = Course.objects.get(name=course_str, year__school=school)
-            course_id = course_obj.id
-            
             profile_picture_base64 = None
+
             if teacher.profile_picture:
                 profile_picture_base64 = convert_binary_to_image(teacher.profile_picture)
-           
+
             schedule_list.append({
-                "subject_id": subjectt.id,
-                "subject_color": subjectt.color,
-                "subject_name": subjectt.name,
-                "subject_abreviation": subjectt.abbreviation,
-                "name": teacher_name,  # Nombre del profesor como string
-                "teacher_id": teacher_id,  # ID del profesor
+                "subject_id": subjects[subject]["subject"].id,
+                "subject_color": subjects[subject]["subject"].color,
+                "subject_name": subjects[subject]["subject"].name,
+                "subject_abreviation": subjects[subject]["subject"].abbreviation,
+                "name": f"{teacher.first_name} {teacher.last_name}",
+                "teacher_id": teacher.id,
                 "day": day,
                 "moduleNumber": int(hour.replace("Hour", "")),
                 "course": course_str,
                 "profile_picture": profile_picture_base64,
-                "course_id": course_id,
+                "course_id": course_obj.id,
                 "tss_id": tss_id,
-                "school_id": school
+                "school_id": school,
             })
 
-    result = [schedule_list, subject_errors]
-    return result
+    return [schedule_list, subject_errors]
