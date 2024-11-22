@@ -305,7 +305,9 @@ def seed_CustomUser_JM():
     )
     teacherJM.append(teacher_informatica)
 
- # Asignar directivos a la escuela
+
+"""
+# Asignar directivos a la escuela
 school.directives.add(directive_user)
 
 
@@ -315,3 +317,28 @@ year3.preceptors.add(preceptor_3ro)
 year4.preceptors.add(preceptor_4to)
 year5.preceptors.add(preceptor_5to)
 year6.preceptors.add(preceptor_6to)
+
+
+    # Now handle the many-to-many relationships
+    event_roles = [
+        (event1, [teacher_role], [teacher_matematica, teacher_fisica]),
+        (event2, [teacher_role], [teacher_quimica, teacher_biologia]),
+        (event3, [teacher_role], [teacher_ingles, teacher_geografia]),
+        (event4, [directive_role], [teacher_informatica]),
+        (event5, [directive_role, teacher_role], [teacher_informatica, teacher_matematica, teacher_geografia]),
+        (event6, [teacher_role], [teacher_quimica, teacher_ingles]),
+        (event7, [directive_role, preceptor_role], [teacher_matematica, teacher_biologia]),
+        (event8, [directive_role, teacher_role, preceptor_role], [teacher_educacion_fisica, teacher_lengua]),
+        (event9, [teacher_role], [teacher_geografia, teacher_latin]),
+        (event10, [directive_role, teacher_role], [teacher_religion, teacher_informatica]),
+        (event11, [preceptor_role], [teacher_biologia, teacher_quimica, teacher_matematica]),
+        (event12, [teacher_role], [teacher_educacion_fisica, teacher_religion]),
+        (event13, [teacher_role, preceptor_role], [teacher_geografia, teacher_lengua, teacher_informatica]),
+        (event14, [teacher_role], [teacher_fisica, teacher_matematica])
+    ]
+
+    # Add roles and affiliated teachers
+    for event, roles, teachers in event_roles:
+        event.roles.add(*roles)
+        event.affiliated_teachers.add(*teachers)
+"""
