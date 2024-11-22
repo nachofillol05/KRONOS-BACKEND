@@ -14,19 +14,19 @@ class Command(BaseCommand):
     # python manage.py seed
     def handle(self, *args, **options):
         # Crear tipos de documentos
-        dni = DocumentType.objects.create(name="DNI", description="Documento Nacional de Identidad")
-        passport = DocumentType.objects.create(name="Pasaporte", description="Documento de viaje internacional")
-        cuit = DocumentType.objects.create(name="CUIT", description="CUIT")
+        dni = DocumentType.objects.get(name="DNI", description="Documento Nacional de Identidad")
+        passport = DocumentType.objects.get(name="Pasaporte", description="Documento de viaje internacional")
+        cuit = DocumentType.objects.get(name="CUIT", description="CUIT")
 
         # Crear nacionalidades
-        argentina = Nationality.objects.create(name="Argentina", description="Nacionalidad argentina")
-        uruguay = Nationality.objects.create(name="Uruguay", description="Nacionalidad uruguaya")
-        brasil = Nationality.objects.create(name="Brasil", description="Nacionalidad brasileña")
-        paraguay = Nationality.objects.create(name="Paraguay", description="Nacionalidad paraguaya")
-        chile = Nationality.objects.create(name="Chile", description="Nacionalidad chilena")
-        bolivia = Nationality.objects.create(name="Bolivia", description="Nacionalidad boliviana")
-        peru = Nationality.objects.create(name="Perú", description="Nacionalidad peruana")
-        otros = Nationality.objects.create(name="Otros", description="Nacionalidad otros")
+        argentina = Nationality.objects.get(name="Argentina", description="Nacionalidad argentina")
+        uruguay = Nationality.objects.get(name="Uruguay", description="Nacionalidad uruguaya")
+        brasil = Nationality.objects.get(name="Brasil", description="Nacionalidad brasileña")
+        paraguay = Nationality.objects.get(name="Paraguay", description="Nacionalidad paraguaya")
+        chile = Nationality.objects.get(name="Chile", description="Nacionalidad chilena")
+        bolivia = Nationality.objects.get(name="Bolivia", description="Nacionalidad boliviana")
+        peru = Nationality.objects.get(name="Perú", description="Nacionalidad peruana")
+        otros = Nationality.objects.get(name="Otros", description="Nacionalidad otros")
 
 
         # Crear ContactInformation
