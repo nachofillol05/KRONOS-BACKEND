@@ -14,11 +14,11 @@ class Command(BaseCommand):
     # python manage.py seed
     def handle(self, *args, **options):
         # Crear tipos de documentos
-        dni = DocumentType.objects.get(name="DNI", description="Documento Nacional de Identidad")
-        passport = DocumentType.objects.get(name="Pasaporte", description="Documento de viaje internacional")
-        cuit = DocumentType.objects.get(name="CUIT", description="CUIT")
+        dni = DocumentType.objects.get(name="DNI")
+        passport = DocumentType.objects.get(name="Pasaporte")
+        cuit = DocumentType.objects.get(name="CUIT")
 
-        # Crear nacionalidades
+        # get nacionalidades
         argentina = Nationality.objects.get(name="Argentina", description="Nacionalidad argentina")
         uruguay = Nationality.objects.get(name="Uruguay", description="Nacionalidad uruguaya")
         brasil = Nationality.objects.get(name="Brasil", description="Nacionalidad brasileña")
@@ -27,6 +27,30 @@ class Command(BaseCommand):
         bolivia = Nationality.objects.get(name="Bolivia", description="Nacionalidad boliviana")
         peru = Nationality.objects.get(name="Perú", description="Nacionalidad peruana")
         otros = Nationality.objects.get(name="Otros", description="Nacionalidad otros")
+
+        # get estados de disponibilidad
+        available = AvailabilityState.objects.get(name='Disponible', isEnabled=True)
+        not_available = AvailabilityState.objects.get(name='No Disponible', isEnabled=False)
+        asigned = AvailabilityState.objects.get(name='Asignado', isEnabled=False)
+
+        # Crear acciones
+        action1 = Action.objects.get(name='Agregar materia', isEnabled=True)
+        action2 = Action.objects.get(name='Cambiar materia', isEnabled=False)
+
+
+        # Crear tipos de eventos
+        event_type1 = EventType.objects.get(name='Paro de transporte')
+        event_type2 = EventType.objects.get(name='Viaje escolar')
+        event_type3 = EventType.objects.get(name='Paro docente')
+        event_type4 = EventType.objects.get(name='Taller Docente')
+        event_type5 = EventType.objects.get(name='Mantenimiento Infraestructura')
+        event_type = EventType.objects.get(name='Otro')
+        
+        # Crear roles
+        directive_role = Role.objects.get(name='Directivo')
+        teacher_role = Role.objects.get(name='Profesor')
+        preceptor_role = Role.objects.get(name='Preceptor')
+
 
 
         # Crear ContactInformation
@@ -512,11 +536,7 @@ class Command(BaseCommand):
                 modulesJM.append(module)
         
 
-        # Crear estados de disponibilidad
-        available = AvailabilityState.objects.create(name='Disponible', isEnabled=True)
-        not_available = AvailabilityState.objects.create(name='No Disponible', isEnabled=False)
-        asigned = AvailabilityState.objects.create(name='Asignado', isEnabled=False)
-
+      
         # Crear disponibilidad de profesor en Jesús María
         for j, teacher in enumerate(teacherJM):
             for i, module in enumerate(modulesJM):
@@ -673,23 +693,7 @@ class Command(BaseCommand):
             )
 
         
-        # Crear acciones
-        action1 = Action.objects.create(name='Agregar materia', isEnabled=True)
-        action2 = Action.objects.create(name='Cambiar materia', isEnabled=False)
-
-
-        # Crear tipos de eventos
-        event_type1 = EventType.objects.create(name='Paro de transporte', description='Interrupción de servicios de transporte')
-        event_type2 = EventType.objects.create(name='Viaje escolar', description='Excursión organizada por la escuela')
-        event_type3 = EventType.objects.create(name='Paro docente', description='Paro de docentes')
-        event_type4 = EventType.objects.create(name='Taller Docente', description='Dictado de taller docente')
-        event_type5 = EventType.objects.create(name='Mantenimiento Infraestructura', description='realizacion de mantenimiento en el instituto')
-        event_type = EventType.objects.create(name='Otro', description='Otro tipo de evento')
-        
-        # Crear roles
-        directive_role = Role.objects.create(name='Directivo')
-        teacher_role = Role.objects.create(name='Profesor')
-        preceptor_role = Role.objects.create(name='Preceptor')
+    
 
         # Crear evento
         event1 = Event.objects.create(
