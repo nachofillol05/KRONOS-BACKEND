@@ -4,7 +4,7 @@ def seed_Subject_JM():
 
     school = School.objects.get(name='Jesus Maria')# Defines which school
 
-    # Defines subjects to create with a structure similar to year_data
+    # Defines subjects to create
     subject_list = [
         {"name": "Matemáticas", "color": "#C0392B", "abbreviation": "MAT"},
         {"name": "Física", "color": "#2980B9", "abbreviation": "FIS"},
@@ -19,11 +19,8 @@ def seed_Subject_JM():
         {"name": "Informatica", "color": "#F39C12", "abbreviation": "INF"}
     ]
 
-    # Create Subject objects from the list of dictionaries
-    subjectsJM = [
+    # Bulk creation of subjects
+    Subject.objects.bulk_create(
         Subject(name=subject['name'], color=subject['color'], abbreviation=subject['abbreviation'], school=school)
         for subject in subject_list
-    ]
-
-    # Bulk creation of subjects
-    Subject.objects.bulk_create(subjectsJM)
+    )
