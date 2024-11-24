@@ -8,9 +8,9 @@ from Kronosapp.management.seeds.schools.jesusmaria.Module import seed_Module_JM
 from Kronosapp.management.seeds.schools.jesusmaria.Course import seed_Course_JM
 from Kronosapp.management.seeds.schools.jesusmaria.Event import seed_Event_JM
 from Kronosapp.management.seeds.schools.jesusmaria.CustomUser import seed_CustomUser_JM
-#from Kronosapp.management.seeds.schools.jesusmaria.CourseSubjects import seed_CourseSubjects_JM
-#from Kronosapp.management.seeds.schools.jesusmaria.TeacherAvailability import seed_TeacherAvailability_JM
-#from Kronosapp.management.seeds.schools.jesusmaria.TeacherSubjectSchool import seed_TeacherSubjectSchool_JM
+from Kronosapp.management.seeds.schools.jesusmaria.CourseSubjects import seed_CourseSubject_JM
+from Kronosapp.management.seeds.schools.jesusmaria.TeacherAvailability import seed_TeacherAvailability_JM
+from Kronosapp.management.seeds.schools.jesusmaria.TeacherSubjectSchool import seed_TeacherSubjectSchool_JM
 
 from Kronosapp.models import Year
 
@@ -38,18 +38,18 @@ class Command(BaseCommand):
 
         seed_Course_JM()
         print("seed_Course_JM")
+        
+        seed_CustomUser_JM()
+        print("seed_CustomUser_JM")
 
-        #seed_CustomUser_JM()
-        #print("seed_CustomUser_JM")
+        seed_CourseSubject_JM()
+        print("seed_CourseSubjects_JM")
 
-        #seed_CourseSubjects_JM()
-        #print("seed_CourseSubjects_JM")
+        seed_TeacherAvailability_JM()
+        print("seed_TeacherAvailability_JM")
 
-        #seed_TeacherAvailability_JM()
-        #print("seed_TeacherAvailability_JM")
-
-        #seed_TeacherSubjectSchool_JM()
-        #print("seed_TeacherSubjectSchool_JM")
+        seed_TeacherSubjectSchool_JM()
+        print("seed_TeacherSubjectSchool_JM")
         
         
 

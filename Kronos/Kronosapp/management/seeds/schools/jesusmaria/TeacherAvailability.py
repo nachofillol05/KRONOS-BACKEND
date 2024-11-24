@@ -1,12 +1,26 @@
-from Kronosapp.models import TeacherAvailability
+from datetime import datetime
+from Kronosapp.models import TeacherAvailability,CustomUser,Module,AvailabilityState
 
-# Crear disponibilidad de profesor en Jesús María
-for j, teacher in enumerate(teacherJM):
-    for i, module in enumerate(modulesJM):
-        availabilityState = available if i % 3 < 2 else not_available
-        TeacherAvailability.objects.create(
+def seed_TeacherAvailability_JM():
+
+    available = AvailabilityState.objects.get(name="Disponible")
+    not_available = AvailabilityState.objects.get(name="No Disponible")
+
+    modules = Module.objects.filter(school__name='Jesus Maria')
+    users = CustomUser.objects.all()
+    
+    teachers = []
+    for i, user in enumerate(users):
+        if i >= 6 and i <= 18:
+            teachers.append(user)
+
+    TeacherAvailability.objects.bulk_create(
+        TeacherAvailability(
             module=module,
             teacher=teacher,
             loadDate=datetime.now(),
-            availabilityState=availabilityState
+            availabilityState=(available if i % 3 < 2 else not_available)
         )
+        for teacher in teachers
+        for i, module in enumerate(modules)
+    )
