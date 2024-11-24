@@ -210,7 +210,6 @@ class ViewTeacherSchedule(generics.ListAPIView):
     serializer_class = ScheduleSerializer
     def get(self, request):
         teacher_id = self.request.user.pk
-        school_id = request.headers.get('SCHOOL-ID')
 
         freeteacher = call_free_teacher()
 
@@ -232,7 +231,6 @@ class ViewTeacherSchedule(generics.ListAPIView):
                             s.name as subject_name,
                             sc.logo,
                             sc.name,
-                            sc.id as school_id,
                             RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
                         FROM Kronosapp_schedules sh
                         INNER JOIN Kronosapp_module m 
@@ -254,11 +252,11 @@ class ViewTeacherSchedule(generics.ListAPIView):
                     ) as t
                     WHERE t.RN = 1
                     AND t.teacher_id = %s
-                    AND t.school_id = %s
                     ORDER BY course_id, module_id	
                 """
-                cursor.execute(sql_query, [datetime.now(), teacher_id, freeteacher, teacher_id, school_id])
+                cursor.execute(sql_query, [datetime.now(), teacher_id, freeteacher, teacher_id])
                 results = cursor.fetchall()
+
                 from ..utils import convert_binary_to_image
                 data = []
                 for row in results:
