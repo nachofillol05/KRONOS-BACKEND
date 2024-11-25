@@ -6,10 +6,11 @@ from .serializers.auth_serializer import RegisterSerializer, RegisterTeacherSubj
 from PIL import Image
 from io import BytesIO
 import base64
-from .models import CustomUser, DocumentType, Nationality, ContactInformation, Subject
+from .models import CustomUser, DocumentType, Nationality, ContactInformation, Subject, AvailabilityState, TeacherAvailability
 from django.http import HttpResponse
 from rest_framework import generics, status
 from rest_framework.response import Response
+from datetime import datetime
 
 
 
@@ -67,6 +68,16 @@ def verify_email(request,token):
             return HttpResponse('Correo electrónico verificado con éxito', status=200)
     except CustomUser.DoesNotExist:
         return HttpResponse('Token de verificación no válido', status=404)
+
+def change_teacher_aviability(module, teacher):
+    try:
+        state = AvailabilityState.objects.get(name="Asignado")
+    except AvailabilityState.DoesNotExist:
+        AvailabilityState.objects.create(name="Asignado", isEnabled=False)
+    availability = TeacherAvailability.objects.get(module=module, teacher=teacher)
+    availability.availabilityState = state
+    availability.loadDate = datetime.now()
+    availability.save()
 
 
 def convert_image_to_binary(image_file):

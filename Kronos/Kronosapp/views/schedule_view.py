@@ -24,7 +24,7 @@ from ..schedule_creation import schedule_creation
 from ..serializers.Subject_serializer import SubjectWithCoursesSerializer
 from ..serializers.schedule_serializer import ScheduleSerializer, CreateScheduleSerializer
 from ..serializers.history_serializer import HistorySerializer
-from ..utils import call_free_teacher,call_free_subject
+from ..utils import call_free_teacher,call_free_subject, change_teacher_aviability
 
 
 class CreateModuleSchedule(generics.CreateAPIView):
@@ -81,6 +81,7 @@ class NewScheduleCreation(generics.GenericAPIView):
 
                 newschedule = Schedules(date=datetime.now(), action=action, module=module, tssId=tss)
                 newschedule.save()
+                change_teacher_aviability(module, tss.teacher)
 
             return Response({'message': 'Schedules created successfully'})  
 
@@ -469,12 +470,7 @@ class SubjectPerModuleView(generics.ListAPIView):
                 "moduleNumber": module.moduleNumber,
                 "subject_name": subject.name
             }
-
-            state = AvailabilityState.objects.get(name="Asignado")
-            availability = TeacherAvailability.objects.get(module=module, teacher=teacher_subject_school.teacher)
-            availability.availabilityState = state
-            availability.loadDate = datetime.now()  
-            availability.save() 
+            change_teacher_aviability(module, teacher_subject_school.teacher)
 
         return Response(schedule_dict, status=status.HTTP_201_CREATED)
 
@@ -551,7 +547,6 @@ class SubjectPerModuleView(generics.ListAPIView):
             try:
                 availability = TeacherAvailability.objects.get(teacher=teacher, module_id=module_id)
             except TeacherAvailability.DoesNotExist:
-                print("NO EXISTE LA DISPONIBILIDAD DEL PROFESOR")
                 return Response({"error": "No se encontro la disponibilidad del profesor."}, status=status.HTTP_404_NOT_FOUND)
             availability.availabilityState = state
             availability.loadDate = datetime.now()
