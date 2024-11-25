@@ -157,7 +157,7 @@ def schedule_creation(user_school):
                 "subject_color": subjects[subject]["subject"].color,
                 "subject_name": subjects[subject]["subject"].name,
                 "subject_abreviation": subjects[subject]["subject"].abbreviation,
-                "name": f"{teacher.first_name} {teacher.last_name}",
+                "nombre": f"{teacher.first_name} {teacher.last_name}",
                 "teacher_id": teacher.id,
                 "day": day,
                 "moduleNumber": int(hour.replace("Hour", "")),

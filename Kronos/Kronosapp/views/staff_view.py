@@ -156,7 +156,7 @@ class DniComprobation(generics.GenericAPIView):
     def post(self, request):
         document = request.data.get('document')
         documentType = request.data.get('documentType')
-        user = CustomUser.objects.filter(documentType=documentType, document=document)            
+        user = CustomUser.objects.filter(documentType=documentType, document=document).exclude(document=11111111)        
 
         if not user.exists():
             return Response({'results': 'DNI no está en uso'}, status=200)

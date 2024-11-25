@@ -75,9 +75,9 @@ class NewScheduleCreation(generics.GenericAPIView):
                     return Response({'error': f'Teacher not found'}, status=404)
 
                 try:
-                    action = Action.objects.get(name="agregar materia")
+                    action = Action.objects.get(name="agregar materia con automatizacion")
                 except Action.DoesNotExist:
-                    return Response({'error': 'Action "agregar materia" not found'}, status=404)
+                    action = Action.objects.create(name="agregar materia con automatizacion")
 
                 newschedule = Schedules(date=datetime.now(), action=action, module=module, tssId=tss)
                 newschedule.save()
@@ -440,10 +440,15 @@ class SubjectPerModuleView(generics.ListAPIView):
                 return Response({"error": "TeacherSubjectSchool no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
             except Module.DoesNotExist:
                 return Response({"error": "Módulo no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                action=Action.objects.get(name="agregar materia")
+            except:
+                action=Action.objects.create(name="agregar materia")
 
             schedule = Schedules.objects.create(
                 date=datetime.now(),
-                action_id=None,
+                action=action,
                 module=module,
                 tssId=teacher_subject_school
             )
@@ -502,11 +507,13 @@ class SubjectPerModuleView(generics.ListAPIView):
                         AND course_id = %s;
                     """
                 cursor.execute(sql_query, [module_id, course_id])
-                old_teacher =  [row[5] for row in cursor.fetchall()]
-                teacher = int(old_teacher[0])
+                results = cursor.fetchall()
 
-        
-        print(old_teacher)
+                if not results:
+                    return Response({'error': 'No se encontraron registros.'}, status=404)
+                old_teacher = results[0][5]
+                schedule_id = results[0][0]  
+                teacher = int(old_teacher)
         
         if not module_id or not course_id:
             return Response({"error": "Se necesita pasar el ID del curso y el ID del módulo."}, status=status.HTTP_400_BAD_REQUEST)
@@ -516,12 +523,10 @@ class SubjectPerModuleView(generics.ListAPIView):
         try:
             module = Module.objects.get(pk=module_id)
         except Module.DoesNotExist:
-            print("NO EXISTE EL MODULO")
             return Response({"error": "El modulo proporcionado no existe."}, status=status.HTTP_400_BAD_REQUEST)
         try: 
             course = Course.objects.get(pk=course_id)
         except Course.DoesNotExist:
-            print("NO EXISTE EL CURSO")
             return Response({"error": "El curso proporcionado no existe."}, status=status.HTTP_400_BAD_REQUEST)
         try:
             course_subject = CourseSubjects.objects.get(course=course, subject=freesubject)
@@ -531,10 +536,19 @@ class SubjectPerModuleView(generics.ListAPIView):
             teacher_subject_school = TeacherSubjectSchool.objects.get(school=request.school, teacher=freeTeacher, coursesubjects=course_subject)
         except TeacherSubjectSchool.DoesNotExist:
             teacher_subject_school = TeacherSubjectSchool.objects.create(school=request.school, teacher=freeTeacher, coursesubjects=course_subject)
-
+        
+        
         try:
-            print("ELIMINA EL SHEDULE")
-            schedule = Schedules.objects.create(
+            state = Action.objects.get(name="eliminar materia")
+        except Action.DoesNotExist:
+            state = Action.objects.create(name="eliminar materia")
+        schedule = Schedules.objects.get(id=schedule_id)
+        schedule.action=state
+        schedule.save()
+        
+        
+        try:
+            Schedules.objects.create(
                 date = datetime.now(),
                 action = None,
                 module = module,
