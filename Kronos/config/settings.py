@@ -28,12 +28,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-_1x1bn^@(i$e8#0z!4umrl*7p52*s$!gaeyu&r24#&n#n6d$02'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -76,11 +76,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
 ]
 #CORS_ALLOW_ALL_ORIGINS = True#ESTO ES SOLO PARA EL DESARROLLO DESPUES CAMBIAR PARA PERMITIR DOMINIOS ESPECIFICOS
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    # Añade otros dominios permitidos aquí
-]
+CORS_ALLOWED_ORIGINS = True
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'school-id',
 ]
