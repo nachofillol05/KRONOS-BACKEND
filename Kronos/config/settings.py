@@ -75,11 +75,17 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
 ]
-#CORS_ALLOW_ALL_ORIGINS = True#ESTO ES SOLO PARA EL DESARROLLO DESPUES CAMBIAR PARA PERMITIR DOMINIOS ESPECIFICOS
-CORS_ALLOWED_ORIGINS = True
+
+
+# Permitir todos los orígenes
+CORS_ALLOW_ALL_ORIGINS = True
+
+# Permitir cabeceras personalizadas adicionales
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'school-id',
 ]
+
+# Permitir cookies y credenciales
 CORS_ALLOW_CREDENTIALS = True
 
 
