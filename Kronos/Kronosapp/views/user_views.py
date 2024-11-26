@@ -188,7 +188,7 @@ class ProfileView(generics.GenericAPIView):
                         ON tss.school_id = sc.id
                     INNER JOIN Kronosapp_subject s
                         ON cs.subject_id = s.id
-                    WHERE DATE(sh.`date`) <= %s
+                    WHERE DATE(sh.date) <= %s
                     AND t.id = %s
                     AND sc.id = %s
                 ) as t
@@ -221,7 +221,7 @@ class ProfileView(generics.GenericAPIView):
                             ON tss.school_id = sc.id
                         INNER JOIN Kronosapp_subject s
                             ON cs.subject_id = s.id
-                        WHERE DATE(sh.`date`) <= %s
+                        WHERE DATE(sh.date) <= %s
                         AND t.id = %s
                     ) as t
                     WHERE t.RN = 1;

@@ -156,7 +156,7 @@ class ViewSchedule(generics.ListAPIView):
                            ON cs.subject_id = s.id
                     INNER JOIN Kronosapp_course c 
                             ON cs.course_id = c.id
-                    WHERE DATE(sh.`date`) <= %s
+                    WHERE DATE(sh.date) <= %s
                 ) as t
                 WHERE t.RN = 1
                 ORDER BY course_id, module_id
@@ -248,7 +248,7 @@ class ViewTeacherSchedule(generics.ListAPIView):
                             ON cs.subject_id = s.id
                         INNER JOIN Kronosapp_course c 
                                 ON cs.course_id = c.id
-                        WHERE DATE(sh.`date`) <= %s
+                        WHERE DATE(sh.date) <= %s
                         AND t.id = %s OR t.id = %s
                     ) as t
                     WHERE t.RN = 1
@@ -388,7 +388,7 @@ class SubjectPerModuleView(generics.ListAPIView):
                                 ON cs.subject_id = s.id
                             INNER JOIN Kronosapp_course c 
                                     ON cs.course_id = c.id
-                            WHERE DATE(sh.`date`) <=  %s
+                            WHERE DATE(sh.date) <=  %s
                             AND m.id = %s
                         ) as t
                         WHERE t.RN = 1
