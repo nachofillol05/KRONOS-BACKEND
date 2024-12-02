@@ -53,11 +53,11 @@ class Nationality(models.Model):
 
 
 class ContactInformation(models.Model):
-    postalCode = models.CharField(max_length=20)
-    street = models.CharField(max_length=255)
-    streetNumber = models.CharField(max_length=10, validators=[validate_numeric])
-    city = models.CharField(max_length=255)
-    province = models.CharField(max_length=255)
+    postalCode = models.CharField(max_length=20, blank=True)
+    street = models.CharField(max_length=255, blank=True)
+    streetNumber = models.CharField(max_length=10, validators=[validate_numeric], blank=True)
+    city = models.CharField(max_length=255, blank=True)
+    province = models.CharField(max_length=255, blank=True)
 
     def __str__(self) -> str:
         return f"{self.street} {self.streetNumber}, {self.city}, {self.province}"
@@ -66,7 +66,7 @@ class ContactInformation(models.Model):
 class School(models.Model):
     name = models.CharField(max_length=255)
     abbreviation = models.CharField(max_length=10)
-    logo = models.ImageField(upload_to='logos/', null=True, blank=True)
+    logo = models.BinaryField(null=True, blank=True)
     email = models.EmailField(max_length=255, unique=True)
     contactInfo = models.OneToOneField(ContactInformation, null=True, blank=True, on_delete=models.SET_NULL)
     directives = models.ManyToManyField('CustomUser', related_name='directed_schools', blank=True)
@@ -78,12 +78,13 @@ class School(models.Model):
 class CustomUser(AbstractUser):
     GENDER_CHOICES = [
         ('masculino', 'Masculino'),
-        ('femenino', 'Femenino')
+        ('femenino', 'Femenino'),
+        ('otro', "Otro")
     ]
-    document = models.CharField(max_length=255, unique=True, blank=True, null=True, validators=[validate_numeric])
+    document = models.CharField(max_length=255, unique=True, blank=True, null=True)
     first_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255, blank=True, null=True)
-    profile_picure = models.ImageField(upload_to='logos/', null=True, blank=True)
+    profile_picture = models.BinaryField(null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True)
     email = models.EmailField(max_length=255, unique=True)
     hoursToWork = models.IntegerField(blank=True, null=True)
@@ -109,6 +110,10 @@ class CustomUser(AbstractUser):
     
     def is_preceptor(self, school: School):
         return Year.objects.filter(school=school, preceptors=self).exists()
+    
+    def get_teacher_availability(self, school: School):
+        queryset = TeacherAvailability.objects.filter(module__school=school, teacher=self)
+        return queryset.filter(availabilityState__isEnabled=True)
     
     def __str__(self) -> str:
         return f'{self.pk} {self.email}'
@@ -136,7 +141,7 @@ class AvailabilityState(models.Model):
     isEnabled = models.BooleanField(default=True)
 
     def __str__(self) -> str:
-        return self.name
+        return f"{self.pk}. {self.name}"
 
 
 class TeacherAvailability(models.Model):
@@ -171,20 +176,10 @@ class Course(models.Model):
 
 class Subject(models.Model):
     name = models.CharField(max_length=255)
-    studyPlan = models.TextField()
     description = models.CharField(max_length=255, blank=True)
-    weeklyHours = models.IntegerField()
-    color = models.CharField(max_length=7, blank=True)  # Including # for hex color
+    color = models.CharField(max_length=9, blank=True)  # Including # for hex color
     abbreviation = models.CharField(max_length=10, blank=True)
-    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True)
-    def __str__(self) -> str:
-        return self.name
-    def __str__(self) -> str:
-        return f"{self.name} - {self.course}"
-
-    def __str__(self) -> str:
-        return self.name
-
+    school = models.ForeignKey(School, on_delete=models.CASCADE)
     def __str__(self) -> str:
         return f"{self.name}"
 
@@ -193,15 +188,18 @@ class CourseSubjects(models.Model):
     studyPlan = models.TextField()
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    weeklyHours = models.IntegerField()
+    def __str__(self) -> str:
+       return f"{self.pk} - {self.course} - {self.subject}"
 
 
 class TeacherSubjectSchool(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, blank=True, null=True)
+    coursesubjects = models.ForeignKey(CourseSubjects, on_delete=models.SET_NULL, blank=True, null=True)
     teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return f"{self.teacher} - {self.subject} - {self.school}"
+        return f"{self.teacher} - {self.coursesubjects} - {self.school}"
 
 
 class Action(models.Model):
@@ -216,7 +214,7 @@ class Schedules(models.Model):
     date = models.DateTimeField()
     action = models.ForeignKey(Action, null=True, on_delete=models.SET_NULL)
     module = models.ForeignKey(Module, on_delete=models.CASCADE)
-    tssId = models.ForeignKey(TeacherSubjectSchool, on_delete=models.CASCADE)
+    tssId = models.ForeignKey(TeacherSubjectSchool, on_delete=models.CASCADE, blank=True, null=True)
 
     def __str__(self) -> str:
         return f"{self.date} - {self.action} - {self.module}"
@@ -227,13 +225,15 @@ class EventType(models.Model):
     description = models.CharField(max_length=255, blank=True)
 
     def __str__(self) -> str:
-        return self.name
+        return f"{self.pk} - {self.name}"
 
 
 class Role(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255, blank=True)
 
+    def __str__(self) -> str:
+        return f"{self.pk} - {self.name}"
 
 class Event(models.Model):
     name = models.CharField(max_length=255)
@@ -246,4 +246,4 @@ class Event(models.Model):
     affiliated_teachers = models.ManyToManyField(CustomUser, blank=True)
 
     def __str__(self) -> str:
-        return f"{self.name} - {self.school} - {self.eventType}"
+        return f"{self.pk} {self.name} - {self.school} - {self.eventType}"

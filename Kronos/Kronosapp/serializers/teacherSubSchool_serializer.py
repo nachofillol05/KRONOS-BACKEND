@@ -4,4 +4,4 @@ from ..models import TeacherSubjectSchool, School, CustomUser
 class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeacherSubjectSchool
-        fields = '__all__'
+        fields = ['teacher', 'school', 'coursesubjects']

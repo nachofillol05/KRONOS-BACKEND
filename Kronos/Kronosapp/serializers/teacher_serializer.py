@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from ..serializers.user_serializer import UserSerializer
 from ..models import ContactInformation, CustomUser, DocumentType, Nationality, TeacherAvailability, TeacherSubjectSchool
 
 class ContactInformationSerializer(serializers.ModelSerializer):
@@ -23,24 +24,30 @@ class TeacherAvailabilitySerializer(serializers.ModelSerializer):
         fields = ['module', 'loadDate', 'state']
 
 class TeacherSubjectSchoolSerializer(serializers.ModelSerializer):
-    subject_name = serializers.CharField(source='subject.name')
+    subject_name = serializers.CharField(source='coursesubjects.subject.name', allow_blank=True, default='')
     school_name = serializers.CharField(source='school.name')
 
     class Meta:
         model = TeacherSubjectSchool
         fields = ['subject_name', 'school_name']
+        
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.coursesubjects is None:
+            representation['subject_name'] = ''
+        elif instance.coursesubjects.subject.name is None:
+            representation['subject_name'] = ''
+        return representation
+        
 
-
-class TeacherSerializer(serializers.ModelSerializer):
-    contactInfo = ContactInformationSerializer()
-    documentType = DocumentTypeSerializer()
-    nationality = NationalitySerializer()
+class TeacherSerializer(UserSerializer):
     availability = serializers.SerializerMethodField()
     subjects = serializers.SerializerMethodField()
+    years = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'first_name', 'last_name', 'gender', 'email', 'document', 'documentType', 'nationality', 'email_verified', 'contactInfo', 'availability', 'subjects']
+        fields = ['id', 'first_name', 'last_name', 'profile_picture', 'gender', 'profile_picture', 'phone', 'email', 'document', 'documentType', 'nationality', 'email_verified', 'contactInfo', 'availability', 'subjects', 'years']
 
     def get_availability(self, obj):
         availabilities = obj.teacheravailability_set.all()
@@ -49,8 +56,17 @@ class TeacherSerializer(serializers.ModelSerializer):
     def get_subjects(self, obj):
         subjects = obj.teachersubjectschool_set.all()
         return TeacherSubjectSchoolSerializer(subjects, many=True).data
-
     
+    def get_years(self, obj: CustomUser):
+        request = self.context.get('request')
+        if obj.is_preceptor(school=request.school):
+            from ..models import Year
+            from .year_serializer import YearSerializerWithoutPreceptors
+            years = Year.objects.filter(preceptors=obj)
+            return YearSerializerWithoutPreceptors(years, many=True).data
+        return None
+    
+
 class CreateTeacherSerializer(serializers.ModelSerializer):
 
     class Meta:

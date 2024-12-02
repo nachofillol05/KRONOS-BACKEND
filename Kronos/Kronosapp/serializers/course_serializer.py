@@ -13,3 +13,10 @@ class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = ['id','name','description', 'year']
+
+
+class CreateCourseSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Course
+        fields = ['id','name','description', 'year']

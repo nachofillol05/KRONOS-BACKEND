@@ -1,36 +1,41 @@
+import time
 import pulp
-from .models import TeacherSubjectSchool, Subject, TeacherAvailability, CustomUser, Course
 
-def get_subjects_dynamically():
+from .  utils import convert_binary_to_image
+from .models import TeacherSubjectSchool, TeacherAvailability, Course, Module, Schedules
+
+
+
+def get_subjects_dynamically(user_school):
     subjects = {}
 
-    # Obtener todos los registros de TeacherSubjectSchool
-    tss_records = TeacherSubjectSchool.objects.all()
+    tss_records = TeacherSubjectSchool.objects.filter(coursesubjects__isnull=False, school=user_school)
 
     for tss in tss_records:
         tss_id = tss.id
-        subject = tss.subject
+        subject = tss.coursesubjects.subject
+        weeklyHours = tss.coursesubjects.weeklyHours
         teacher = tss.teacher
         school = tss.school.id
-        course = subject.course
+        course = tss.coursesubjects.course
 
         if course and course.name not in subjects:
             subjects[subject.name, course.name] = {
-                "hours": subject.weeklyHours,
+                "subject": subject,
+                "hours": weeklyHours,
                 "availability": [],
+                "teacher_class": teacher,
                 "teacher": f"{teacher.first_name} {teacher.last_name}",
                 "tss_id": tss_id,
                 "school_id": school
             }
 
-        # Obtener la disponibilidad del profesor
         availability_records = TeacherAvailability.objects.filter(teacher=teacher)
-
         for availability in availability_records:
             module = availability.module
             day = module.day.capitalize()
             hour = f"Hour{module.moduleNumber}"
-            course_str = f"Course{course.name}"
+            course_str = course.name
 
             availability_str = f"{day}_{hour}_{course_str}"
             subjects[subject.name, course.name]["availability"].append(availability_str)
@@ -38,104 +43,129 @@ def get_subjects_dynamically():
     return subjects
 
 
-def schedule_creation():
-    # Llamar a la función para obtener las materias de manera dinámica
-    subjects = get_subjects_dynamically()
+def schedule_creation(user_school):
+    import pulp
+    import time
 
-    # Extraer todos los horarios disponibles puede ser omitido y directamente usar subjects[subject]["availability"]
-    course_schedules = list(set(schedule for s in subjects for schedule in subjects[s]["availability"]))
+    # Obtener materias dinámicamente
+    subjects = get_subjects_dynamically(user_school=user_school)
+
+    # Reducir horarios redundantes
+    for subject in subjects:
+        subjects[subject]["availability"] = list(set(subjects[subject]["availability"]))
+
+    # Crear lista única de horarios disponibles
+    course_schedules = list(set(
+        schedule for subject in subjects for schedule in subjects[subject]["availability"]
+    ))
 
     # Variables de decisión
     assignment = pulp.LpVariable.dicts(
         "assignment",
-        ((subject, course_schedule) for subject in subjects for course_schedule in course_schedules),
+        ((subject, schedule) for subject in subjects for schedule in subjects[subject]["availability"]),
         cat="Binary"
     )
 
     # Problema de optimización
     problem = pulp.LpProblem("Schedule_Assignment", pulp.LpMaximize)
 
-    # Función objetivo (maximizar la cantidad de horas asignadas)
-    problem += pulp.lpSum(assignment[subject, course_schedule] for subject in subjects for course_schedule in course_schedules)
-    #se fija que la suma de las asignaciones de las materias en los horarios sea la mayor posible
+    # Función objetivo: Maximizar las horas asignadas
+    problem += pulp.lpSum(assignment[subject, schedule] 
+                          for subject in subjects 
+                          for schedule in subjects[subject]["availability"])
 
-    # Restricciones
-
-    # 1. Cada materia se debe impartir el número requerido de horas.
+    # Restricción 1: Asignar cada materia hasta las horas requeridas
     for subject in subjects:
-        problem += pulp.lpSum(assignment[subject, course_schedule] for course_schedule in course_schedules) <= subjects[subject]["hours"]
+        problem += pulp.lpSum(assignment[subject, schedule] 
+                              for schedule in subjects[subject]["availability"]) <= subjects[subject]["hours"]
 
-    # 2. Una materia solo puede ser impartida en los horarios disponibles.
+    # Restricción 2: Evitar más de una asignación por horario
+    for schedule in course_schedules:
+        problem += pulp.lpSum(assignment[subject, schedule] 
+                              for subject in subjects if schedule in subjects[subject]["availability"]) <= 1
+
+    # Restricción 3: Evitar conflictos de profesores en el mismo bloque horario
+    teacher_availability = {}
     for subject in subjects:
-        for course_schedule in course_schedules:
-            if course_schedule not in subjects[subject]["availability"]:
-                problem += assignment[subject, course_schedule] == 0
+        teacher = subjects[subject]["teacher"]
+        for schedule in subjects[subject]["availability"]:
+            if teacher not in teacher_availability:
+                teacher_availability[teacher] = {}
+            day_hour = "_".join(schedule.split("_")[:2])
+            if day_hour not in teacher_availability[teacher]:
+                teacher_availability[teacher][day_hour] = []
+            teacher_availability[teacher][day_hour].append((subject, schedule))
 
-    # 3. Un horario no puede estar ocupado por más de una materia en total.
-    #una materia no se puede dar en dos cursos a la misma hora
-    for course_schedule in course_schedules:
-        problem += pulp.lpSum(assignment[subject, course_schedule] for subject in subjects) <= 1
+    for teacher, day_hours in teacher_availability.items():
+        for day_hour, assignments in day_hours.items():
+            problem += pulp.lpSum(assignment[subject, schedule] for subject, schedule in assignments) <= 1
 
-    # 4. Si hay dos materias a la misma hora en diferentes cursos, deben ser impartidas por diferentes profesores.
-    for course_schedule in course_schedules:
-        day_hour = "_".join(course_schedule.split("_")[:2]) #saca el dia y la hora de el course_schedule
-        for subject1 in subjects:
-            for subject2 in subjects:
-                if subject1 != subject2:
-                    avail1 = [s for s in subjects[subject1]["availability"] if day_hour in s] #se fija que la disponibilidad de la materia 1 este en el actual day_hour de el course_schedule. ejemplo la disponibilidad tiene muchos y va recorriendo el for y se fija que esa fecha hora se cumpla en los 2 para que sea el mismo horario
-                    avail2 = [s for s in subjects[subject2]["availability"] if day_hour in s]
-                    if avail1 and avail2 and subjects[subject1]["teacher"] == subjects[subject2]["teacher"]:#se fija que ninguno de los dos este vacio y que los profesores sean los mismos
-                        problem += pulp.lpSum(assignment[subject1, s] for s in avail1) + pulp.lpSum(assignment[subject2, s] for s in avail2) <= 1 #si se cumple la condicion anterior entonces se fija que la suma de las asignaciones de las materias en los horarios sean menor o igual a 1
-    #ver ese tema de igual avail1 == avail2
     # Resolver el problema
-    print(problem)
-    problem.solve()
+    start_time = time.time()
+    solver = pulp.PULP_CBC_CMD(timeLimit=180, msg=True)
+    problem.solve(solver)
+    elapsed_time = time.time() - start_time
+    print(f"Tiempo de ejecución: {elapsed_time} segundos")
 
-    # Resultados
-    #Guarda los valores de cada materia osea matematica tiene 5 horas para despues irlas restando y ver si quedo alguna sin asignar
+    # Evaluar resultados
     unassigned_subjects = {subject: subjects[subject]["hours"] for subject in subjects}
     for subject in subjects:
-        for course_schedule in course_schedules:
-            if pulp.value(assignment[subject, course_schedule]) == 1:
+        for schedule in subjects[subject]["availability"]:
+            if pulp.value(assignment[subject, schedule]) == 1:
                 unassigned_subjects[subject] -= 1
-    # Mostrar resultados
-    subject_errors = []
-    for subject, remaining_hours in unassigned_subjects.items():
-        if remaining_hours > 0:
-            subject_errors.append(f"Subject {subject} has {remaining_hours} hours unassigned")
-        #else:
-            #print(f"Materia {materia} fue completamente asignada")
 
-
-    # Crear horario
+    # Crear horario vacío
     schedule = {}
-    courses = Course.objects.all()
-    days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"]
-    for course in courses:
-        for day in days:
-            for hour in range(1, 11):
-                schedule[f"{day}_{hour}_{course.name}"] = None
+    modules = Module.objects.filter(school=user_school)
+    assigned_modules = Schedules.objects.filter(tssId__school=user_school).values_list('module', flat=True)
+    available_modules = modules.exclude(id__in=assigned_modules)
 
-    # Llenar horario con las materias asignadas
+    for module in available_modules:
+        day = module.day.capitalize()
+        hour = f"Hour{module.moduleNumber}"
+        course_str = module.school.name
+        schedule[f"{day}_{hour}_{course_str}"] = None
+
+    # Llenar horario con asignaciones
     for subject in subjects:
-        for course_schedule in course_schedules:
-            if pulp.value(assignment[subject, course_schedule]) == 1:
-                schedule[course_schedule] = subject
+        for schedule_key in subjects[subject]["availability"]:
+            if pulp.value(assignment[subject, schedule_key]) == 1:
+                schedule[schedule_key] = subject
 
-    # Mostrar horario
+    # Crear lista de errores
+    subject_errors = [
+        f"La materia {subject} tiene {hours} horas sin asignar"
+        for subject, hours in unassigned_subjects.items() if hours > 0 and "freeSubject" not in subject
+    ]
+
+    # Crear lista de horarios finales
     schedule_list = []
-    for course_schedule, subject in schedule.items():
+    for schedule_key, subject in schedule.items():
         if subject is not None:
-            day, hour, course_str = course_schedule.split("_")
-            print(day, hour, course)
+            day, hour, course_str = schedule_key.split("_")
             tss_id = subjects[subject]["tss_id"]
             school = subjects[subject]["school_id"]
+            teacher = subjects[subject]["teacher_class"]
+            course_obj = Course.objects.get(name=course_str, year__school=school)
+            profile_picture_base64 = None
+
+            if teacher.profile_picture:
+                profile_picture_base64 = convert_binary_to_image(teacher.profile_picture)
+
             schedule_list.append({
+                "subject_id": subjects[subject]["subject"].id,
+                "subject_color": subjects[subject]["subject"].color,
+                "subject_name": subjects[subject]["subject"].name,
+                "subject_abreviation": subjects[subject]["subject"].abbreviation,
+                "nombre": f"{teacher.first_name} {teacher.last_name}",
+                "teacher_id": teacher.id,
                 "day": day,
-                "hour": int(hour.replace("Hour", "")),
-                "course": course_str.replace("Curso", ""),
+                "moduleNumber": int(hour.replace("Hour", "")),
+                "course": course_str,
+                "profile_picture": profile_picture_base64,
+                "course_id": course_obj.id,
                 "tss_id": tss_id,
-                "school_id": school
+                "school_id": school,
             })
-    result = [schedule_list, subject_errors]
-    return result
+
+    return [schedule_list, subject_errors]
