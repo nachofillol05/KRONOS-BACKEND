@@ -25,6 +25,16 @@ from ..serializers.Subject_serializer import SubjectWithCoursesSerializer
 from ..serializers.schedule_serializer import ScheduleSerializer, CreateScheduleSerializer
 from ..serializers.history_serializer import HistorySerializer
 from ..utils import call_free_teacher,call_free_subject, change_teacher_aviability
+from datetime import datetime
+from django.db.models import F, Window, Value, Q
+from django.db.models.functions import Rank, Concat
+from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from ..models import Schedules, Module, TeacherSubjectSchool, CourseSubjects, CustomUser, Subject, Course
+from ..utils import convert_binary_to_image
+from ..permissions import SchoolHeader, IsDirectiveOrOnlyRead
 
 
 class CreateModuleSchedule(generics.CreateAPIView):
@@ -95,28 +105,31 @@ class ViewSchedule(generics.ListAPIView):
         teachers = self.request.query_params.getlist('teachers', None)
         courses = self.request.query_params.getlist('courses', None)
 
+        # Validar teachers
         if teachers:
             try:
                 teacher_ids = [int(teacher) for teacher in teachers]
                 for teacher_id in teacher_ids:
                     if not CustomUser.objects.filter(pk=teacher_id).exists():
-                        raise ValidationError({'error': '"teachers_ids": no valido.'})
+                        raise ValidationError({'error': '"teachers_ids": no válido.'})
             except ValueError:
                 raise ValidationError("Los teachers proporcionados no existen.")
         else:
             teacher_ids = None
 
+        # Validar courses
         if courses:
             try:
                 course_ids = [int(course) for course in courses]
                 for course_id in course_ids:
                     if not Course.objects.filter(pk=course_id).exists():
-                        raise ValidationError({'error': '"courses_ids": no valido.'})
+                        raise ValidationError({'error': '"courses_ids": no válido.'})
             except ValueError:
                 raise ValidationError("Los courses proporcionados no existen.")
         else:
             course_ids = None
 
+        # Validar y formatear la fecha
         if not date:
             date = datetime.now().strftime('%Y-%m-%d')
         try:
@@ -124,72 +137,55 @@ class ViewSchedule(generics.ListAPIView):
         except ValueError:
             return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
 
-        with connection.cursor() as cursor:
-            sql_query = """
-                SELECT *
-                FROM (
-                    SELECT sh.id as id,
-                           sh.date,
-                           sh.module_id,
-                           cs.course_id as course_id,
-                           tss.teacher_id as teacher_id,
-                           CONCAT(t.first_name, ' ', t.last_name) AS nombre,
-                           t.profile_picture,
-                           s.abbreviation,
-                           s.color,
-                           cs.subject_id,
-                           c.name as course_name,
-                           m.day as day,
-                           m.moduleNumber,
-                           s.name as subject_name,
-                           RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
-                    FROM Kronosapp_schedules sh
-                    INNER JOIN Kronosapp_module m 
-                            ON sh.module_id = m.id
-                    INNER JOIN Kronosapp_teachersubjectschool tss
-                           ON sh.tssId_id = tss.id
-                    INNER JOIN Kronosapp_coursesubjects cs
-                           ON tss.coursesubjects_id = cs.id
-                    INNER JOIN Kronosapp_customuser t
-                           ON tss.teacher_id = t.id
-                    INNER JOIN Kronosapp_subject s
-                           ON cs.subject_id = s.id
-                    INNER JOIN Kronosapp_course c 
-                            ON cs.course_id = c.id
-                    WHERE DATE(sh.date) <= %s
-                ) as t
-                WHERE t.RN = 1
-                ORDER BY course_id, module_id
-            """
-            cursor.execute(sql_query, [date])
-            results = cursor.fetchall()
+        # Usar el ORM para replicar la lógica de la consulta SQL
+        schedules = Schedules.objects.filter(
+            date__lte=date
+        ).annotate(
+            rank=Window(
+                expression=Rank(),
+                partition_by=[F('module_id'), F('tssId__coursesubjects__course_id')],
+                order_by=F('date').desc()
+            ),
+            teacher_id=F('tssId__teacher_id'),
+            course_id=F('tssId__coursesubjects__course_id'),
+            subject_id=F('tssId__coursesubjects__subject_id'),
+            course_name=F('tssId__coursesubjects__course__name'),
+            day=F('module__day'),
+            module_number=F('module__moduleNumber'),
+            subject_name=F('tssId__coursesubjects__subject__name'),
+            subject_abbreviation=F('tssId__coursesubjects__subject__abbreviation'),
+            subject_color=F('tssId__coursesubjects__subject__color'),
+            nombre=Concat(F('tssId__teacher__first_name'), Value(' '), F('tssId__teacher__last_name')),
+            profile_picture=F('tssId__teacher__profile_picture'),
+        ).filter(rank=1).order_by('course_id', 'module_id')
 
-            from ..utils import convert_binary_to_image
-            data = []
-            for row in results:
-                if not row[13] == "freeSubject":
-                    data.append({
-                        "id": row[0],
-                        "date": row[1],
-                        "module_id": row[2],
-                        "course_id": row[3],
-                        "teacher_id": row[4],
-                        "nombre": row[5],
-                        "profile_picture": convert_binary_to_image(row[6]) if row[6] else None,
-                        "subject_abreviation": row[7],
-                        "subject_color": row[8],
-                        "subject_id": row[9],
-                        "course_name": row[10],
-                        "day": row[11],
-                        "moduleNumber": row[12],
-                        "subject_name": row[13]
-                    })
+        # Filtrar por teacher_ids y course_ids si existen
+        if teacher_ids:
+            schedules = schedules.filter(teacher_id__in=teacher_ids)
+        if course_ids:
+            schedules = schedules.filter(course_id__in=course_ids)
 
-            if teacher_ids is not None:
-                data = [row for row in data if row["teacher_id"] in teacher_ids]
-
-            if course_ids is not None:
-                data = [row for row in data if row["course_id"] in course_ids]
+        # Construir la respuesta final
+        data = []
+        for schedule in schedules:
+            if schedule.subject_name != "freeSubject":
+                data.append({
+                    "id": schedule.id,
+                    "date": schedule.date,
+                    "module_id": schedule.module_id,
+                    "course_id": schedule.course_id,
+                    "teacher_id": schedule.teacher_id,
+                    "nombre": schedule.nombre,
+                    "profile_picture": convert_binary_to_image(schedule.profile_picture) if schedule.profile_picture else None,
+                    "subject_abreviation": schedule.subject_abbreviation,
+                    "subject_color": schedule.subject_color,
+                    "subject_id": schedule.subject_id,
+                    "course_name": schedule.course_name,
+                    "day": schedule.day,
+                    "moduleNumber": schedule.module_number,
+                    "subject_name": schedule.subject_name,
+                })
+        
         return Response(data)
 
 
@@ -209,82 +205,62 @@ class ViewHistorySchedule(generics.ListAPIView):
 class ViewTeacherSchedule(generics.ListAPIView):
     permission_classes = [IsAuthenticated, SchoolHeader]
     serializer_class = ScheduleSerializer
+
     def get(self, request):
         teacher_id = self.request.user.pk
-
         freeteacher = call_free_teacher()
 
-        with connection.cursor() as cursor:
-                sql_query = """
-                    SELECT *
-                    FROM (
-                        SELECT sh.id as id,
-                            sh.date,
-                            sh.module_id,
-                            cs.course_id as course_id,
-                            tss.teacher_id as teacher_id,
-                            s.abbreviation,
-                            s.color,
-                            cs.subject_id,
-                            c.name as course_name,
-                            m.day as day,
-                            m.moduleNumber,
-                            s.name as subject_name,
-                            sc.logo,
-                            sc.name,
-                            RANK() over (PARTITION BY sh.module_id, cs.course_id order by sh.date DESC) as RN
-                        FROM Kronosapp_schedules sh
-                        INNER JOIN Kronosapp_module m 
-                                ON sh.module_id = m.id
-                        INNER JOIN Kronosapp_teachersubjectschool tss
-                            ON sh.tssId_id = tss.id
-                        INNER JOIN Kronosapp_school sc
-                                ON tss.school_id = sc.id
-                        INNER JOIN Kronosapp_coursesubjects cs
-                            ON tss.coursesubjects_id = cs.id
-                        INNER JOIN Kronosapp_customuser t
-                            ON tss.teacher_id = t.id
-                        INNER JOIN Kronosapp_subject s
-                            ON cs.subject_id = s.id
-                        INNER JOIN Kronosapp_course c 
-                                ON cs.course_id = c.id
-                        WHERE DATE(sh.date) <= %s
-                        AND t.id = %s OR t.id = %s
-                    ) as t
-                    WHERE t.RN = 1
-                    AND t.teacher_id = %s
-                    ORDER BY course_id, module_id	
-                """
-                cursor.execute(sql_query, [datetime.now(), teacher_id, freeteacher, teacher_id])
-                results = cursor.fetchall()
+        # Filtro base
+        base_query = Schedules.objects.filter(
+            Q(date__lte=datetime.now()) & 
+            (Q(tssId__teacher_id=teacher_id) | Q(tssId__teacher_id=freeteacher))
+        ).annotate(
+            course_id=F("tssId__coursesubjects__course_id"),
+            teacher_id=F("tssId__teacher_id"),
+            subject_abreviation=F("tssId__coursesubjects__subject__abbreviation"),
+            subject_color=F("tssId__coursesubjects__subject__color"),
+            subject_id=F("tssId__coursesubjects__subject_id"),
+            course_name=F("tssId__coursesubjects__course__name"),
+            day=F("module__day"),
+            moduleNumber=F("module__moduleNumber"),
+            subject_name=F("tssId__coursesubjects__subject__name"),
+            logo=F("tssId__school__logo"),
+            school_name=F("tssId__school__name"),
+            rank=Window(
+                expression=Rank(),
+                partition_by=[F("module_id"), F("tssId__coursesubjects__course_id")],
+                order_by=F("date").desc(),
+            )
+        ).filter(rank=1, tssId__teacher_id=teacher_id).order_by("course_id", "module_id")
 
-                from ..utils import convert_binary_to_image
-                data = []
-                for row in results:
-                    if not row[11] == "freeSubject":
-                        data.append({
-                            "id": row[0],
-                            "date": row[1],
-                            "module_id": row[2],
-                            "course_id": row[3],
-                            "teacher_id": row[4],
-                            "subject_abreviation": row[5],
-                            "subject_color": row[6],
-                            "subject_id": row[7],
-                            "course_name": row[8],
-                            "day": row[9],
-                            "moduleNumber": row[10],
-                            "subject_name": row[11],
-                            "logo": convert_binary_to_image(row[12]) if row[12] else None,
-                            "school_name": row[13]
-                        })
+        # Construcción de los datos
+        data = []
+        for schedule in base_query:
+            if schedule.subject_name != "freeSubject":
+                data.append({
+                    "id": schedule.id,
+                    "date": schedule.date,
+                    "module_id": schedule.module_id,
+                    "course_id": schedule.course_id,
+                    "teacher_id": schedule.teacher_id,
+                    "subject_abreviation": schedule.subject_abreviation,
+                    "subject_color": schedule.subject_color,
+                    "subject_id": schedule.subject_id,
+                    "course_name": schedule.course_name,
+                    "day": schedule.day,
+                    "moduleNumber": schedule.moduleNumber,
+                    "subject_name": schedule.subject_name,
+                    "logo": convert_binary_to_image(schedule.logo) if schedule.logo else None,
+                    "school_name": schedule.school_name
+                })
+
         if data:
             return Response(data)
         else:
             return Response(
-                    {'error': "No se encontraron materias para el profesor"}, 
-                    status=status.HTTP_404_NOT_FOUND
-                )
+                {'error': "No se encontraron materias para el profesor"},
+                status=status.HTTP_404_NOT_FOUND
+            )
             
 
 
