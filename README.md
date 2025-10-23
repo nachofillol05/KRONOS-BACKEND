@@ -6,7 +6,3 @@ If you need some sample data you can run
 ```
 python manage.py seed
 ```
-or 
-```
-python manage.py bigpapa
-```
